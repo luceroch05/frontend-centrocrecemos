@@ -41,6 +41,7 @@ import VerificarDocumentos from '../pages/VerificarDocumento';
 import ArchivosOficiales from '../pages/ArchivosOficiales';
 
 import PostulacionesDashboard from '../pages/PostulacionesDashboard';
+import VerificarBeneficios from '../pages/VerificarBeneficios';
 
 
 export const AppRouter = () => {
@@ -118,6 +119,7 @@ export const AppRouter = () => {
           <Route path="registro-paciente" element={<RegistroPacientePage />} />
           <Route path="libro-reclamaciones" element={<LibroReclamaciones />} />
           <Route path="verificar-documento" element={<VerificarDocumentos />} />
+          <Route path="verificar-beneficios" element={<VerificarBeneficios />} />
           <Route path="loading" element={<Loading />} />
           <Route path="*" element={<ErrorPage />} />
         </Route>

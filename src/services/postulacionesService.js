@@ -233,6 +233,7 @@ class PostulacionesService {
       throw new Error(errorMessage);
     }
   }
+  
 
   // Limpiar URL blob
   limpiarUrlBlob(url) {
