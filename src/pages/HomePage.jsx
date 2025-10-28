@@ -83,7 +83,7 @@ export default function HomePage() {
   return (
     <main className="main">
        {/* Popup/Promo Modal */}
-      {showPopup && (
+      {/* {showPopup && (
         <div className="promo-popup-overlay">
           <div className="promo-popup-container" data-aos="zoom-in">
             <div className="promo-popup-content">
@@ -107,7 +107,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
   <section id="hero" className="hero section" style={{ paddingTop: '150px' }}>
       <div className="container" data-aos="fade-up" data-aos-delay="100">
         <div className="row align-items-center">
@@ -143,42 +143,47 @@ export default function HomePage() {
           <div className="col-lg-6">
             <div className="hero-image position-relative" data-aos="zoom-out" data-aos-delay="300">
               {/* Carrusel de imágenes */}
-              <div className="position-relative" style={{ height: '600px', borderRadius: '16px', overflow: 'hidden' }}>
-                {heroImages.map((img, index) => (
-                  <img 
-                    key={index}
-                    src={img}
-                    alt={`Terapia y Bienestar ${index + 1}`}
-                    className="position-absolute top-0 start-0 w-100 h-100"
-                    style={{
-                      objectFit: 'cover',
-                      opacity: index === currentImage ? 1 : 0,
-                      transition: 'opacity 1s ease-in-out'
-                    }}
-                  />
-                ))}
-                
-              
-                
-                {/* Indicadores */}
-                <div className="position-absolute bottom-0 end-0 mb-4 me-4 d-flex gap-2">
-                  {heroImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImage(index)}
-                      className="btn p-0 border-0 rounded-pill"
-                      style={{
-                        width: index === currentImage ? '32px' : '8px',
-                        height: '8px',
-                        backgroundColor: index === currentImage ? 'white' : 'rgba(255, 255, 255, 0.5)',
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer'
-                      }}
-                      aria-label={`Ir a imagen ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
+<div className="position-relative hero-carousel" style={{ 
+  width: '100%',
+  aspectRatio: '3/4',
+  maxHeight: '600px',
+  borderRadius: '16px', 
+  overflow: 'hidden'
+}}>
+  {heroImages.map((img, index) => (
+    <img 
+      key={index}
+      src={img}
+      alt={`Terapia y Bienestar ${index + 1}`}
+      className="position-absolute top-0 start-0 w-100 h-100 hero-carousel-img"
+      style={{
+        objectFit: 'cover',
+        objectPosition: 'center 50%', // Más abajo para cortar logo
+        opacity: index === currentImage ? 1 : 0,
+        transition: 'opacity 1s ease-in-out'
+      }}
+    />
+  ))}
+  
+  {/* Indicadores */}
+  <div className="position-absolute bottom-0 end-0 mb-3 me-3 d-flex gap-2">
+    {heroImages.map((_, index) => (
+      <button
+        key={index}
+        onClick={() => setCurrentImage(index)}
+        className="btn p-0 border-0 rounded-pill"
+        style={{
+          width: index === currentImage ? '32px' : '8px',
+          height: '8px',
+          backgroundColor: index === currentImage ? 'white' : 'rgba(255, 255, 255, 0.5)',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer'
+        }}
+        aria-label={`Ir a imagen ${index + 1}`}
+      />
+    ))}
+  </div>
+</div>
             </div>
           </div>
         </div>
