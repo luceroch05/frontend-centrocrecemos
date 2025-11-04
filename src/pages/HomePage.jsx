@@ -97,7 +97,7 @@ export default function HomePage() {
               
               <div className="promo-image-container">
                 <img 
-                  src="/assets/img/index/Dia-Internacional-de-la-Tartamudez.png" // Cambia por la ruta de tu imagen promocional
+                  src="/assets/img/index/Cyber-wow-2025-Noviembre.png" // Cambia por la ruta de tu imagen promocional
                   alt="Promoción especial - Centro Crecemos"
                   className="promo-image"
                 />
