@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import postulacionesService from '../../services/postulacionesService';
+import {getDistritos} from '../../services/catalogoService'; // ✅ Importar el servicio
 
 const FormularioTrabaja = () => {
   const [formData, setFormData] = useState({
@@ -16,24 +17,40 @@ const FormularioTrabaja = () => {
   const [errores, setErrores] = useState({});
   const [mostrarModalExito, setMostrarModalExito] = useState(false);
 
-  const cargosDisponibles = [
-    'Terapia de Lenguaje',
-    'Terapeuta Ocupacional',
-    'Psicología',
-    'Recepción / Administración',
-    'Practicas Preprofesionales',
-  ];
+  // ✅ Estados para almacenar los catálogos dinámicos
+  const [cargosDisponibles, setCargosDisponibles] = useState([]);
+  const [distritosDisponibles, setDistritosDisponibles] = useState([]);
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
 
-  const distritosDisponibles = [
-    'Ate', 'Barranco', 'Breña', 'Callao', 'Cercado de Lima',
-    'Chaclacayo', 'Chorrillos', 'Cieneguilla', 'Comas', 'El Agustino',
-    'Independencia', 'Jesús María', 'La Molina', 'La Victoria', 'Lince',
-    'Los Olivos', 'Lurigancho', 'Lurín', 'Magdalena del Mar', 'Miraflores',
-    'Pachacámac', 'Pueblo Libre', 'Puente Piedra', 'Rímac', 'San Borja',
-    'San Isidro', 'San Juan de Lurigancho', 'San Juan de Miraflores',
-    'San Luis', 'San Martín de Porres', 'San Miguel', 'Santa Anita',
-    'Santiago de Surco', 'Surquillo', 'Villa El Salvador', 'Villa María del Triunfo',
-  ];
+  // ✅ Cargar catálogos al montar el componente
+  useEffect(() => {
+    cargarCatalogos();
+  }, []);
+
+const cargarCatalogos = async () => {
+    try {
+      setCargandoCatalogos(true);
+      
+      // Cargar cargos y distritos en paralelo desde diferentes servicios
+      const [cargosData, distritosData] = await Promise.all([
+        postulacionesService.obtenerCargos(), // Desde postulacionesService
+        getDistritos(), // Desde catalogoService
+      ]);
+ 
+      // Guardar los datos en el estado
+      setCargosDisponibles(cargosData);
+      setDistritosDisponibles(distritosData);
+
+    } catch (error) {
+      console.error('❌ Error al cargar catálogos:', error);
+      setMensaje({
+        tipo: 'error',
+        texto: 'Error al cargar los catálogos. Por favor, recarga la página.'
+      });
+    } finally {
+      setCargandoCatalogos(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -71,7 +88,6 @@ const FormularioTrabaja = () => {
     }
     
     if (file) {
-      
       if (file.type !== 'application/pdf') {
         setErrores(prev => ({
           ...prev,
@@ -148,7 +164,7 @@ const FormularioTrabaja = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('=== INICIANDO ENVÍO DE FORMULARIO ===');
+  
     
     if (!validarFormulario()) {
       setMensaje({
@@ -165,21 +181,16 @@ const FormularioTrabaja = () => {
     try {
       const formDataToSend = new FormData();
       
-      // IMPORTANTE: Agregar campos en el orden correcto
       formDataToSend.append('nombre', formData.nombre.trim());
       formDataToSend.append('apellido', formData.apellido.trim());
       formDataToSend.append('email', formData.email.trim().toLowerCase());
       formDataToSend.append('telefono', formData.telefono.trim());
       formDataToSend.append('distrito', formData.distrito);
       formDataToSend.append('cargo_postulado', formData.cargo_postulado);
-      
-      // El campo 'cv' debe ser el último y coincidir con el nombre en el backend
       formDataToSend.append('cv', cvFile);
-
 
       const response = await postulacionesService.crearPostulacion(formDataToSend);
       
-      // Mostrar modal de éxito
       setMostrarModalExito(true);
       
       // Limpiar formulario
@@ -194,14 +205,13 @@ const FormularioTrabaja = () => {
       setCvFile(null);
       setErrores({});
       
-      // Limpiar input de archivo
       const fileInput = document.getElementById('cv-file');
       if (fileInput) fileInput.value = '';
       
-      console.log('🎉 FORMULARIO ENVIADO CON ÉXITO');
+
       
     } catch (error) {
-      console.error('Error:', error);
+
       console.error('Mensaje:', error.message);
       
       setMensaje({
@@ -217,6 +227,28 @@ const FormularioTrabaja = () => {
   const cerrarModalExito = () => {
     setMostrarModalExito(false);
   };
+
+  // ✅ Mostrar mensaje mientras cargan los catálogos
+  if (cargandoCatalogos) {
+    return (
+      <section className="formulario-trabaja-section">
+        <div className="container py-5">
+          <div className="row justify-content-center">
+            <div className="col-lg-10">
+              <div className="formulario-card">
+                <div className="formulario-card-body text-center py-5">
+                  <div className="spinner-border text-primary mb-3" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                  </div>
+                  <p className="text-muted">Cargando formulario...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -336,6 +368,7 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Distrito con datos dinámicos */}
                       <div className="col-12 mb-3">
                         <label htmlFor="distrito" className="form-label-trabaja">
                           Distrito <span className="text-danger">*</span>
@@ -346,12 +379,12 @@ const FormularioTrabaja = () => {
                           name="distrito"
                           value={formData.distrito}
                           onChange={handleInputChange}
-                          disabled={loading}
+                          disabled={loading || distritosDisponibles.length === 0}
                         >
                           <option value="">Seleccione su distrito</option>
                           {distritosDisponibles.map((distrito) => (
-                            <option key={distrito} value={distrito}>
-                              {distrito}
+                            <option key={distrito.id} value={distrito.nombre}>
+                              {distrito.nombre}
                             </option>
                           ))}
                         </select>
@@ -362,6 +395,7 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Cargo con datos dinámicos */}
                       <div className="col-12 mb-3">
                         <label htmlFor="cargo_postulado" className="form-label-trabaja">
                           Cargo al que postula <span className="text-danger">*</span>
@@ -372,12 +406,12 @@ const FormularioTrabaja = () => {
                           name="cargo_postulado"
                           value={formData.cargo_postulado}
                           onChange={handleInputChange}
-                          disabled={loading}
+                          disabled={loading || cargosDisponibles.length === 0}
                         >
                           <option value="">Seleccione un cargo</option>
                           {cargosDisponibles.map((cargo) => (
-                            <option key={cargo} value={cargo}>
-                              {cargo}
+                            <option key={cargo.id} value={cargo.descripcion}>
+                              {cargo.descripcion}
                             </option>
                           ))}
                         </select>

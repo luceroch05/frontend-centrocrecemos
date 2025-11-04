@@ -39,6 +39,30 @@ class PostulacionesService {
       throw new Error(errorMessage);
     }
   }
+   async obtenerCargos() {
+    try {
+      const response = await api.get('/cargos-postulacion');
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 
+        'Error al obtener los cargos';
+      console.error('Error en obtenerCargos:', error);
+      throw new Error(errorMessage);
+    }
+  }
+
+  // Obtener todos los estados activos
+  async obtenerEstados() {
+    try {
+      const response = await api.get('/estados-postulacion');
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 
+        'Error al obtener los estados';
+      console.error('Error en obtenerEstados:', error);
+      throw new Error(errorMessage);
+    }
+  }
 
   // Obtener todas las postulaciones con filtros
   async obtenerPostulaciones(filtros = {}) {
@@ -92,6 +116,19 @@ class PostulacionesService {
       throw new Error(errorMessage);
     }
   }
+
+   async obtenerEstadisticasPorEstados() {
+    try {
+      const response = await api.get('/postulaciones/estadisticas-por-estados');
+      console.log('Respuesta de estadísticas por estados:', response.data);
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 
+        'Error al obtener estadísticas';
+      throw new Error(errorMessage);
+    }
+  }
+
 
   // Obtener una postulación por ID
   async obtenerPostulacionPorId(id) {
@@ -219,12 +256,14 @@ class PostulacionesService {
     }
   }
 
+
   // Limpiar URL blob
   limpiarUrlBlob(url) {
     if (url && url.startsWith('blob:')) {
       URL.revokeObjectURL(url);
     }
   }
+  
 }
 
 export default new PostulacionesService();
