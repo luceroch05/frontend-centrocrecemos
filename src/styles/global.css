@@ -972,7 +972,6 @@ section,
   font-size: 0.875rem;
   color: color-mix(in srgb, var(--default-color), transparent 40%);
 }
-
 @media (max-width: 992px) {
   .hero .customers-badge {
     position: static;
@@ -981,6 +980,24 @@ section,
   }
 }
 
+@media (max-width: 768px) {
+  .hero-carousel {
+    aspect-ratio: 12/13 !important;
+    max-height: 65vh !important;
+  }
+  
+  /* Mobile - enfoca MÁS ABAJO para cortar logo superior */
+  .hero-carousel-img {
+    object-position: center 78% !important;
+  }
+}
+
+/* Desktop - enfoca más abajo para cortar logo y mostrar piezas completas */
+@media (min-width: 769px) {
+  .hero-carousel-img {
+    object-position: center 53% !important;
+  }
+}
 .hero .stats-row {
   position: relative;
   z-index: 1;
