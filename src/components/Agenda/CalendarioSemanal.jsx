@@ -287,9 +287,10 @@ const CalendarioSemanal = ({
                         if (!slotInfo.isTop) return null;
                         
                         // Calcular posición y ancho para múltiples citas
-                        const totalCitas = citasInfo.length;
+                        const totalCitas = citasInfo.filter(c => c.isTop).length;
                         const anchoCita = totalCitas === 1 ? 'calc(100% - 4px)' : `calc(${100 / totalCitas}% - 2px)`;
-                        const leftOffset = totalCitas === 1 ? 2 : 2 + (index * (100 / totalCitas));
+                        const indiceCitaVisible = citasInfo.filter(c => c.isTop).findIndex(c => c.cita.id === cita.id);
+                        const leftOffset = totalCitas === 1 ? 2 : (100 / totalCitas) * indiceCitaVisible;
                         
                         return (
                           <Box

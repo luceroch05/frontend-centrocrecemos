@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // ✅ Agregado useRef
 import {
   Box,
   Card,
@@ -56,8 +56,11 @@ import {
   Email,
   Phone
 } from '@mui/icons-material';
-import postulacionesService from '../services/postulacionesService';
+import { CONFIGURACION_ESTADOS_POSTULACION } from '../constants/estadosPostulacion';
 import TopMenu from '../components/TopMenu';
+import {getDistritos} from '../services/catalogoService';
+import postulacionesService from '../services/postulacionesService';
+
 
 const PostulacionesDashboard = () => {
   const [postulaciones, setPostulaciones] = useState([]);
@@ -77,12 +80,18 @@ const PostulacionesDashboard = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [estadisticas, setEstadisticas] = useState({
     total: 0,
-    porEstado: []
+    estados: []
   });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [estadosDisponibles, setEstadosDisponibles] = useState([]);
+  const [cargosDisponibles, setCargosDisponibles] = useState([]);
+  const [distritosDisponibles, setDistritosDisponibles] = useState([]);
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
+  
+  // ✅ NUEVO: Control de inicialización
+  const inicializadoRef = useRef(false);
 
-  const estadosDisponibles = ['Nuevo', 'En revisión', 'Contactado', 'Por entrevistar', 'Rechazado', 'Contratado'];
   const coloresEstado = {
     'Nuevo': 'warning',
     'En revisión': 'info',
@@ -92,10 +101,43 @@ const PostulacionesDashboard = () => {
     'Contratado': 'success'
   };
 
+  // ✅ SOLUCIÓN: useEffect con control de duplicados
   useEffect(() => {
-    cargarPostulaciones();
-    cargarEstadisticas();
+    // Evita ejecución duplicada en React Strict Mode
+    if (inicializadoRef.current) return;
+    inicializadoRef.current = true;
+
+    const inicializar = async () => {
+      await cargarCatalogos();
+      await Promise.all([
+        cargarPostulaciones(),
+        cargarEstadisticas()
+      ]);
+    };
+    
+    inicializar();
   }, []);
+
+  const cargarCatalogos = async () => {
+    try {
+      setCargandoCatalogos(true);
+      
+      const [estadosData, cargosData, distritosData] = await Promise.all([
+        postulacionesService.obtenerEstados(),
+        postulacionesService.obtenerCargos(),
+        getDistritos(),
+      ]);
+
+      setEstadosDisponibles(estadosData);
+      setCargosDisponibles(cargosData);
+      setDistritosDisponibles(distritosData);
+
+    } catch (error) {
+      console.error('❌ Error al cargar catálogos:', error);
+    } finally {
+      setCargandoCatalogos(false);
+    }
+  };
 
   const cargarPostulaciones = async () => {
     try {
@@ -112,7 +154,7 @@ const PostulacionesDashboard = () => {
 
   const cargarEstadisticas = async () => {
     try {
-      const data = await postulacionesService.obtenerEstadisticas();
+      const data = await postulacionesService.obtenerEstadisticasPorEstados();
       setEstadisticas(data);
     } catch (error) {
       console.error('❌ Error al cargar estadísticas:', error);
@@ -194,10 +236,8 @@ const PostulacionesDashboard = () => {
     setModalCV(null);
   };
 
-  const getEstadisticaPorEstado = (estado) => {
-    const est = estadisticas.porEstado?.find(e => e.estado_postulacion === estado);
-    return est ? parseInt(est.count) : 0;
-  };
+  // Configuración de las tarjetas de estadísticas
+  const configuracionEstados = CONFIGURACION_ESTADOS_POSTULACION;
 
   const getInitials = (nombre, apellido) => {
     return `${nombre?.charAt(0) || ''}${apellido?.charAt(0) || ''}`.toUpperCase();
@@ -214,12 +254,10 @@ const PostulacionesDashboard = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Calcular los datos paginados
   const paginatedPostulaciones = postulaciones.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', p: 3 }}>
@@ -237,6 +275,7 @@ const PostulacionesDashboard = () => {
 
         {/* Estadísticas */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
+          {/* Tarjeta Total */}
           <Grid item xs={12} sm={6} md={4} lg={2}>
             <Card sx={{ 
               borderTop: 4, 
@@ -257,105 +296,33 @@ const PostulacionesDashboard = () => {
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card sx={{ 
-              borderTop: 4, 
-              borderColor: '#f59e0b',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              transition: 'all 0.3s',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-            }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <Schedule sx={{ fontSize: 32, color: '#f59e0b', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                  {getEstadisticaPorEstado('Nuevo')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                  Nuevos
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card sx={{ 
-              borderTop: 4, 
-              borderColor: '#06b6d4',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              transition: 'all 0.3s',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-            }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <Warning sx={{ fontSize: 32, color: '#06b6d4', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                  {getEstadisticaPorEstado('En revisión')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                  En Revisión
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card sx={{ 
-              borderTop: 4, 
-              borderColor: '#8b5cf6',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              transition: 'all 0.3s',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-            }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <CheckCircle sx={{ fontSize: 32, color: '#8b5cf6', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                  {getEstadisticaPorEstado('Contactado')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                  Contactados
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card sx={{ 
-              borderTop: 4, 
-              borderColor: '#10b981',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              transition: 'all 0.3s',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-            }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <CheckCircle sx={{ fontSize: 32, color: '#10b981', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                  {getEstadisticaPorEstado('Contratado')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                  Contratados
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card sx={{ 
-              borderTop: 4, 
-              borderColor: '#ef4444',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              transition: 'all 0.3s',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-            }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <Cancel sx={{ fontSize: 32, color: '#ef4444', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                  {getEstadisticaPorEstado('Rechazado')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                  Rechazados
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+          {/* Tarjetas dinámicas por estado */}
+          {configuracionEstados.map((estado, index) => {
+            const IconoComponente = estado.icono;
+            const cantidad = estadisticas.estados?.find(e => e.nombre === estado.nombre)?.cantidad || 0;
+            
+            return (
+              <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
+                <Card sx={{ 
+                  borderTop: 4, 
+                  borderColor: estado.color,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                  transition: 'all 0.3s',
+                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
+                }}>
+                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                    <IconoComponente sx={{ fontSize: 32, color: estado.color, mb: 1 }} />
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                      {cantidad}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                      {estado.label}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
 
         {/* Filtros */}
@@ -397,8 +364,9 @@ const PostulacionesDashboard = () => {
                     />
                   </Grid>
 
+                  {/* ✅ Select de Estado dinámico */}
                   <Grid item xs={12} md={2}>
-                    <FormControl fullWidth size="small">
+                    <FormControl fullWidth size="small" disabled={cargandoCatalogos}>
                       <InputLabel>Estado</InputLabel>
                       <Select
                         value={filtros.estado_postulacion}
@@ -407,30 +375,44 @@ const PostulacionesDashboard = () => {
                       >
                         <MenuItem value="">Todos</MenuItem>
                         {estadosDisponibles.map(estado => (
-                          <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                          <MenuItem key={estado.id} value={estado.descripcion}>{estado.descripcion}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
                   </Grid>
 
+                  {/* ✅ Select de Distrito dinámico */}
                   <Grid item xs={12} md={2}>
-                    <TextField
-                      fullWidth
-                      placeholder="Distrito"
-                      value={filtros.distrito}
-                      onChange={(e) => setFiltros({ ...filtros, distrito: e.target.value })}
-                      size="small"
-                    />
+                    <FormControl fullWidth size="small" disabled={cargandoCatalogos}>
+                      <InputLabel>Distrito</InputLabel>
+                      <Select
+                        value={filtros.distrito}
+                        label="Distrito"
+                        onChange={(e) => setFiltros({ ...filtros, distrito: e.target.value })}
+                      >
+                        <MenuItem value="">Todos</MenuItem>
+                        {distritosDisponibles.map(distrito => (
+                          <MenuItem key={distrito.id} value={distrito.nombre}>{distrito.nombre}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
 
+                  {/* ✅ Select de Cargo dinámico */}
                   <Grid item xs={12} md={2}>
-                    <TextField
-                      fullWidth
-                      placeholder="Cargo"
-                      value={filtros.cargo_postulado}
-                      onChange={(e) => setFiltros({ ...filtros, cargo_postulado: e.target.value })}
-                      size="small"
-                    />
+                    <FormControl fullWidth size="small" disabled={cargandoCatalogos}>
+                      <InputLabel>Cargo</InputLabel>
+                      <Select
+                        value={filtros.cargo_postulado}
+                        label="Cargo"
+                        onChange={(e) => setFiltros({ ...filtros, cargo_postulado: e.target.value })}
+                      >
+                        <MenuItem value="">Todos</MenuItem>
+                        {cargosDisponibles.map(cargo => (
+                          <MenuItem key={cargo.id} value={cargo.descripcion}>{cargo.descripcion}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
                 </Grid>
 
@@ -613,7 +595,7 @@ const PostulacionesDashboard = () => {
           )}
         </Card>
 
-        {/* Modal Perfil y Notas */}
+      {/* Modal Perfil y Notas */}
         <Dialog
           open={!!modalPerfil}
           onClose={() => setModalPerfil(null)}
@@ -697,11 +679,12 @@ const PostulacionesDashboard = () => {
                         value={modalPerfil.estado_postulacion}
                         onChange={(e) => handleCambiarEstado(modalPerfil.id_postulacion, e.target.value)}
                       >
+                        {/* ✅ CORREGIDO: Ahora usa estado.id como key y estado.descripcion como valor */}
                         {estadosDisponibles.map(estado => (
-                          <MenuItem key={estado} value={estado}>
+                          <MenuItem key={estado.id} value={estado.descripcion}>
                             <Chip
-                              label={estado}
-                              color={coloresEstado[estado]}
+                              label={estado.descripcion}
+                              color={coloresEstado[estado.descripcion]}
                               size="small"
                               sx={{ fontWeight: 500 }}
                             />
@@ -778,7 +761,8 @@ const PostulacionesDashboard = () => {
                     </Alert>
                   ) : (
                     <List sx={{ p: 0 }}>
-                      {comentarios.map((comentario, index) => (
+                      {/* ✅ ESTE YA ESTABA BIEN - Tiene key único con id_comentario */}
+                      {comentarios.map((comentario) => (
                         <ListItem
                           key={comentario.id_comentario}
                           sx={{

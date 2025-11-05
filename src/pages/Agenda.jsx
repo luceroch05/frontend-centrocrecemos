@@ -44,14 +44,14 @@ const Agenda = () => {
   const [terapeutaFiltro, setTerapeutaFiltro] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [citaEditando, setCitaEditando] = useState(null); // Para saber si estamos editando
+  const [guardando, setGuardando] = useState(false); // Estado para controlar el proceso de guardado
   const [formularioCita, setFormularioCita] = useState({
     paciente: null,
     doctor_id: '',
     servicio_id: '',
     motivo_id: '',
     duracion: '',
-    fecha: '',
-    horaInicio: '',
+    fechasHoras: [],
     nota: ''
   });
 
@@ -62,7 +62,7 @@ const Agenda = () => {
   const { trabajadores } = useTrabajadores();
   
   // Hook de citas (listar + crear + actualizar + eliminar)
-  const { citas, loading, error, listarCitas, crearCita, actualizarCita, eliminarCita } = useCitas();
+  const { citas, loading, error, listarCitas, crearCita, crearMultiplesCitas, actualizarCita, eliminarCita } = useCitas();
   
   // Cargar citas al montar y al cambiar de semana o filtro
   React.useEffect(() => {
@@ -104,24 +104,29 @@ const Agenda = () => {
   };
 
   // Handlers para el modal
-  const abrirModal = (dia, hora) => {
+
+  // Abrir modal al hacer clic en un slot vacío del calendario
+  const abrirModalDesdeSlot = (dia, hora) => {
     setSlotSeleccionado({ 
       dia: dia.nombre, 
       hora,
       fecha: dia.fechaString 
     });
-    
-    // Determinar el doctor_id: si es terapeuta usa su ID, si es admin usa el del filtro
+
     const doctorId = currentUser?.rol?.id === ROLES.TERAPEUTA 
       ? currentUser.id 
       : terapeutaFiltro;
-    
-    setFormularioCita({
-      ...formularioCita,
-      fecha: dia.fechaString,
-      horaInicio: formatearHora(hora),
-      doctor_id: doctorId
-    });
+
+    setFormularioCita(prev => ({
+      ...prev,
+      paciente: null,
+      doctor_id: doctorId,
+      servicio_id: '',
+      motivo_id: '',
+      duracion: '',
+      fechasHoras: [{ fecha: dia.fechaString, horaInicio: formatearHora(hora) }],
+      nota: ''
+    }));
     setModalAbierto(true);
   };
 
@@ -143,8 +148,7 @@ const Agenda = () => {
       servicio_id: '',
       motivo_id: '',
       duracion: '',
-      fecha: fechaHoy,
-      horaInicio: '',
+      fechasHoras: [],
       nota: ''
     });
     setModalAbierto(true);
@@ -160,20 +164,41 @@ const Agenda = () => {
       servicio_id: '',
       motivo_id: '',
       duracion: '',
-      fecha: '',
-      horaInicio: '',
+      fechasHoras: [],
       nota: ''
     });
   };
 
   const manejarCambioFormulario = (campo, valor) => {
+    if (campo === 'agregarFechaHora') {
+      setFormularioCita(prev => ({
+        ...prev,
+        fechasHoras: [...prev.fechasHoras, { fecha: '', horaInicio: '' }]
+      }));
+    } else if (campo === 'eliminarFechaHora') {
+      setFormularioCita(prev => ({
+        ...prev,
+        fechasHoras: prev.fechasHoras.filter((_, index) => index !== valor)
+      }));
+    } else if (campo === 'actualizarFechaHora') {
+      setFormularioCita(prev => ({
+        ...prev,
+        fechasHoras: prev.fechasHoras.map((fh, index) => 
+          index === valor.index 
+            ? { ...fh, [valor.campo]: valor.valor }
+            : fh
+        )
+      }));
+    } else {
     setFormularioCita(prev => ({
       ...prev,
       [campo]: valor
     }));
+    }
   };
 
   const guardarCita = async () => {
+    setGuardando(true); // Activar estado de guardando
     try {
       // Validar campos requeridos
       const validaciones = [];
@@ -193,11 +218,17 @@ const Agenda = () => {
       if (!formularioCita.duracion) {
         validaciones.push('Debe seleccionar una duración');
       }
-      if (!formularioCita.fecha) {
-        validaciones.push('Debe seleccionar una fecha');
-      }
-      if (!formularioCita.horaInicio) {
-        validaciones.push('Debe seleccionar una hora');
+      if (!formularioCita.fechasHoras || formularioCita.fechasHoras.length === 0) {
+        validaciones.push('Debe agregar al menos una fecha y hora');
+      } else {
+        formularioCita.fechasHoras.forEach((fh, index) => {
+          if (!fh.fecha) {
+            validaciones.push(`Debe seleccionar una fecha para la cita ${index + 1}`);
+          }
+          if (!fh.horaInicio) {
+            validaciones.push(`Debe seleccionar una hora para la cita ${index + 1}`);
+          }
+        });
       }
 
       if (validaciones.length > 0) {
@@ -206,34 +237,54 @@ const Agenda = () => {
           message: `Por favor complete los siguientes campos:\n• ${validaciones.join('\n• ')}`, 
           severity: 'error' 
         });
+        setGuardando(false); // Desactivar estado de guardando
         return;
       }
 
-      // Preparar datos para enviar al backend
-      const citaData = {
+      // Detectar si estamos editando o creando
+      if (citaEditando) {
+        // Para edición, solo actualizamos la primera cita (mantenemos compatibilidad)
+        const primeraCita = {
         paciente_id: formularioCita.paciente?.id,
         doctor_id: formularioCita.doctor_id,
         servicio_id: formularioCita.servicio_id,
         motivo_id: formularioCita.motivo_id,
-        fecha: formularioCita.fecha,
-        hora_inicio: formularioCita.horaInicio + ':00',
+          fecha: formularioCita.fechasHoras[0].fecha,
+          hora_inicio: formularioCita.fechasHoras[0].horaInicio + ':00',
         duracion_minutos: parseInt(formularioCita.duracion),
         nota: formularioCita.nota,
         user_id: currentUser?.id,
         estado_id: 1
       };
-
-      // Detectar si estamos editando o creando
-      if (citaEditando) {
-        // Actualizar cita existente
-        await actualizarCita(citaEditando.id, citaData);
+        await actualizarCita(citaEditando.id, primeraCita);
         setSnackbar({ open: true, message: 'Cita actualizada correctamente', severity: 'success' });
       } else {
-        // Crear nueva cita
-        await crearCita(citaData);
-        setSnackbar({ open: true, message: 'Cita agendada correctamente', severity: 'success' });
+        // Crear múltiples citas - enviar array al backend
+        const citasParaCrear = formularioCita.fechasHoras.map(fechaHora => ({
+          paciente_id: formularioCita.paciente?.id,
+          doctor_id: formularioCita.doctor_id,
+          servicio_id: formularioCita.servicio_id,
+          motivo_id: formularioCita.motivo_id,
+          fecha: fechaHora.fecha,
+          hora_inicio: fechaHora.horaInicio + ':00',
+          duracion_minutos: parseInt(formularioCita.duracion),
+          nota: formularioCita.nota,
+          user_id: currentUser?.id,
+          estado_id: 1
+        }));
+
+        const resultados = await crearMultiplesCitas(citasParaCrear);
+        
+        const cantidadCitas = resultados.length;
+        setSnackbar({ 
+          open: true, 
+          message: `${cantidadCitas} cita${cantidadCitas > 1 ? 's' : ''} agendada${cantidadCitas > 1 ? 's' : ''} correctamente`, 
+          severity: 'success' 
+        });
       }
       
+      // Esperar 1 segundo para que el usuario vea el mensaje antes de cerrar
+      await new Promise(resolve => setTimeout(resolve, 1000));
       cerrarModal();
     } catch (error) {
       // Extraer el mensaje de error del servidor
@@ -246,6 +297,8 @@ const Agenda = () => {
       }
       
       setSnackbar({ open: true, message: mensajeError, severity: 'error' });
+    } finally {
+      setGuardando(false); // Siempre desactivar estado de guardando
     }
   };
 
@@ -443,64 +496,63 @@ const Agenda = () => {
       ) : (
         /* Calendario semanal */
         <CalendarioSemanal
-          horas={horas}
-          citas={citas}
-          onSlotClick={abrirModal}
-          onCitaClick={({ fecha, hora, cita }) => {
-            // Usar la hora real de inicio de la cita, no la del slot
+        horas={horas}
+        citas={citas}
+          onSlotClick={abrirModalDesdeSlot}
+        onCitaClick={({ fecha, hora, cita }) => {
+            // Solo permitir ver/editar citas existentes
             const horaInicioCita = cita.hora_inicio ? cita.hora_inicio.substring(0, 5) : hora;
             setSlotSeleccionado({ dia: '', hora: horaInicioCita, fecha });
             setCitaEditando(cita); // Guardar la cita completa que se está editando
-            setFormularioCita({
-              fecha,
-              horaInicio: formatearHora(horaInicioCita),
-              // Crear objeto paciente con la estructura que espera el Autocomplete
-              paciente: cita.paciente_id ? {
-                id: cita.paciente_id,
-                nombre_completo: cita.paciente_nombre
-              } : null,
-              doctor_id: cita.doctor_id || '',
-              servicio_id: cita.servicio_id || '',
-              motivo_id: cita.motivo_id || '',
-              duracion: String(cita.duracion_minutos || ''),
-              nota: cita.nota || ''
-            });
-            setModalAbierto(true);
-          }}
-          getEstadoColor={getEstadoColor}
-          getEstadoIcon={getEstadoIcon}
-          fechaActual={fechaActual}
-          onFechaChange={setFechaActual}
+          setFormularioCita({
+              fechasHoras: [{ fecha, horaInicio: formatearHora(horaInicioCita) }],
+            // Crear objeto paciente con la estructura que espera el Autocomplete
+            paciente: cita.paciente_id ? {
+              id: cita.paciente_id,
+              nombre_completo: cita.paciente_nombre
+            } : null,
+            doctor_id: cita.doctor_id || '',
+            servicio_id: cita.servicio_id || '',
+            motivo_id: cita.motivo_id || '',
+            duracion: String(cita.duracion_minutos || ''),
+            nota: cita.nota || ''
+          });
+          setModalAbierto(true);
+        }}
+        getEstadoColor={getEstadoColor}
+        getEstadoIcon={getEstadoIcon}
+        fechaActual={fechaActual}
+        onFechaChange={setFechaActual}
           currentUser={currentUser}
-        />
+      />
       )}
 
       {/* Botón flotante para nueva cita - Solo para ADMINISTRADOR y ADMISION */}
       {(currentUser?.rol?.id === ROLES.ADMINISTRADOR || currentUser?.rol?.id === ROLES.ADMISION) && (
         <Fab
-          color="primary"
-          aria-label="add"
+        color="primary"
+        aria-label="add"
           onClick={abrirModalNuevaCita}
-          sx={{
-            position: 'fixed',
-            bottom: 32,
-            right: 32,
-            backgroundColor: '#A3C644',
-            width: 64,
-            height: 64,
-            boxShadow: '0 8px 24px rgba(163,198,68,0.4)',
-            '&:hover': { 
-              backgroundColor: '#8fb23a',
-              transform: 'scale(1.1)',
-              boxShadow: '0 12px 32px rgba(163,198,68,0.5)'
-            },
-            '&:active': {
-              transform: 'scale(0.95)'
-            },
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-          }}
-        >
-          <AddIcon sx={{ fontSize: 28 }} />
+        sx={{
+          position: 'fixed',
+          bottom: 32,
+          right: 32,
+          backgroundColor: '#A3C644',
+          width: 64,
+          height: 64,
+          boxShadow: '0 8px 24px rgba(163,198,68,0.4)',
+          '&:hover': { 
+            backgroundColor: '#8fb23a',
+            transform: 'scale(1.1)',
+            boxShadow: '0 12px 32px rgba(163,198,68,0.5)'
+          },
+          '&:active': {
+            transform: 'scale(0.95)'
+          },
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
+      >
+        <AddIcon sx={{ fontSize: 28 }} />
         </Fab>
       )}
 
@@ -523,6 +575,7 @@ const Agenda = () => {
         modoEdicion={!!citaEditando}
         citaEditando={citaEditando}
         currentUser={currentUser}
+        guardando={guardando}
       />
 
       {/* Snackbar para mensajes de éxito/error */}

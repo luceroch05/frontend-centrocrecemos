@@ -58,7 +58,8 @@ const ModalAgendarCita = ({
   terapeutaSeleccionado,
   modoEdicion = false,
   citaEditando = null,
-  currentUser = null
+  currentUser = null,
+  guardando = false
 }) => {
   const [queryPaciente, setQueryPaciente] = useState('');
   const [tabValue, setTabValue] = useState(0);
@@ -142,7 +143,7 @@ const ModalAgendarCita = ({
   return (
     <Dialog 
       open={open} 
-      onClose={onClose}
+      onClose={guardando ? undefined : onClose}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -172,11 +173,15 @@ const ModalAgendarCita = ({
         </Box>
         <IconButton 
           onClick={onClose} 
+          disabled={guardando}
           sx={{ 
             color: 'white',
             '&:hover': { 
               backgroundColor: 'rgba(255,255,255,0.1)',
               transform: 'scale(1.1)'
+            },
+            '&.Mui-disabled': {
+              color: 'rgba(255,255,255,0.5)'
             },
             transition: 'all 0.2s ease'
           }}
@@ -460,57 +465,201 @@ const ModalAgendarCita = ({
 
           {/* Fecha y Hora */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#424242' }}>
-              📅 Fecha y Hora
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#424242' }}>
+                📅 {modoEdicion ? 'Fecha y Hora' : 'Fechas y Horas'}
+              </Typography>
+              {/* En edición NO se permite agregar nuevas fechas */}
+              {!esTerapeuta && !modoEdicion && (
+                <Button
                   size="small"
-                  type="date"
-                  value={formularioCita.fecha}
-                  onChange={(e) => onFormularioChange('fecha', e.target.value)}
-                  disabled={esTerapeuta}
-                  InputLabelProps={{ shrink: true }}
+                  startIcon={<AddIcon />}
+                  onClick={() => onFormularioChange('agregarFechaHora', null)}
                   sx={{
-                    borderRadius: 2,
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#ffffff',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#A3C644',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#A3C644',
-                      },
+                    color: '#A3C644',
+                    borderColor: '#A3C644',
+                    '&:hover': {
+                      borderColor: '#8FA83A',
+                      backgroundColor: 'rgba(163, 198, 68, 0.04)',
                     },
                   }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="time"
-                  value={formularioCita.horaInicio}
-                  onChange={(e) => onFormularioChange('horaInicio', e.target.value)}
-                  disabled={esTerapeuta}
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    borderRadius: 2,
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#ffffff',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#A3C644',
+                  variant="outlined"
+                >
+                  Agregar
+                </Button>
+              )}
+            </Box>
+
+            {/* Modo edición: solo un par de campos (sin agregar/eliminar) */}
+            {modoEdicion ? (
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="date"
+                    label="Fecha"
+                    value={formularioCita.fechasHoras?.[0]?.fecha || ''}
+                    onChange={(e) => onFormularioChange('actualizarFechaHora', { index: 0, campo: 'fecha', valor: e.target.value })}
+                    disabled={esTerapeuta}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: '#ffffff',
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#A3C644',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#A3C644',
+                        },
                       },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#A3C644',
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="time"
+                    label="Hora"
+                    value={formularioCita.fechasHoras?.[0]?.horaInicio || ''}
+                    onChange={(e) => {
+                      const hora = e.target.value;
+                      if (hora >= '08:00' && hora <= '20:00') {
+                        onFormularioChange('actualizarFechaHora', { index: 0, campo: 'horaInicio', valor: hora });
+                      }
+                    }}
+                    disabled={esTerapeuta}
+                    inputProps={{ lang: 'es-ES', min: '08:00', max: '20:00', step: 300 }}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: '#ffffff',
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#A3C644',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#A3C644',
+                        },
                       },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                </Grid>
               </Grid>
-            </Grid>
+            ) : (
+              // Modo creación: lista de múltiples fechas/horas con agregar/eliminar
+              <>
+                {formularioCita.fechasHoras && formularioCita.fechasHoras.length > 0 ? (
+                  <Stack spacing={2}>
+                    {formularioCita.fechasHoras.map((fechaHora, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 2,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 2,
+                          backgroundColor: '#fafafa',
+                          position: 'relative'
+                        }}
+                      >
+                        {!esTerapeuta && formularioCita.fechasHoras.length > 1 && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onFormularioChange('eliminarFechaHora', index)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              color: '#f44336',
+                              '&:hover': {
+                                backgroundColor: 'rgba(244, 67, 54, 0.04)',
+                              },
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              type="date"
+                              label="Fecha"
+                              value={fechaHora.fecha}
+                              onChange={(e) => onFormularioChange('actualizarFechaHora', { index, campo: 'fecha', valor: e.target.value })}
+                              disabled={esTerapeuta}
+                              InputLabelProps={{ shrink: true }}
+                              sx={{
+                                borderRadius: 2,
+                                '& .MuiOutlinedInput-root': {
+                                  backgroundColor: '#ffffff',
+                                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#A3C644',
+                                  },
+                                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#A3C644',
+                                  },
+                                },
+                              }}
+                            />
+                          </Grid>
+                          <Grid item xs={6}>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              type="time"
+                              label="Hora"
+                              value={fechaHora.horaInicio}
+                              onChange={(e) => {
+                                const hora = e.target.value;
+                                if (hora >= '08:00' && hora <= '20:00') {
+                                  onFormularioChange('actualizarFechaHora', { index, campo: 'horaInicio', valor: hora });
+                                }
+                              }}
+                              disabled={esTerapeuta}
+                              inputProps={{ lang: 'es-ES', min: '08:00', max: '20:00', step: 300 }}
+                              InputLabelProps={{ shrink: true }}
+                              sx={{
+                                borderRadius: 2,
+                                '& .MuiOutlinedInput-root': {
+                                  backgroundColor: '#ffffff',
+                                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#A3C644',
+                                  },
+                                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#A3C644',
+                                  },
+                                },
+                              }}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Box sx={{ p: 2, border: '2px dashed #e0e0e0', borderRadius: 2, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No hay fechas y horas programadas
+                    </Typography>
+                    {!esTerapeuta && (
+                      <Button
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => onFormularioChange('agregarFechaHora', null)}
+                        sx={{ mt: 1, color: '#A3C644' }}
+                      >
+                        Agregar primera fecha
+                      </Button>
+                    )}
+                  </Box>
+                )}
+              </>
+            )}
           </Box>
 
           {/* Nota de la cita */}
@@ -727,6 +876,7 @@ const ModalAgendarCita = ({
           onClick={onClose}
           variant="outlined"
           size="large"
+          disabled={guardando}
           sx={{
             borderColor: '#A3C644',
             color: '#A3C644',
@@ -747,6 +897,8 @@ const ModalAgendarCita = ({
           onClick={onGuardar}
           variant="contained"
           size="large"
+          disabled={guardando}
+          startIcon={guardando ? <CircularProgress size={20} color="inherit" /> : null}
           sx={{
             background: 'linear-gradient(135deg, #A3C644 0%, #8fb23a 100%)',
             borderRadius: 2,
@@ -758,10 +910,14 @@ const ModalAgendarCita = ({
               transform: 'translateY(-1px)',
               boxShadow: '0 6px 16px rgba(163,198,68,0.4)'
             },
+            '&.Mui-disabled': {
+              background: 'linear-gradient(135deg, #c4c4c4 0%, #9e9e9e 100%)',
+              color: 'rgba(255, 255, 255, 0.8)'
+            },
             transition: 'all 0.2s ease'
           }}
         >
-                {modoEdicion ? '✏️ Actualizar Cita' : '💾 Guardar Cita'}
+                {guardando ? 'Guardando...' : (modoEdicion ? '✏️ Actualizar Cita' : '💾 Guardar Cita')}
               </Button>
             </>
           )}
@@ -804,11 +960,21 @@ const ModalAgendarCita = ({
                   <strong>Paciente:</strong> {formularioCita.paciente?.nombre_completo || 'N/A'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Fecha:</strong> {formularioCita.fecha}
+                  <strong>Fechas y Horas:</strong>
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  <strong>Hora:</strong> {formularioCita.horaInicio}
-                </Typography>
+                {formularioCita.fechasHoras && formularioCita.fechasHoras.length > 0 ? (
+                  <Box sx={{ ml: 2 }}>
+                    {formularioCita.fechasHoras.map((fechaHora, index) => (
+                      <Typography key={index} variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                        • {fechaHora.fecha} a las {fechaHora.horaInicio}
+                      </Typography>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                    No hay fechas programadas
+                  </Typography>
+                )}
               </Box>
             )}
           </DialogContentText>

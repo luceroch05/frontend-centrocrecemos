@@ -972,7 +972,6 @@ section,
   font-size: 0.875rem;
   color: color-mix(in srgb, var(--default-color), transparent 40%);
 }
-
 @media (max-width: 992px) {
   .hero .customers-badge {
     position: static;
@@ -981,6 +980,24 @@ section,
   }
 }
 
+@media (max-width: 768px) {
+  .hero-carousel {
+    aspect-ratio: 12/13 !important;
+    max-height: 65vh !important;
+  }
+  
+  /* Mobile - enfoca MÁS ABAJO para cortar logo superior */
+  .hero-carousel-img {
+    object-position: center 78% !important;
+  }
+}
+
+/* Desktop - enfoca más abajo para cortar logo y mostrar piezas completas */
+@media (min-width: 769px) {
+  .hero-carousel-img {
+    object-position: center 53% !important;
+  }
+}
 .hero .stats-row {
   position: relative;
   z-index: 1;
@@ -5610,5 +5627,27 @@ section,
 
   .verificar-info-card {
     break-inside: avoid;
+  }
+}
+
+/* Mejora el comportamiento del scroll en iOS/Safari */
+html {
+  scroll-behavior: auto; /* Evita conflictos con smooth scroll en iOS */
+  -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+}
+
+body {
+  overflow-x: hidden; /* Evita scroll horizontal no deseado */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Previene el rubber banding en iOS si es necesario */
+body.no-bounce {
+  overscroll-behavior-y: none;
+}
+/* Para Safari/iOS que a veces ignora scroll-behavior */
+@supports (-webkit-overflow-scrolling: touch) {
+  html {
+    scroll-behavior: smooth;
   }
 }

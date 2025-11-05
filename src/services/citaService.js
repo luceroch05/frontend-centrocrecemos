@@ -13,8 +13,8 @@ export const listarCitas = async (params = {}) => {
   return response.data;
 };
 
-export const crearCita = async (citaData) => {
-  const response = await api.post('/citas', citaData);
+export const crearMultiplesCitas = async (citasData) => {
+  const response = await api.post('/citas', citasData);
   return response.data;
 };
 

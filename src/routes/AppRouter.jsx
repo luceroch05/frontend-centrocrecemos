@@ -37,9 +37,13 @@ import ReglamentoInterno from '../pages/ReglamentoInterno';
 import PoliticaPrivacidad from '../pages/PoliticaPrivacidad';
 import Mantenimiento from '../pages/Mantenimiento';
 import LibroReclamaciones from '../pages/LibroReclamaciones';
+<<<<<<< HEAD
 import VerificarDocumentos from '../pages/VerificarDocumento';
 import ArchivosOficiales from '../pages/ArchivosOficiales';
 
+=======
+import GestionPopup from '../pages/GestionPopup';
+>>>>>>> upstream/main
 import PostulacionesDashboard from '../pages/PostulacionesDashboard';
 
 
@@ -79,6 +83,7 @@ export const AppRouter = () => {
             <PostulacionesDashboard />
           </PrivateRoute>
         } />
+<<<<<<< HEAD
          <Route path="/intranet/archivos-oficiales" element={
           <PrivateRoute>
             <ArchivosOficiales
@@ -87,6 +92,14 @@ export const AppRouter = () => {
         } />
       
       
+=======
+
+        <Route path="/intranet/popup-promocional" element={
+          <PrivateRoute>
+            <GestionPopup />
+          </PrivateRoute>
+        } />
+>>>>>>> upstream/main
         
         <Route path="/editar-paciente/:id" element={<><TopMenu /><EditarPacientePage /></>} />
         <Route path="/preguntas" element={<Preguntas />} />

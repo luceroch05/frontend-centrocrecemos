@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import postulacionesService from '../../services/postulacionesService';
+<<<<<<< HEAD
 import { getDistritos } from '../../services/catalogoService';
 import { getCargosPostulacion } from '../../services/cargoPostulacion';
+=======
+import {getDistritos} from '../../services/catalogoService'; // ✅ Importar el servicio
+>>>>>>> upstream/main
 
 const FormularioTrabaja = () => {
   const [formData, setFormData] = useState({
@@ -22,6 +26,7 @@ const FormularioTrabaja = () => {
   const [cargosDisponibles, setCargosDisponibles] = useState([]);
   const [loadingCargos, setLoadingCargos] = useState(false);
 
+<<<<<<< HEAD
   // ✅ CORREGIDO: useEffect en lugar de useStatet
   useEffect(() => {
     const cargarCargos = async () => {
@@ -68,6 +73,42 @@ const FormularioTrabaja = () => {
 
     cargarDistritos();
   }, []);
+=======
+  // ✅ Estados para almacenar los catálogos dinámicos
+  const [cargosDisponibles, setCargosDisponibles] = useState([]);
+  const [distritosDisponibles, setDistritosDisponibles] = useState([]);
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
+
+  // ✅ Cargar catálogos al montar el componente
+  useEffect(() => {
+    cargarCatalogos();
+  }, []);
+
+const cargarCatalogos = async () => {
+    try {
+      setCargandoCatalogos(true);
+      
+      // Cargar cargos y distritos en paralelo desde diferentes servicios
+      const [cargosData, distritosData] = await Promise.all([
+        postulacionesService.obtenerCargos(), // Desde postulacionesService
+        getDistritos(), // Desde catalogoService
+      ]);
+ 
+      // Guardar los datos en el estado
+      setCargosDisponibles(cargosData);
+      setDistritosDisponibles(distritosData);
+
+    } catch (error) {
+      console.error('❌ Error al cargar catálogos:', error);
+      setMensaje({
+        tipo: 'error',
+        texto: 'Error al cargar los catálogos. Por favor, recarga la página.'
+      });
+    } finally {
+      setCargandoCatalogos(false);
+    }
+  };
+>>>>>>> upstream/main
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -181,8 +222,12 @@ const FormularioTrabaja = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+<<<<<<< HEAD
     console.log('=== INICIANDO ENVÍO DE FORMULARIO ===');
     console.log('Datos del formulario:', formData);
+=======
+  
+>>>>>>> upstream/main
     
     if (!validarFormulario()) {
       setMensaje({
@@ -204,6 +249,7 @@ const FormularioTrabaja = () => {
       formDataToSend.append('email', formData.email.trim().toLowerCase());
       formDataToSend.append('telefono', formData.telefono.trim());
       formDataToSend.append('distrito', formData.distrito);
+<<<<<<< HEAD
       formDataToSend.append('cargoPostuladoId', parseInt(formData.cargoPostuladoId));
       formDataToSend.append('cv', cvFile);
 
@@ -213,6 +259,13 @@ const FormularioTrabaja = () => {
       
       console.log('✅ Respuesta del servidor:', response);
       
+=======
+      formDataToSend.append('cargo_postulado', formData.cargo_postulado);
+      formDataToSend.append('cv', cvFile);
+
+      const response = await postulacionesService.crearPostulacion(formDataToSend);
+      
+>>>>>>> upstream/main
       setMostrarModalExito(true);
       
       setFormData({
@@ -229,10 +282,14 @@ const FormularioTrabaja = () => {
       const fileInput = document.getElementById('cv-file');
       if (fileInput) fileInput.value = '';
       
-      console.log('🎉 FORMULARIO ENVIADO CON ÉXITO');
+
       
     } catch (error) {
+<<<<<<< HEAD
       console.error('❌ Error:', error);
+=======
+
+>>>>>>> upstream/main
       console.error('Mensaje:', error.message);
       
       setMensaje({
@@ -248,6 +305,28 @@ const FormularioTrabaja = () => {
   const cerrarModalExito = () => {
     setMostrarModalExito(false);
   };
+
+  // ✅ Mostrar mensaje mientras cargan los catálogos
+  if (cargandoCatalogos) {
+    return (
+      <section className="formulario-trabaja-section">
+        <div className="container py-5">
+          <div className="row justify-content-center">
+            <div className="col-lg-10">
+              <div className="formulario-card">
+                <div className="formulario-card-body text-center py-5">
+                  <div className="spinner-border text-primary mb-3" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                  </div>
+                  <p className="text-muted">Cargando formulario...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -367,6 +446,7 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Distrito con datos dinámicos */}
                       <div className="col-12 mb-3">
                         <label htmlFor="distrito" className="form-label-trabaja">
                           Distrito <span className="text-danger">*</span>
@@ -377,6 +457,7 @@ const FormularioTrabaja = () => {
                           name="distrito"
                           value={formData.distrito}
                           onChange={handleInputChange}
+<<<<<<< HEAD
                           disabled={loading || loadingDistritos}
                         >
                           <option value="">Seleccione su distrito</option>
@@ -389,6 +470,16 @@ const FormularioTrabaja = () => {
                               </option>
                             ))
                           )}
+=======
+                          disabled={loading || distritosDisponibles.length === 0}
+                        >
+                          <option value="">Seleccione su distrito</option>
+                          {distritosDisponibles.map((distrito) => (
+                            <option key={distrito.id} value={distrito.nombre}>
+                              {distrito.nombre}
+                            </option>
+                          ))}
+>>>>>>> upstream/main
                         </select>
                         {errores.distrito && (
                           <div className="invalid-feedback d-block">
@@ -397,6 +488,7 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Cargo con datos dinámicos */}
                       <div className="col-12 mb-3">
                         <label htmlFor="cargoPostuladoId" className="form-label-trabaja">
                           Cargo al que postula <span className="text-danger">*</span>
@@ -407,6 +499,7 @@ const FormularioTrabaja = () => {
                           name="cargoPostuladoId"
                           value={formData.cargoPostuladoId}
                           onChange={handleInputChange}
+<<<<<<< HEAD
                           disabled={loading || loadingCargos}
                         >
                           <option value="">Seleccione un cargo</option>
@@ -419,6 +512,16 @@ const FormularioTrabaja = () => {
                               </option>
                             ))
                           )}
+=======
+                          disabled={loading || cargosDisponibles.length === 0}
+                        >
+                          <option value="">Seleccione un cargo</option>
+                          {cargosDisponibles.map((cargo) => (
+                            <option key={cargo.id} value={cargo.descripcion}>
+                              {cargo.descripcion}
+                            </option>
+                          ))}
+>>>>>>> upstream/main
                         </select>
                         {errores.cargoPostuladoId && (
                           <div className="invalid-feedback d-block">
