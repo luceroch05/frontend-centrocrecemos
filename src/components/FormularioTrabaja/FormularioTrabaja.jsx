@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import postulacionesService from '../../services/postulacionesService';
-<<<<<<< HEAD
 import { getDistritos } from '../../services/catalogoService';
 import { getCargosPostulacion } from '../../services/cargoPostulacion';
-=======
-import {getDistritos} from '../../services/catalogoService'; // ✅ Importar el servicio
->>>>>>> upstream/main
 
 const FormularioTrabaja = () => {
   const [formData, setFormData] = useState({
@@ -26,7 +22,6 @@ const FormularioTrabaja = () => {
   const [cargosDisponibles, setCargosDisponibles] = useState([]);
   const [loadingCargos, setLoadingCargos] = useState(false);
 
-<<<<<<< HEAD
   // ✅ CORREGIDO: useEffect en lugar de useStatet
   useEffect(() => {
     const cargarCargos = async () => {
@@ -37,7 +32,7 @@ const FormularioTrabaja = () => {
         const cargos = response.data || response;
         setCargosDisponibles(Array.isArray(cargos) ? cargos : []);
         
-        console.log('✅ Cargos cargados:', cargos);
+   
       } catch (error) {
         console.error('❌ Error al cargar cargos:', error);
         setCargosDisponibles([]);
@@ -73,42 +68,9 @@ const FormularioTrabaja = () => {
 
     cargarDistritos();
   }, []);
-=======
-  // ✅ Estados para almacenar los catálogos dinámicos
-  const [cargosDisponibles, setCargosDisponibles] = useState([]);
-  const [distritosDisponibles, setDistritosDisponibles] = useState([]);
-  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
 
-  // ✅ Cargar catálogos al montar el componente
-  useEffect(() => {
-    cargarCatalogos();
-  }, []);
 
-const cargarCatalogos = async () => {
-    try {
-      setCargandoCatalogos(true);
-      
-      // Cargar cargos y distritos en paralelo desde diferentes servicios
-      const [cargosData, distritosData] = await Promise.all([
-        postulacionesService.obtenerCargos(), // Desde postulacionesService
-        getDistritos(), // Desde catalogoService
-      ]);
- 
-      // Guardar los datos en el estado
-      setCargosDisponibles(cargosData);
-      setDistritosDisponibles(distritosData);
 
-    } catch (error) {
-      console.error('❌ Error al cargar catálogos:', error);
-      setMensaje({
-        tipo: 'error',
-        texto: 'Error al cargar los catálogos. Por favor, recarga la página.'
-      });
-    } finally {
-      setCargandoCatalogos(false);
-    }
-  };
->>>>>>> upstream/main
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -222,12 +184,7 @@ const cargarCatalogos = async () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-<<<<<<< HEAD
-    console.log('=== INICIANDO ENVÍO DE FORMULARIO ===');
-    console.log('Datos del formulario:', formData);
-=======
   
->>>>>>> upstream/main
     
     if (!validarFormulario()) {
       setMensaje({
@@ -249,23 +206,11 @@ const cargarCatalogos = async () => {
       formDataToSend.append('email', formData.email.trim().toLowerCase());
       formDataToSend.append('telefono', formData.telefono.trim());
       formDataToSend.append('distrito', formData.distrito);
-<<<<<<< HEAD
-      formDataToSend.append('cargoPostuladoId', parseInt(formData.cargoPostuladoId));
-      formDataToSend.append('cv', cvFile);
-
-      console.log('📤 Enviando FormData con cargoPostuladoId:', formData.cargoPostuladoId);
-
-      const response = await postulacionesService.crearPostulacion(formDataToSend);
-      
-      console.log('✅ Respuesta del servidor:', response);
-      
-=======
-      formDataToSend.append('cargo_postulado', formData.cargo_postulado);
+      formDataToSend.append('cargo_postulado', formData.cargoPostuladoId);
       formDataToSend.append('cv', cvFile);
 
       const response = await postulacionesService.crearPostulacion(formDataToSend);
       
->>>>>>> upstream/main
       setMostrarModalExito(true);
       
       setFormData({
@@ -285,11 +230,6 @@ const cargarCatalogos = async () => {
 
       
     } catch (error) {
-<<<<<<< HEAD
-      console.error('❌ Error:', error);
-=======
-
->>>>>>> upstream/main
       console.error('Mensaje:', error.message);
       
       setMensaje({
@@ -305,28 +245,6 @@ const cargarCatalogos = async () => {
   const cerrarModalExito = () => {
     setMostrarModalExito(false);
   };
-
-  // ✅ Mostrar mensaje mientras cargan los catálogos
-  if (cargandoCatalogos) {
-    return (
-      <section className="formulario-trabaja-section">
-        <div className="container py-5">
-          <div className="row justify-content-center">
-            <div className="col-lg-10">
-              <div className="formulario-card">
-                <div className="formulario-card-body text-center py-5">
-                  <div className="spinner-border text-primary mb-3" role="status">
-                    <span className="visually-hidden">Cargando...</span>
-                  </div>
-                  <p className="text-muted">Cargando formulario...</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <>
@@ -457,20 +375,6 @@ const cargarCatalogos = async () => {
                           name="distrito"
                           value={formData.distrito}
                           onChange={handleInputChange}
-<<<<<<< HEAD
-                          disabled={loading || loadingDistritos}
-                        >
-                          <option value="">Seleccione su distrito</option>
-                          {loadingDistritos ? (
-                            <option disabled>Cargando distritos...</option>
-                          ) : (
-                            distritosDisponibles.map((distrito) => (
-                              <option key={distrito.id} value={distrito.nombre}>
-                                {distrito.nombre}
-                              </option>
-                            ))
-                          )}
-=======
                           disabled={loading || distritosDisponibles.length === 0}
                         >
                           <option value="">Seleccione su distrito</option>
@@ -479,7 +383,6 @@ const cargarCatalogos = async () => {
                               {distrito.nombre}
                             </option>
                           ))}
->>>>>>> upstream/main
                         </select>
                         {errores.distrito && (
                           <div className="invalid-feedback d-block">
@@ -499,20 +402,6 @@ const cargarCatalogos = async () => {
                           name="cargoPostuladoId"
                           value={formData.cargoPostuladoId}
                           onChange={handleInputChange}
-<<<<<<< HEAD
-                          disabled={loading || loadingCargos}
-                        >
-                          <option value="">Seleccione un cargo</option>
-                          {loadingCargos ? (
-                            <option disabled>Cargando cargos...</option>
-                          ) : (
-                            cargosDisponibles.map((cargo) => (
-                              <option key={cargo.id} value={cargo.id}>
-                                {cargo.descripcion}
-                              </option>
-                            ))
-                          )}
-=======
                           disabled={loading || cargosDisponibles.length === 0}
                         >
                           <option value="">Seleccione un cargo</option>
@@ -521,7 +410,6 @@ const cargarCatalogos = async () => {
                               {cargo.descripcion}
                             </option>
                           ))}
->>>>>>> upstream/main
                         </select>
                         {errores.cargoPostuladoId && (
                           <div className="invalid-feedback d-block">
