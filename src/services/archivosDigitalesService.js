@@ -35,3 +35,8 @@ export const descargarArchivo = async (archivoId) => {
   });
   return response.data;
 };
+
+export const validarDocumentoPorCodigo = async (codigo) => {
+  const response = await api.get(`/archivos-digitales/verificar/${codigo}`);
+  return response.data;
+};

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import postulacionesService from '../../services/postulacionesService';
-import {getDistritos} from '../../services/catalogoService'; // ✅ Importar el servicio
+import { getDistritos } from '../../services/catalogoService';
+import { getCargosPostulacion } from '../../services/cargoPostulacion';
 
 const FormularioTrabaja = () => {
   const [formData, setFormData] = useState({
@@ -9,48 +10,67 @@ const FormularioTrabaja = () => {
     email: '',
     telefono: '',
     distrito: '',
-    cargo_postulado: '',
+    cargoPostuladoId: '',
   });
   const [cvFile, setCvFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [errores, setErrores] = useState({});
   const [mostrarModalExito, setMostrarModalExito] = useState(false);
-
-  // ✅ Estados para almacenar los catálogos dinámicos
-  const [cargosDisponibles, setCargosDisponibles] = useState([]);
   const [distritosDisponibles, setDistritosDisponibles] = useState([]);
-  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
+  const [loadingDistritos, setLoadingDistritos] = useState(false);
+  const [cargosDisponibles, setCargosDisponibles] = useState([]);
+  const [loadingCargos, setLoadingCargos] = useState(false);
 
-  // ✅ Cargar catálogos al montar el componente
+  // ✅ CORREGIDO: useEffect en lugar de useStatet
   useEffect(() => {
-    cargarCatalogos();
+    const cargarCargos = async () => {
+      try {
+        setLoadingCargos(true);
+        const response = await getCargosPostulacion();
+        
+        const cargos = response.data || response;
+        setCargosDisponibles(Array.isArray(cargos) ? cargos : []);
+        
+   
+      } catch (error) {
+        console.error('❌ Error al cargar cargos:', error);
+        setCargosDisponibles([]);
+        setMensaje({
+          tipo: 'error',
+          texto: 'Error al cargar la lista de cargos'
+        });
+      } finally {
+        setLoadingCargos(false);
+      }
+    };
+
+    cargarCargos();
   }, []);
 
-const cargarCatalogos = async () => {
-    try {
-      setCargandoCatalogos(true);
-      
-      // Cargar cargos y distritos en paralelo desde diferentes servicios
-      const [cargosData, distritosData] = await Promise.all([
-        postulacionesService.obtenerCargos(), // Desde postulacionesService
-        getDistritos(), // Desde catalogoService
-      ]);
- 
-      // Guardar los datos en el estado
-      setCargosDisponibles(cargosData);
-      setDistritosDisponibles(distritosData);
+  useEffect(() => {
+    const cargarDistritos = async () => {
+      try {
+        setLoadingDistritos(true);
+        const distritos = await getDistritos();
+        setDistritosDisponibles(distritos || []);
+      } catch (error) {
+        console.error('Error al cargar distritos:', error);
+        setDistritosDisponibles([]);
+        setMensaje({
+          tipo: 'error',
+          texto: 'Error al cargar la lista de distritos'
+        });
+      } finally {
+        setLoadingDistritos(false);
+      }
+    };
 
-    } catch (error) {
-      console.error('❌ Error al cargar catálogos:', error);
-      setMensaje({
-        tipo: 'error',
-        texto: 'Error al cargar los catálogos. Por favor, recarga la página.'
-      });
-    } finally {
-      setCargandoCatalogos(false);
-    }
-  };
+    cargarDistritos();
+  }, []);
+
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -145,8 +165,8 @@ const cargarCatalogos = async () => {
       nuevosErrores.telefono = 'El número debe comenzar con 9';
     }
 
-    if (!formData.cargo_postulado) {
-      nuevosErrores.cargo_postulado = 'Debe seleccionar un cargo';
+    if (!formData.cargoPostuladoId) {
+      nuevosErrores.cargoPostuladoId = 'Debe seleccionar un cargo';
     }
 
     if (!formData.distrito) {
@@ -186,21 +206,20 @@ const cargarCatalogos = async () => {
       formDataToSend.append('email', formData.email.trim().toLowerCase());
       formDataToSend.append('telefono', formData.telefono.trim());
       formDataToSend.append('distrito', formData.distrito);
-      formDataToSend.append('cargo_postulado', formData.cargo_postulado);
+      formDataToSend.append('cargo_postulado', formData.cargoPostuladoId);
       formDataToSend.append('cv', cvFile);
 
       const response = await postulacionesService.crearPostulacion(formDataToSend);
       
       setMostrarModalExito(true);
       
-      // Limpiar formulario
       setFormData({
         nombre: '',
         apellido: '',
         email: '',
         telefono: '',
         distrito: '',
-        cargo_postulado: '',
+        cargoPostuladoId: '',
       });
       setCvFile(null);
       setErrores({});
@@ -211,7 +230,6 @@ const cargarCatalogos = async () => {
 
       
     } catch (error) {
-
       console.error('Mensaje:', error.message);
       
       setMensaje({
@@ -227,28 +245,6 @@ const cargarCatalogos = async () => {
   const cerrarModalExito = () => {
     setMostrarModalExito(false);
   };
-
-  // ✅ Mostrar mensaje mientras cargan los catálogos
-  if (cargandoCatalogos) {
-    return (
-      <section className="formulario-trabaja-section">
-        <div className="container py-5">
-          <div className="row justify-content-center">
-            <div className="col-lg-10">
-              <div className="formulario-card">
-                <div className="formulario-card-body text-center py-5">
-                  <div className="spinner-border text-primary mb-3" role="status">
-                    <span className="visually-hidden">Cargando...</span>
-                  </div>
-                  <p className="text-muted">Cargando formulario...</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <>
@@ -397,14 +393,14 @@ const cargarCatalogos = async () => {
 
                       {/* ✅ Select de Cargo con datos dinámicos */}
                       <div className="col-12 mb-3">
-                        <label htmlFor="cargo_postulado" className="form-label-trabaja">
+                        <label htmlFor="cargoPostuladoId" className="form-label-trabaja">
                           Cargo al que postula <span className="text-danger">*</span>
                         </label>
                         <select
-                          className={`form-select-trabaja ${errores.cargo_postulado ? 'is-invalid' : ''}`}
-                          id="cargo_postulado"
-                          name="cargo_postulado"
-                          value={formData.cargo_postulado}
+                          className={`form-select-trabaja ${errores.cargoPostuladoId ? 'is-invalid' : ''}`}
+                          id="cargoPostuladoId"
+                          name="cargoPostuladoId"
+                          value={formData.cargoPostuladoId}
                           onChange={handleInputChange}
                           disabled={loading || cargosDisponibles.length === 0}
                         >
@@ -415,9 +411,9 @@ const cargarCatalogos = async () => {
                             </option>
                           ))}
                         </select>
-                        {errores.cargo_postulado && (
+                        {errores.cargoPostuladoId && (
                           <div className="invalid-feedback d-block">
-                            {errores.cargo_postulado}
+                            {errores.cargoPostuladoId}
                           </div>
                         )}
                       </div>

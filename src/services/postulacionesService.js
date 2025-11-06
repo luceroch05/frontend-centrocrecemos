@@ -2,7 +2,7 @@ import api from './api';
 
 class PostulacionesService {
   // CREAR POSTULACIÓN (para el formulario público)
-  async crearPostulacion(formData) {
+ async crearPostulacion(formData) {
     try {
       
       // Verificar que el archivo existe antes de enviar
@@ -11,8 +11,15 @@ class PostulacionesService {
         throw new Error('No se ha seleccionado un archivo CV válido');
       }
       
-      
-     
+      // 🔍 DEBUGGING: Verificar TODO lo que contiene el FormData
+      console.log('📦 Contenido del FormData antes de enviar:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, type: ${value.type})`);
+        } else {
+          console.log(`  ${key}: "${value}" (type: ${typeof value}, length: ${value.length})`);
+        }
+      }
       
       const response = await api.post('/postulaciones', formData, {
         headers: {
@@ -31,14 +38,22 @@ class PostulacionesService {
         console.error('Error completo:', JSON.stringify(error.response.data, null, 2));
       }
       
-      const errorMessage = error.response?.data?.message || 
-        error.response?.data?.error || 
-        error.message ||
-        'Error al crear la postulación';
+      // ✅ Mejor manejo de arrays de errores
+      let errorMessage;
+      if (Array.isArray(error.response?.data?.message)) {
+        errorMessage = error.response.data.message.join(', ');
+      } else {
+        errorMessage = error.response?.data?.message || 
+          error.response?.data?.error || 
+          error.message ||
+          'Error al crear la postulación';
+      }
       
       throw new Error(errorMessage);
     }
   }
+  
+  
    async obtenerCargos() {
     try {
       const response = await api.get('/cargos-postulacion');
