@@ -10,6 +10,12 @@ export const getPacientes = async (url = '/pacientes') => {
   return response.data;
 };
 
+export const getPacientesAll = async (url = '/pacientes/all') => {
+  const response = await api.get(url);
+  return response.data;
+};
+
+
 export const getPacienteById = async (id) => {
   const response = await api.get(`/pacientes/${id}`);
   return response.data;

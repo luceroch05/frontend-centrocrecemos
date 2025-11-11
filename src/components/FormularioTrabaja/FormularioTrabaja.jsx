@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import postulacionesService from '../../services/postulacionesService';
+import { getDistritos } from '../../services/catalogoService';
+import { getCargosPostulacion } from '../../services/cargoPostulacion';
 
 const FormularioTrabaja = () => {
   const [formData, setFormData] = useState({
@@ -8,32 +10,67 @@ const FormularioTrabaja = () => {
     email: '',
     telefono: '',
     distrito: '',
-    cargo_postulado: '',
+    cargoPostuladoId: '',
   });
   const [cvFile, setCvFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [errores, setErrores] = useState({});
   const [mostrarModalExito, setMostrarModalExito] = useState(false);
+  const [distritosDisponibles, setDistritosDisponibles] = useState([]);
+  const [loadingDistritos, setLoadingDistritos] = useState(false);
+  const [cargosDisponibles, setCargosDisponibles] = useState([]);
+  const [loadingCargos, setLoadingCargos] = useState(false);
 
-  const cargosDisponibles = [
-    'Terapia de Lenguaje',
-    'Terapeuta Ocupacional',
-    'Psicología',
-    'Recepción / Administración',
-    'Practicas Preprofesionales',
-  ];
+  // ✅ CORREGIDO: useEffect en lugar de useStatet
+  useEffect(() => {
+    const cargarCargos = async () => {
+      try {
+        setLoadingCargos(true);
+        const response = await getCargosPostulacion();
+        
+        const cargos = response.data || response;
+        setCargosDisponibles(Array.isArray(cargos) ? cargos : []);
+        
+   
+      } catch (error) {
+        console.error('❌ Error al cargar cargos:', error);
+        setCargosDisponibles([]);
+        setMensaje({
+          tipo: 'error',
+          texto: 'Error al cargar la lista de cargos'
+        });
+      } finally {
+        setLoadingCargos(false);
+      }
+    };
 
-  const distritosDisponibles = [
-    'Ate', 'Barranco', 'Breña', 'Callao', 'Cercado de Lima',
-    'Chaclacayo', 'Chorrillos', 'Cieneguilla', 'Comas', 'El Agustino',
-    'Independencia', 'Jesús María', 'La Molina', 'La Victoria', 'Lince',
-    'Los Olivos', 'Lurigancho', 'Lurín', 'Magdalena del Mar', 'Miraflores',
-    'Pachacámac', 'Pueblo Libre', 'Puente Piedra', 'Rímac', 'San Borja',
-    'San Isidro', 'San Juan de Lurigancho', 'San Juan de Miraflores',
-    'San Luis', 'San Martín de Porres', 'San Miguel', 'Santa Anita',
-    'Santiago de Surco', 'Surquillo', 'Villa El Salvador', 'Villa María del Triunfo',
-  ];
+    cargarCargos();
+  }, []);
+
+  useEffect(() => {
+    const cargarDistritos = async () => {
+      try {
+        setLoadingDistritos(true);
+        const distritos = await getDistritos();
+        setDistritosDisponibles(distritos || []);
+      } catch (error) {
+        console.error('Error al cargar distritos:', error);
+        setDistritosDisponibles([]);
+        setMensaje({
+          tipo: 'error',
+          texto: 'Error al cargar la lista de distritos'
+        });
+      } finally {
+        setLoadingDistritos(false);
+      }
+    };
+
+    cargarDistritos();
+  }, []);
+
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -71,7 +108,6 @@ const FormularioTrabaja = () => {
     }
     
     if (file) {
-      
       if (file.type !== 'application/pdf') {
         setErrores(prev => ({
           ...prev,
@@ -129,8 +165,8 @@ const FormularioTrabaja = () => {
       nuevosErrores.telefono = 'El número debe comenzar con 9';
     }
 
-    if (!formData.cargo_postulado) {
-      nuevosErrores.cargo_postulado = 'Debe seleccionar un cargo';
+    if (!formData.cargoPostuladoId) {
+      nuevosErrores.cargoPostuladoId = 'Debe seleccionar un cargo';
     }
 
     if (!formData.distrito) {
@@ -148,7 +184,7 @@ const FormularioTrabaja = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('=== INICIANDO ENVÍO DE FORMULARIO ===');
+  
     
     if (!validarFormulario()) {
       setMensaje({
@@ -165,43 +201,35 @@ const FormularioTrabaja = () => {
     try {
       const formDataToSend = new FormData();
       
-      // IMPORTANTE: Agregar campos en el orden correcto
       formDataToSend.append('nombre', formData.nombre.trim());
       formDataToSend.append('apellido', formData.apellido.trim());
       formDataToSend.append('email', formData.email.trim().toLowerCase());
       formDataToSend.append('telefono', formData.telefono.trim());
       formDataToSend.append('distrito', formData.distrito);
-      formDataToSend.append('cargo_postulado', formData.cargo_postulado);
-      
-      // El campo 'cv' debe ser el último y coincidir con el nombre en el backend
+      formDataToSend.append('cargo_postulado', formData.cargoPostuladoId);
       formDataToSend.append('cv', cvFile);
-
 
       const response = await postulacionesService.crearPostulacion(formDataToSend);
       
-      // Mostrar modal de éxito
       setMostrarModalExito(true);
       
-      // Limpiar formulario
       setFormData({
         nombre: '',
         apellido: '',
         email: '',
         telefono: '',
         distrito: '',
-        cargo_postulado: '',
+        cargoPostuladoId: '',
       });
       setCvFile(null);
       setErrores({});
       
-      // Limpiar input de archivo
       const fileInput = document.getElementById('cv-file');
       if (fileInput) fileInput.value = '';
       
-      console.log('🎉 FORMULARIO ENVIADO CON ÉXITO');
+
       
     } catch (error) {
-      console.error('Error:', error);
       console.error('Mensaje:', error.message);
       
       setMensaje({
@@ -336,6 +364,7 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Distrito con datos dinámicos */}
                       <div className="col-12 mb-3">
                         <label htmlFor="distrito" className="form-label-trabaja">
                           Distrito <span className="text-danger">*</span>
@@ -346,12 +375,12 @@ const FormularioTrabaja = () => {
                           name="distrito"
                           value={formData.distrito}
                           onChange={handleInputChange}
-                          disabled={loading}
+                          disabled={loading || distritosDisponibles.length === 0}
                         >
                           <option value="">Seleccione su distrito</option>
                           {distritosDisponibles.map((distrito) => (
-                            <option key={distrito} value={distrito}>
-                              {distrito}
+                            <option key={distrito.id} value={distrito.nombre}>
+                              {distrito.nombre}
                             </option>
                           ))}
                         </select>
@@ -362,28 +391,29 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Cargo con datos dinámicos */}
                       <div className="col-12 mb-3">
-                        <label htmlFor="cargo_postulado" className="form-label-trabaja">
+                        <label htmlFor="cargoPostuladoId" className="form-label-trabaja">
                           Cargo al que postula <span className="text-danger">*</span>
                         </label>
                         <select
-                          className={`form-select-trabaja ${errores.cargo_postulado ? 'is-invalid' : ''}`}
-                          id="cargo_postulado"
-                          name="cargo_postulado"
-                          value={formData.cargo_postulado}
+                          className={`form-select-trabaja ${errores.cargoPostuladoId ? 'is-invalid' : ''}`}
+                          id="cargoPostuladoId"
+                          name="cargoPostuladoId"
+                          value={formData.cargoPostuladoId}
                           onChange={handleInputChange}
-                          disabled={loading}
+                          disabled={loading || cargosDisponibles.length === 0}
                         >
                           <option value="">Seleccione un cargo</option>
                           {cargosDisponibles.map((cargo) => (
-                            <option key={cargo} value={cargo}>
-                              {cargo}
+                            <option key={cargo.id} value={cargo.descripcion}>
+                              {cargo.descripcion}
                             </option>
                           ))}
                         </select>
-                        {errores.cargo_postulado && (
+                        {errores.cargoPostuladoId && (
                           <div className="invalid-feedback d-block">
-                            {errores.cargo_postulado}
+                            {errores.cargoPostuladoId}
                           </div>
                         )}
                       </div>

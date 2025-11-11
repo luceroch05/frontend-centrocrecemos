@@ -34,6 +34,7 @@ const ArchivosDigitales = ({ paciente }) => {
   const [openConfirmacion, setOpenConfirmacion] = useState(false);
   const [archivoAEliminar, setArchivoAEliminar] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const [requiereVerificacion, setRequiereVerificacion] = useState('TERAPIA');
 
   // Obtener tipos de archivo del backend
   useEffect(() => {
@@ -243,6 +244,9 @@ const ArchivosDigitales = ({ paciente }) => {
       const nombreOriginal = form.archivo.name;
       const tipoMime = form.archivo.type;
       const tamano = form.archivo.size;
+      const requiereVerificacion = (currentUser?.rol?.id === 1 || currentUser?.rol?.id === 2) 
+      ? 'OFICIAL'  // Admin y Admisión suben archivos OFICIALES
+      : 'TERAPIA';
       
       // Agregar solo los datos básicos - el backend generará nombreArchivo y rutaArchivo
       formData.append('terapeutaId', currentUser?.id);
@@ -252,6 +256,7 @@ const ArchivosDigitales = ({ paciente }) => {
       formData.append('nombreOriginal', nombreOriginal);
       formData.append('tipoMime', tipoMime);
       formData.append('tamano', tamano);
+      formData.append('requiereVerificacion', requiereVerificacion);
 
       console.log('FormData a enviar al backend:', {
         terapeutaId: currentUser?.id,

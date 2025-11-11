@@ -5036,6 +5036,599 @@ section,
     margin-bottom: 20px;
   }
 }
+/* ========================================
+   VERIFICADOR DE DOCUMENTOS - SCOPED STYLES
+   Agregar al final de global.css
+======================================== */
+
+/* Contenedor principal - clase única */
+.verificar-documentos-wrapper {
+  font-family: 'Roboto', system-ui, sans-serif;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* ========================================
+   HEADER DEL VERIFICADOR
+======================================== */
+.verificar-header {
+  background: linear-gradient(135deg, #c263f9 0%, #d857d0 100%);
+  color: white;
+  padding: 2.5rem 0;
+  
+  box-shadow: 0 4px 20px rgba(194, 99, 249, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.verificar-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.verificar-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  padding-top: 100px;
+}
+
+.verificar-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.verificar-logo {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.5rem;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  font-family: 'Nunito', sans-serif;
+}
+
+.verificar-brand-text h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  font-family: 'Nunito', sans-serif;
+  color: white;
+}
+
+.verificar-brand-text p {
+  font-size: 0.95rem;
+  opacity: 0.95;
+  font-weight: 300;
+  margin: 0;
+}
+
+.verificar-link-web {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  opacity: 0.95;
+  transition: all 0.3s;
+  font-size: 0.95rem;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.verificar-link-web:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================
+   CONTENIDO PRINCIPAL
+======================================== */
+.verificar-main-content {
+  flex: 1;
+  padding: 3rem 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.verificar-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 992px) {
+  .verificar-grid-layout {
+    grid-template-columns: 400px 1fr;
+  }
+}
+
+/* ========================================
+   PANEL COMÚN
+======================================== */
+.verificar-panel {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.verificar-panel:hover {
+  box-shadow: 0 8px 35px rgba(0, 0, 0, 0.12);
+}
+
+/* ========================================
+   PANEL DE BÚSQUEDA
+======================================== */
+.verificar-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+  color: #c263f9;
+}
+
+.verificar-panel-title svg {
+  flex-shrink: 0;
+}
+
+.verificar-panel-title h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  color: #2d465e;
+}
+
+.verificar-form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #2d465e;
+  font-size: 1rem;
+  font-family: 'Nunito', sans-serif;
+}
+
+.verificar-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-family: 'Courier New', monospace;
+  transition: all 0.3s;
+  background: #f8f9fa;
+  color: #212529;
+  font-weight: 500;
+}
+
+.verificar-input:focus {
+  outline: none;
+  border-color: #c263f9;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(194, 99, 249, 0.1);
+}
+
+.verificar-input.verificar-input-invalid {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.verificar-input.verificar-input-invalid:focus {
+  box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
+}
+
+.verificar-helper-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.75rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.verificar-helper-text strong {
+  color: #2d465e;
+  font-weight: 600;
+}
+
+.verificar-btn-validar {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #c263f9 0%, #d857d0 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(194, 99, 249, 0.3);
+  font-family: 'Nunito', sans-serif;
+}
+
+.verificar-btn-validar:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(194, 99, 249, 0.4);
+}
+
+.verificar-btn-validar:active:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.verificar-btn-validar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.verificar-info-note {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.75rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: #212529;
+  border: 1px solid #dee2e6;
+}
+
+.verificar-info-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #c263f9;
+}
+
+.verificar-info-note strong {
+  color: #2d465e;
+  font-weight: 600;
+}
+
+/* ========================================
+   PANEL DE RESULTADO
+======================================== */
+.verificar-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.verificar-status-badge {
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.3s;
+  font-family: 'Nunito', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.verificar-status-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.verificar-status-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.verificar-status-error {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.verificar-status-idle {
+  background: #e9ecef;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+}
+
+.verificar-tipo-badge {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2d465e;
+  border: 1px solid #dee2e6;
+  font-family: 'Nunito', sans-serif;
+}
+
+.verificar-result-content {
+  min-height: 250px;
+}
+
+/* ========================================
+   ALERTAS
+======================================== */
+.verificar-alert {
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.verificar-alert-info {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  color: #0c5460;
+  border-left: 5px solid #17a2b8;
+}
+
+.verificar-alert-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+  color: #856404;
+  border-left: 5px solid #ffc107;
+}
+
+.verificar-alert-error {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  border-left: 5px solid #dc3545;
+}
+
+.verificar-alert code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.verificar-alert strong {
+  font-weight: 700;
+}
+
+/* ========================================
+   CARDS DE INFORMACIÓN
+======================================== */
+.verificar-info-cards {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-bottom: 1.5rem;
+}
+
+.verificar-info-card {
+  padding: 1.75rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s;
+}
+
+.verificar-info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: #c263f9;
+}
+
+.verificar-card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #6c757d;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.verificar-card-label:first-child {
+  margin-top: 0;
+}
+
+.verificar-card-value {
+  font-size: 1rem;
+  color: #212529;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.verificar-code-value {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #c263f9;
+  letter-spacing: 1px;
+}
+
+.verificar-card-divider {
+  height: 1px;
+  background: #dee2e6;
+  margin: 1.25rem 0;
+}
+
+.verificar-dni-text {
+  color: #6c757d;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.verificar-estado-activo {
+  color: #28a745;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.verificar-estado-inactivo {
+  color: #dc3545;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.verificar-verification-url {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #c263f9;
+  word-break: break-all;
+  background: rgba(194, 99, 249, 0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  border: 2px dashed #c263f9;
+  font-weight: 500;
+}
+
+.verificar-card-note {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.75rem;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* ========================================
+   ACCIONES
+======================================== */
+.verificar-actions-bar {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #dee2e6;
+}
+
+.verificar-btn-secondary {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  color: #2d465e;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 1rem;
+  font-family: 'Nunito', sans-serif;
+}
+
+.verificar-btn-secondary:hover {
+  background: #f8f9fa;
+  border-color: #c263f9;
+  color: #c263f9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+@media (max-width: 768px) {
+  .verificar-header-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .verificar-brand {
+    flex-direction: column;
+  }
+
+  .verificar-info-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .verificar-actions-bar {
+    flex-direction: column;
+  }
+
+  .verificar-panel {
+    padding: 1.75rem;
+  }
+
+  .verificar-panel-title h2 {
+    font-size: 1.3rem;
+  }
+
+  .verificar-main-content {
+    padding: 2rem 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .verificar-header {
+    padding: 2rem 0;
+  }
+
+  .verificar-logo {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+
+  .verificar-brand-text h1 {
+    font-size: 1.4rem;
+  }
+
+  .verificar-panel {
+    padding: 1.5rem;
+  }
+
+  .verificar-input {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+  }
+
+  .verificar-btn-validar {
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+  }
+}
+
+/* ========================================
+   PRINT STYLES
+======================================== */
+@media print {
+  .verificar-header,
+  .verificar-panel:first-child,
+  .verificar-actions-bar {
+    display: none;
+  }
+
+  .verificar-documentos-wrapper {
+    background: white;
+  }
+
+  .verificar-panel {
+    box-shadow: none;
+    border: 1px solid #dee2e6;
+  }
+
+  .verificar-info-card {
+    break-inside: avoid;
+  }
+}
 
 /* Mejora el comportamiento del scroll en iOS/Safari */
 html {
