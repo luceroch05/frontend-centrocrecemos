@@ -11,6 +11,8 @@ const menuItems = [
   { text: 'Usuarios', path: '/intranet/usuarios' },
   { text: 'Popup Inicio', path: '/intranet/popup-promocional' },
   { text: 'Postulaciones', path: '/intranet/postulaciones', adminOnly: true },
+  { text: 'Certificaciones', path: '/intranet/archivos-oficiales', adminOnly: true }
+
 ];
 
 const TopMenu = () => {
@@ -54,7 +56,7 @@ const TopMenu = () => {
         zIndex: 1201,
       }}
     >
-      <Toolbar sx={{ minHeight: 64, display: 'flex', justifyContent: 'space-between' }}>
+      <Toolbar sx={{ minHeight: 64, display: 'flex', justifyContent: 'space-between',pr: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <img
             src="/logo-text-short.png"
@@ -81,7 +83,7 @@ const TopMenu = () => {
             </Button>
           ))}
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pr: 0 }}>
           {user && (
             <>
               <Avatar sx={{ bgcolor: '#A3C644', width: 36, height: 36, fontWeight: 'bold', mr: 1 }}>
@@ -104,18 +106,18 @@ const TopMenu = () => {
               fontWeight: 'bold',
               border: '1px solid #A3C644',
               borderRadius: 2,
-              ml: 2,
-              px: 2.5,
+              px: 2,
               color: '#A3C644',
               background: 'transparent',
               '&:hover': {
                 background: '#A3C644',
                 color: '#ffffff',
               },
+              ml: 0, // ❗ sin margen izquierdo
+              mr: 0, // ❗ sin margen derecho
+              minWidth: 0, // ❗ evita espacio innecesario del botón
             }}
-          >
-            Cerrar sesión
-          </Button>
+          />
         </Box>
       </Toolbar>
     </AppBar>
