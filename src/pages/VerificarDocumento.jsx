@@ -513,15 +513,13 @@ const VerificarDocumentos = () => {
       <header className="verificar-header">
         <div className="verificar-header-inner">
           <div className="verificar-brand">
-            <div className="verificar-logo">CTC</div>
+           
             <div className="verificar-brand-text">
               <h1>Validador de Documentos</h1>
               <p>Verifica emisión, vigencia y estado del paciente</p>
             </div>
           </div>
-          <a className="verificar-link-web" href="https://www.crecemos.com.pe" target="_blank" rel="noreferrer">
-            www.crecemos.com.pe
-          </a>
+         
         </div>
       </header>
 
