@@ -32,7 +32,7 @@ const TopMenu = () => {
     
     // Admisión puede ver "Agenda" y "Pacientes"
     if (userRole === ROLES.ADMISION) {
-      return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes');
+      return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes' ||item.text === 'Certificaciones');
     }
     
     // Otros roles pueden ver todos los elementos
