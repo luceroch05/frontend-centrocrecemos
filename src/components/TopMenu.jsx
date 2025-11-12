@@ -11,6 +11,7 @@ const menuItems = [
   { text: 'Usuarios', path: '/intranet/usuarios' },
   { text: 'Popup Inicio', path: '/intranet/popup-promocional' },
   { text: 'Postulaciones', path: '/intranet/postulaciones', adminOnly: true },
+  { text: 'Certificaciones', path: '/intranet/archivos-oficiales', adminOnly: true }
 ];
 
 const TopMenu = () => {
@@ -30,7 +31,7 @@ const TopMenu = () => {
     
     // Admisión puede ver "Agenda" y "Pacientes"
     if (userRole === ROLES.ADMISION) {
-      return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes');
+      return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes',item => item.text === 'Certificaciones');
     }
     
     // Otros roles pueden ver todos los elementos
