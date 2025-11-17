@@ -28,10 +28,11 @@ import { ReportesEvaluaciones } from '../pages/ReportesEvaluaciones';
 import RegistroPacientePage from '../pages/RegistroPacientePage';
 import EditarPacientePage from '../pages/EditarPacientePage';
 import  AdultoEvalPsicolUniverPage  from '../pages/service-adulto/AdultoEvalPsicolUniverPage';
-import TopMenu from '../components/TopMenu';
+import Sidebar from '../components/Sidebar';
 import Login from '../components/Login';
 import PrivateRoute from '../components/PrivateRoute';
 import Usuarios from '../pages/Usuarios';
+import MiPerfil from '../pages/MiPerfil';
 import Agenda from '../pages/Agenda';
 import ReglamentoInterno from '../pages/ReglamentoInterno';
 import PoliticaPrivacidad from '../pages/PoliticaPrivacidad';
@@ -45,57 +46,55 @@ import PostulacionesDashboard from '../pages/PostulacionesDashboard';
 
 
 export const AppRouter = () => {
-  const location = useLocation();
-  
-  // Ocultar NavBar/TopMenu en todas las rutas de intranet y en editar-paciente
-  const shouldHideNavBar = location.pathname.startsWith('/intranet') || location.pathname.startsWith('/editar-paciente/');
-
   return (
     <>
-      {/* ELIMINADO: El NavBar ya está en BasicLayout */}
       <Routes>
         <Route path="/intranet" element={<Login />} />
         <Route path="/intranet/lista-pacientes" element={
           <PrivateRoute>
-            <><TopMenu /><ListaPacientes /></>
+            <><Sidebar /><ListaPacientes /></>
           </PrivateRoute>
         } />
         <Route path="/intranet/reportes-evaluaciones" element={
           <PrivateRoute>
-            <><TopMenu /><ReportesEvaluaciones /></>
+            <><Sidebar /><ReportesEvaluaciones /></>
           </PrivateRoute>
         } />
         <Route path="/intranet/usuarios" element={
           <PrivateRoute>
-            <><TopMenu /><Usuarios /></>
+            <><Sidebar /><Usuarios /></>
+          </PrivateRoute>
+        } />
+        <Route path="/intranet/mi-perfil" element={
+          <PrivateRoute>
+            <><Sidebar /><MiPerfil /></>
           </PrivateRoute>
         } />
         <Route path="/intranet/agenda" element={
           <PrivateRoute>
-            <><TopMenu /><Agenda /></>
+            <><Sidebar /><Agenda /></>
           </PrivateRoute>
         } />
         <Route path="/intranet/postulaciones" element={
           <PrivateRoute>
-            <PostulacionesDashboard />
+            <><Sidebar /><PostulacionesDashboard /></>
           </PrivateRoute>
         } />
          <Route path="/intranet/archivos-oficiales" element={
           <PrivateRoute>
-            <ArchivosOficiales
-           />
+            <><Sidebar /><ArchivosOficiales /></>
           </PrivateRoute>
         } />
-      
-      
+
+
 
         <Route path="/intranet/popup-promocional" element={
           <PrivateRoute>
-            <GestionPopup />
+            <><Sidebar /><GestionPopup /></>
           </PrivateRoute>
         } />
-        
-        <Route path="/editar-paciente/:id" element={<><TopMenu /><EditarPacientePage /></>} />
+
+        <Route path="/editar-paciente/:id" element={<><Sidebar /><EditarPacientePage /></>} />
         <Route path="/preguntas" element={<Preguntas />} />
         <Route path="/" element={<BasicLayout />}>
           <Route index element={<HomePage />} />

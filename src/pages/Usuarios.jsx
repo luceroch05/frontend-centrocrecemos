@@ -107,8 +107,10 @@ const Usuarios = () => {
     const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'rol', 'email'];
     
     // Agregar especialidad solo si el rol es Terapeuta
-    const rolNombre = typeof usuarioEditando.rol === 'object' ? usuarioEditando.rol.nombre : usuarioEditando.rol;
-    if (rolNombre === 'Terapeuta') {
+const rolNombre = typeof usuarioEditando.rol === 'object' && usuarioEditando.rol !== null 
+  ? usuarioEditando.rol.nombre 
+  : usuarioEditando.rol;
+      if (rolNombre === 'Terapeuta') {
       camposObligatorios.push('especialidad');
     }
     
@@ -169,11 +171,25 @@ const Usuarios = () => {
          apellidos: usuarioEditando.apellidos,
          dni: usuarioEditando.dni,
          username: usuarioEditando.usuario || usuarioEditando.username,
-         password: usuarioEditando.contrasena, // Solo si se quiere cambiar
          email: usuarioEditando.email,
          rol_id: rolId,
-         especialidad_id: especialidadId
+         especialidad_id: especialidadId,
+         telefono: usuarioEditando.telefono || null,
+         telefono_emergencia: usuarioEditando.telefono_emergencia || null,
+         contacto_emergencia: usuarioEditando.contacto_emergencia || null,
+         direccion: usuarioEditando.direccion || null,
+         distrito: usuarioEditando.distrito || null,
+         provincia: usuarioEditando.provincia || null,
+         departamento: usuarioEditando.departamento || null,
+         talla_polo: usuarioEditando.talla_polo || null,
+         talla_pantalon: usuarioEditando.talla_pantalon || null,
+         talla_zapatos: usuarioEditando.talla_zapatos || null
        };
+
+       // Solo agregar password si se está cambiando
+       if (usuarioEditando.contrasena && usuarioEditando.contrasena.trim() !== '') {
+         data.password = usuarioEditando.contrasena;
+       }
        console.log('Data que se envía al backend:', data);
       const actualizado = await updateTrabajador(usuarioEditando.id, data);
       setUsuarios(usuarios.map(u =>

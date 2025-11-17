@@ -55,4 +55,16 @@ export const getTrabajadoresSelect = async () => {
     console.error('Error al obtener trabajadores:', error);
     throw error;
   }
+};
+
+// Obtener perfil del usuario autenticado
+export const getMyProfile = async () => {
+  const response = await api.get('/trabajadores/perfil/me');
+  return response.data;
+};
+
+// Actualizar perfil del usuario autenticado
+export const updateMyProfile = async (data) => {
+  const response = await api.patch('/trabajadores/perfil/me', data);
+  return response.data;
 }; 
