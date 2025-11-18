@@ -1,66 +1,29 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
   CircularProgress,
-  TablePagination,
-  Drawer,
-  Divider,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  Tooltip,
-  ListSubheader
+  Chip
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import { useNavigate } from 'react-router-dom';
-import { getPacientes, getPacienteById, getEstadosPaciente } from '../services/pacienteService';
+import { Search, X, Filter, RefreshCw } from 'lucide-react';
+import { getPacientes, getEstadosPaciente } from '../services/pacienteService';
 import { getDistritos, getServicios } from '../services/catalogoService';
-import WizardRegistroPaciente from '../components/WizzardRegistroPaciente/WizzardRegistroPaciente';
-import TablaPacientes from '../components/Pacientes/TablaPacientes';
-import DetallePacientePanel from '../components/Pacientes/DetallePacientePanel';
+import TarjetasPacientes from '../components/Pacientes/TablaPacientes';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { ROLES, isTerapeuta, canViewServiceInfo } from '../constants/roles';
-
-// Componente simple de botón con carga
-const LoadingButton = ({ loading, children, ...props }) => (
-  <Button
-    {...props}
-    disabled={loading || props.disabled}
-    startIcon={loading ? <CircularProgress size={16} color="inherit" /> : props.startIcon}
-  >
-    {children}
-  </Button>
-);
+import { useNavigate } from 'react-router-dom';
+import '../styles/intranet.css';
 
 export const ListaPacientes = () => {
   const user = useCurrentUser();
-  const [logged, setLogged] = useState(false);
+  const navigate = useNavigate();
   const [pacientes, setPacientes] = useState([]);
   const [filteredPacientes, setFilteredPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedPaciente, setSelectedPaciente] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showWizard, setShowWizard] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [pacienteToDelete, setPacienteToDelete] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [searchParams, setSearchParams] = useState({});
   const [filters, setFilters] = useState({
-    tipoDocumento: '',
-    distrito: '',
-    sexo: '',
     distritoId: '',
     estadoId: '',
     numeroDocumento: '',
@@ -69,61 +32,38 @@ export const ListaPacientes = () => {
   });
   const [numeroDocumentoInput, setNumeroDocumentoInput] = useState('');
   const [nombreCompletoInput, setNombreCompletoInput] = useState('');
-  const [searchParams, setSearchParams] = useState({});
-  const numeroDocumentoRef = useRef(null);
-  const nombreCompletoRef = useRef(null);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const navigate = useNavigate();
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [pacienteDetalle, setPacienteDetalle] = useState(null);
-  const [parejasDetalle, setParejasDetalle] = useState([]);
-  const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(12);
   const [pacienteSeleccionadoId, setPacienteSeleccionadoId] = useState(null);
   const [distritos, setDistritos] = useState([]);
   const [estados, setEstados] = useState([]);
   const [servicios, setServicios] = useState([]);
-  const [filtrosActivos, setFiltrosActivos] = useState(false);
   const [searching, setSearching] = useState(false);
 
-
   useEffect(() => {
-    // Solo ejecutar búsqueda si searchParams tiene valores reales (no solo el objeto vacío inicial)
     const tieneFiltrosActivos = searchParams.distritoId || searchParams.estadoId || 
                                 searchParams.numeroDocumento || searchParams.nombreCompleto || 
                                 searchParams.servicioId;
     
     if (!tieneFiltrosActivos) {
-      console.log('No hay filtros activos, no se ejecuta búsqueda');
-      return; // No ejecutar búsqueda si no hay filtros
+      return;
     }
     
-    console.log('useEffect cargarPacientes triggered with searchParams:', searchParams);
     const cargarPacientes = async () => {
       try {
         setLoading(true);
         let url = '/pacientes';
         const params = new URLSearchParams();
-        console.log(user);
+        
         if (user?.rol?.id === ROLES.TERAPEUTA) {
           params.append('terapeutaId', user.id);
         }
         
-        // Agregar parámetros de búsqueda si están definidos
-        if (searchParams.distritoId) {
-          params.append('distritoId', searchParams.distritoId);
-        }
-        if (searchParams.estadoId) {
-          params.append('estadoId', searchParams.estadoId);
-        }
-        if (searchParams.numeroDocumento) {
-          params.append('numeroDocumento', searchParams.numeroDocumento);
-        }
-        if (searchParams.nombreCompleto) {
-          params.append('nombreCompleto', searchParams.nombreCompleto);
-        }
+        if (searchParams.distritoId) params.append('distritoId', searchParams.distritoId);
+        if (searchParams.estadoId) params.append('estadoId', searchParams.estadoId);
+        if (searchParams.numeroDocumento) params.append('numeroDocumento', searchParams.numeroDocumento);
+        if (searchParams.nombreCompleto) params.append('nombreCompleto', searchParams.nombreCompleto);
         if (searchParams.servicioId && searchParams.servicioId !== '') {
-          console.log('Adding servicioId to API params:', searchParams.servicioId);
           params.append('servicioId', searchParams.servicioId);
         }
         
@@ -155,7 +95,6 @@ export const ListaPacientes = () => {
     cargarPacientes();
   }, [user, searchParams]);
 
-  // Cargar pacientes iniciales sin filtros (solo una vez al montar)
   useEffect(() => {
     const cargarPacientesIniciales = async () => {
       try {
@@ -195,84 +134,8 @@ export const ListaPacientes = () => {
     if (user) {
       cargarPacientesIniciales();
     }
-  }, [user]); // Solo se ejecuta cuando cambia el usuario
+  }, [user]);
 
-
-
-
-
-
-
-
-
-  // Función para ejecutar búsqueda manual con todos los filtros
-  // NOTA: Esta función toma los valores actuales de todos los filtros
-  // y solo se ejecuta cuando el usuario presiona el botón "Buscar"
-  const ejecutarBusqueda = async () => {
-    setSearching(true); // Activar estado de carga
-    
-    try {
-      const nuevosSearchParams = {
-        // Filtros de texto (sin condiciones de longitud mínima)
-        numeroDocumento: numeroDocumentoInput || '',
-        nombreCompleto: nombreCompletoInput || '',
-        
-        // Filtros de selección (tomados del estado actual)
-        distritoId: filters.distritoId || '',
-        estadoId: filters.estadoId || '',
-        // Solo incluir servicioId si el usuario puede ver información de servicios
-        ...(canViewServiceInfo(user) && { servicioId: filters.servicioId || '' })
-      };
-      
-      console.log('Ejecutando búsqueda con parámetros:', nuevosSearchParams);
-      setSearchParams(nuevosSearchParams);
-      
-      // Aplicar filtros localmente para mostrar resultados inmediatos
-      let filtered = [...pacientes];
-      
-      // Filtro por distrito
-      if (nuevosSearchParams.distritoId) {
-        filtered = filtered.filter(p => p.distrito?.id === parseInt(nuevosSearchParams.distritoId));
-      }
-      
-      // Filtro por estado
-      if (nuevosSearchParams.estadoId) {
-        filtered = filtered.filter(p => p.estado?.id === parseInt(nuevosSearchParams.estadoId));
-      }
-      
-      // Filtro por servicio (solo si el usuario puede ver información de servicios)
-      if (canViewServiceInfo(user) && nuevosSearchParams.servicioId) {
-        filtered = filtered.filter(p => p.servicio?.id === parseInt(nuevosSearchParams.servicioId));
-      }
-      
-      // Filtro por número de documento
-      if (nuevosSearchParams.numeroDocumento) {
-        filtered = filtered.filter(p => 
-          p.numero_documento && p.numero_documento.includes(nuevosSearchParams.numeroDocumento)
-        );
-      }
-      
-      // Filtro por nombre completo
-      if (nuevosSearchParams.nombreCompleto && nuevosSearchParams.nombreCompleto.trim() !== '') {
-        const nombreLower = nuevosSearchParams.nombreCompleto.toLowerCase();
-        filtered = filtered.filter(p => 
-          (p.nombres && p.nombres.toLowerCase().includes(nombreLower)) ||
-          (p.apellido_paterno && p.apellido_paterno.toLowerCase().includes(nombreLower)) ||
-          (p.apellido_materno && p.apellido_materno.toLowerCase().includes(nombreLower))
-        );
-      }
-      
-      setFilteredPacientes(filtered);
-    } finally {
-      setSearching(false); // Desactivar estado de carga
-    }
-  };
-
-
-
-
-
-  // Cargar datos de distritos y estados
   useEffect(() => {
     const cargarDatosAdicionales = async () => {
       try {
@@ -284,7 +147,6 @@ export const ListaPacientes = () => {
         
         setDistritos(distritosData || []);
         setEstados(estadosData || []);
-        console.log('Services loaded:', serviciosData);
         setServicios(serviciosData || []);
       } catch (error) {
         console.error('Error cargando datos adicionales:', error);
@@ -294,130 +156,74 @@ export const ListaPacientes = () => {
     cargarDatosAdicionales();
   }, []);
 
-
-
-  // const handleOpenDialog = async (paciente) => {
-  //   try {
-  //     const detallesPaciente = await getPacienteById(paciente.id);
-  //     setSelectedPaciente(detallesPaciente);
-  //     setOpenDialog(true);
-  //   } catch (error) {
-  //     console.error('Error al cargar detalles del paciente:', error);
-  //   }
-  // };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedPaciente(null);
-  };
-
-  const paginatedPacientes = filteredPacientes.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
-  const handleSelectPaciente = async (paciente) => {
-    setPacienteSeleccionadoId(paciente.id);
-    setLoadingDetalle(true);
+  const ejecutarBusqueda = async () => {
+    setSearching(true);
+    
     try {
-      const detalle = await getPacienteById(paciente.id);
-      setPacienteDetalle(detalle.paciente);
-    } catch (e) {
-      setPacienteDetalle(null);
-    }
-    setLoadingDetalle(false);
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchDetalle = async () => {
-      // Si no hay pacientes filtrados, limpiar el detalle y no cargar nada
-      if (filteredPacientes.length === 0) {
-        setPacienteDetalle(null);
-        setPacienteSeleccionadoId(null);
-        setLoadingDetalle(false);
-        return;
+      const nuevosSearchParams = {
+        numeroDocumento: numeroDocumentoInput || '',
+        nombreCompleto: nombreCompletoInput || '',
+        distritoId: filters.distritoId || '',
+        estadoId: filters.estadoId || '',
+        ...(canViewServiceInfo(user) && { servicioId: filters.servicioId || '' })
+      };
+      
+      setSearchParams(nuevosSearchParams);
+      
+      let filtered = [...pacientes];
+      
+      if (nuevosSearchParams.distritoId) {
+        filtered = filtered.filter(p => p.distrito?.id === parseInt(nuevosSearchParams.distritoId));
       }
-
-      const start = page * rowsPerPage;
-      const paciente = filteredPacientes[start];
-      if (paciente) {
-        setPacienteSeleccionadoId(paciente.id);
-        setLoadingDetalle(true);
-        try {
-          const detalle = await getPacienteById(paciente.id);
-          if (isMounted) setPacienteDetalle(detalle.paciente);
-        } catch (e) {
-          if (isMounted) setPacienteDetalle(null);
-        }
-        if (isMounted) setLoadingDetalle(false);
-      } else {
-        setPacienteDetalle(null);
-        setLoadingDetalle(false);
+      
+      if (nuevosSearchParams.estadoId) {
+        filtered = filtered.filter(p => p.estado?.id === parseInt(nuevosSearchParams.estadoId));
       }
-    };
-    fetchDetalle();
-    return () => { isMounted = false; };
-    // eslint-disable-next-line
-  }, [page, rowsPerPage, filteredPacientes]);
-
-  const handleCloseWizard = () => {
-    setShowWizard(false);
-    recargarPacientes();
-  };
-
-  const recargarPacientes = async () => {
-    try {
-      setLoading(true);
-      const data = await getPacientes();
-      setPacientes(data);
-      setFilteredPacientes(data);
-    } catch (err) {
-      console.error('Error al recargar pacientes:', err);
+      
+      if (canViewServiceInfo(user) && nuevosSearchParams.servicioId) {
+        filtered = filtered.filter(p => p.servicio?.id === parseInt(nuevosSearchParams.servicioId));
+      }
+      
+      if (nuevosSearchParams.numeroDocumento) {
+        filtered = filtered.filter(p => 
+          p.numero_documento && p.numero_documento.includes(nuevosSearchParams.numeroDocumento)
+        );
+      }
+      
+      if (nuevosSearchParams.nombreCompleto && nuevosSearchParams.nombreCompleto.trim() !== '') {
+        const nombreLower = nuevosSearchParams.nombreCompleto.toLowerCase();
+        filtered = filtered.filter(p => 
+          (p.nombres && p.nombres.toLowerCase().includes(nombreLower)) ||
+          (p.apellido_paterno && p.apellido_paterno.toLowerCase().includes(nombreLower)) ||
+          (p.apellido_materno && p.apellido_materno.toLowerCase().includes(nombreLower))
+        );
+      }
+      
+      setFilteredPacientes(filtered);
+      setPage(0);
     } finally {
-      setLoading(false);
+      setSearching(false);
     }
-  };
-
-  const handleDeleteClick = (paciente) => {
-    setPacienteToDelete(paciente);
-    setShowDeleteDialog(true);
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteDialog(false);
-    setPacienteToDelete(null);
   };
 
   const handleFilterChange = (field, value) => {
-    console.log('field', field, 'value', value);
-    
-    // Para servicioId, asegurar que sea string para el estado
     let processedValue = value;
     if (field === 'servicioId') {
       processedValue = value === '' ? '' : String(value);
     }
     
-    setFilters(prev => {
-      const newFilters = {
-        ...prev,
-        [field]: processedValue
-      };
-      console.log('Filters updated:', newFilters);
-      return newFilters;
-    });
+    setFilters(prev => ({
+      ...prev,
+      [field]: processedValue
+    }));
   };
 
   const clearFilters = async () => {
-    console.log('Clearing filters but maintaining terapeuta filter if applicable');
-    
-    // Llamar al servicio para obtener la lista completa, pero manteniendo el filtro de terapeuta
     try {
       setLoading(true);
       let url = '/pacientes';
       const params = new URLSearchParams();
       
-      // Mantener el filtro de terapeuta si el usuario es terapeuta
       if (user?.rol?.id === ROLES.TERAPEUTA) {
         params.append('terapeutaId', user.id);
       }
@@ -429,7 +235,6 @@ export const ListaPacientes = () => {
       const data = await getPacientes(url);
       setPacientes(data);
       setFilteredPacientes(data);
-      console.log('Pacientes recargados sin filtros adicionales:', data.length);
     } catch (error) {
       console.error('Error al recargar pacientes:', error);
       setError('Error al recargar la lista de pacientes');
@@ -437,662 +242,439 @@ export const ListaPacientes = () => {
       setLoading(false);
     }
     
-    // Limpiar todos los estados DESPUÉS de cargar los datos
     setFilters({
-      tipoDocumento: '',
-      distrito: '',
-      sexo: '',
       distritoId: '',
       estadoId: '',
       numeroDocumento: '',
       nombreCompleto: '',
-      // Solo limpiar servicioId si el usuario puede ver información de servicios
       ...(canViewServiceInfo(user) && { servicioId: '' })
     });
     setNumeroDocumentoInput('');
     setNombreCompletoInput('');
     setSearchParams({});
+    setPage(0);
+  };
+
+  const handleSelectPaciente = async (paciente) => {
+    setPacienteSeleccionadoId(paciente.id);
   };
 
   const handleEditarPaciente = (id) => {
     navigate(`/editar-paciente/${id}`);
   };
 
+  const recargarPacientes = async () => {
+    try {
+      setLoading(true);
+      let url = '/pacientes';
+      const params = new URLSearchParams();
+      
+      if (user?.rol?.id === ROLES.TERAPEUTA) {
+        params.append('terapeutaId', user.id);
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const data = await getPacientes(url);
+      setPacientes(data);
+      setFilteredPacientes(data);
+    } catch (err) {
+      console.error('Error al recargar pacientes:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const paginatedPacientes = filteredPacientes.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const totalPages = Math.ceil(filteredPacientes.length / rowsPerPage);
+
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <Box sx={{ 
-          flexGrow: 1, 
-          p: 3, 
-          backgroundColor: '#f5f5f5', 
-          minHeight: '100vh', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center' 
-        }}>
-          <CircularProgress />
-        </Box>
+      <div className="tailwind-scope">
+      <Box sx={{ 
+        flexGrow: 1, 
+        p: 3, 
+        backgroundColor: '#f8f9fa', 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        ml: { xs: 0, sm: '72px' },
+        transition: 'margin 0.3s ease'
+      }}>
+        <CircularProgress sx={{ color: '#7B1FA2' }} />
       </Box>
+      </div>
     );
   }
 
   if (error && !pacientes.length) {
     return (
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <Box sx={{ 
-          flexGrow: 1, 
-          p: 3, 
-          backgroundColor: '#f5f5f5', 
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Typography color="error" variant="h6">{error}</Typography>
-        </Box>
+      
+      <Box sx={{ 
+        flexGrow: 1, 
+        p: 3, 
+        backgroundColor: '#f8f9fa', 
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ml: { xs: 0, sm: '72px' },
+        transition: 'margin 0.3s ease'
+      }}>
+        <Typography color="error" variant="h6">{error}</Typography>
       </Box>
     );
   }
 
+  const filtrosActivos = searchParams.distritoId || searchParams.estadoId || searchParams.servicioId || searchParams.numeroDocumento || searchParams.nombreCompleto;
+
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>      
-      <Box 
-        component="main" 
-        sx={{ 
-          flexGrow: 1, 
-          p: { xs: 2, md: 4 }, 
-          backgroundColor: '#f5f5f5', 
-          minHeight: '100vh', 
-          width: '100vw',
-          overflowX: 'hidden',
-          mt: { xs: 6, md: 7 }
-        }}
-      >
-        {/* Header Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h4" 
-            component="h1" 
-            gutterBottom
-            sx={{ 
-              fontWeight: 600,
-              color: '#1a1a1a',
-              mb: 3
-            }}
-          >
-            Lista de Pacientes
-          </Typography>
-          
-          {/* Action Button */}
-          {/* <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => console.log('registrar nuevo paciente')}
-              sx={{ 
-                backgroundColor: (theme) => theme.palette.primary.main, 
-                '&:hover': { backgroundColor: (theme) => theme.palette.primary.dark },
-                px: 3,
-                py: 1.5,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 500,
-                fontSize: '0.95rem'
-              }}
-            >
-              Nuevo Paciente
-            </Button>
-          </Box> */}
+    <div className="tailwind-scope"> 
+    
+    <Box 
+      component="main" 
+      sx={{ 
+        flexGrow: 1, 
+        p: { xs: 2, md: 4 }, 
+        backgroundColor: '#f8f9fa', 
+        minHeight: '100vh',
+        ml: { xs: 0, sm: '72px' },
+        pt: { xs: 10, md: 4 },
+        transition: 'margin 0.3s ease'
+      }}
+    >
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Lista de Pacientes</h1>
+        <p className="text-gray-600">Gestiona y visualiza todos tus pacientes</p>
+      </div>
 
-          {/* Filters Section */}
-          <Box sx={{ mb: 4 }}>
-            {/* Section Title */}
-            <Typography 
-              variant="h6" 
-              component="h2"
-              sx={{ 
-                fontWeight: 500,
-                color: '#333',
-                mb: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-              }}
-            >
-              <SearchIcon sx={{ fontSize: 20, color: 'primary.main' }} />
-              Filtros de Búsqueda
-            </Typography>
-
-            <Paper 
-              sx={{ 
-                p: 3, 
-                borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                border: '1px solid #e0e0e0',
-                backgroundColor: '#fafafa'
-              }}
-            >
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* Filtros aplicados - Solo mostrar después de presionar "Buscar" */}
-                {(searchParams.distritoId || searchParams.estadoId || searchParams.servicioId || searchParams.numeroDocumento || searchParams.nombreCompleto) && (
-                  <Box sx={{ 
-                    p: 2, 
-                    backgroundColor: '#fff3e0', 
-                    borderRadius: 1.5,
-                    border: '1px solid #ffb74d'
-                  }}>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Typography variant="body2" color="#e65100" sx={{ mr: 1, fontWeight: 600 }}>
-                        Filtros aplicados:
-                      </Typography>
-                      {searchParams.distritoId && (
-                        <Chip 
-                          label={`Distrito: ${distritos.find(d => d.id === parseInt(searchParams.distritoId))?.nombre || searchParams.distritoId}`}
-                          size="small"
-                          sx={{ 
-                            borderRadius: 1.5,
-                            backgroundColor: '#fff',
-                            color: '#e65100',
-                            fontWeight: 600,
-                            border: '1px solid #ffb74d'
-                          }}
-                        />
-                      )}
-                      {searchParams.estadoId && (
-                        <Chip 
-                          label={`Estado: ${estados.find(e => e.id === parseInt(searchParams.estadoId))?.nombre || searchParams.estadoId}`}
-                          size="small"
-                          sx={{ 
-                            borderRadius: 1.5,
-                            backgroundColor: '#fff',
-                            color: '#e65100',
-                            fontWeight: 600,
-                            border: '1px solid #ffb74d'
-                          }}
-                        />
-                      )}
-                      {searchParams.numeroDocumento && (
-                        <Chip 
-                          label={`Doc: ${searchParams.numeroDocumento}`}
-                          size="small"
-                          sx={{ 
-                            borderRadius: 1.5,
-                            backgroundColor: '#fff',
-                            color: '#e65100',
-                            fontWeight: 600,
-                            border: '1px solid #ffb74d'
-                          }}
-                        />
-                      )}
-                      {searchParams.nombreCompleto && (
-                        <Chip 
-                          label={`Nombre: ${searchParams.nombreCompleto}`}
-                          size="small"
-                          sx={{ 
-                            borderRadius: 1.5,
-                            backgroundColor: '#fff',
-                            color: '#e65100',
-                            fontWeight: 600,
-                            border: '1px solid #ffb74d'
-                          }}
-                        />
-                      )}
-                      {searchParams.servicioId && (
-                        <Chip 
-                          label={`Servicio: ${servicios.find(s => s.id === parseInt(searchParams.servicioId))?.nombre || searchParams.servicioId}`}
-                          size="small"
-                          sx={{ 
-                            borderRadius: 1.5,
-                            backgroundColor: '#fff',
-                            color: '#e65100',
-                            fontWeight: 600,
-                            border: '1px solid #ffb74d'
-                          }}
-                        />
-                      )}
-                    </Box>
-                  </Box>
+      {/* Filtros Section - Estilo moderno */}
+      <div className="mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          {/* Filtros aplicados */}
+          {filtrosActivos && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-[#7B1FA2]/5 to-[#A3C644]/5 rounded-xl border border-[#7B1FA2]/20">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-[#7B1FA2]" />
+                  <span className="text-sm font-semibold text-gray-700">Filtros activos:</span>
+                </div>
+                
+                {searchParams.nombreCompleto && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#7B1FA2]/30 text-sm">
+                    <span className="font-medium text-[#7B1FA2]">Nombre:</span>
+                    <span className="text-gray-700">{searchParams.nombreCompleto}</span>
+                  </div>
                 )}
                 
-                {/* Filter Controls */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                    Buscar por:
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-end' }}>
-                    <TextField
-                      ref={nombreCompletoRef}
-                      label="Nombre Completo"
-                      variant="outlined"
-                      size="small"
-                      value={nombreCompletoInput}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // Solo permitir letras, espacios y algunos caracteres especiales
-                        if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
-                          setNombreCompletoInput(value);
-                        }
-                      }}
-                      onKeyPress={(e) => {
-                        // Solo permitir letras, espacios y algunos caracteres especiales
-                        if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        // Ejecutar búsqueda al presionar Enter
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          ejecutarBusqueda();
-                        }
-                      }}
-                      sx={{ 
-                        minWidth: 280,
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 1.5,
-                          backgroundColor: 'white',
-                          '&:hover': {
-                            backgroundColor: '#fafafa'
-                          }
-                        }
-                      }}
-                    />
-                    
-                    <TextField
-                      ref={numeroDocumentoRef}
-                      label="Número de Documento"
-                      variant="outlined"
-                      size="small"
-                      value={numeroDocumentoInput}
-                      inputProps={{
-                        maxLength: 12,
-                        pattern: '[0-9]*'
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // Solo permitir números
-                        if (/^\d*$/.test(value)) {
-                          setNumeroDocumentoInput(value);
-                          // Actualizar filters.numeroDocumento para mostrar en filtros aplicados
-                          setFilters(prev => ({
-                            ...prev,
-                            numeroDocumento: value
-                          }));
-                        }
-                      }}
-                      onKeyPress={(e) => {
-                        // Prevenir entrada de caracteres que no sean números
-                        if (!/[0-9]/.test(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        // Ejecutar búsqueda al presionar Enter
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          ejecutarBusqueda();
-                        }
-                      }}
-                      sx={{ 
-                        minWidth: 220,
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 1.5,
-                          backgroundColor: 'white',
-                          '&:hover': {
-                            backgroundColor: '#fafafa'
-                          }
-                        }
-                      }}
-                    />
-
-                    {!isTerapeuta(user) && (
-                      <FormControl size="small" sx={{ minWidth: 220 }}>
-                        <InputLabel>Distrito</InputLabel>
-                        <Select
-                          value={filters.distritoId}
-                          label="Distrito"
-                          onChange={(e) => handleFilterChange('distritoId', e.target.value)}
-                          sx={{ 
-                            borderRadius: 1.5,
-                            backgroundColor: 'white',
-                            '&:hover': {
-                              backgroundColor: '#fafafa'
-                            }
-                          }}
-                        >
-                          <MenuItem value="">Todos los distritos</MenuItem>
-                          {distritos.map((distrito) => (
-                            <MenuItem key={distrito.id} value={distrito.id}>
-                              {distrito.nombre}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-
-                    <FormControl size="small" sx={{ minWidth: 220 }}>
-                      <InputLabel>Estado</InputLabel>
-                      <Select
-                        value={filters.estadoId}
-                        label="Estado"
-                        onChange={(e) => handleFilterChange('estadoId', e.target.value)}
-                        sx={{ 
-                          borderRadius: 1.5,
-                          backgroundColor: 'white',
-                          '&:hover': {
-                            backgroundColor: '#fafafa'
-                          }
-                        }}
-                      >
-                        <MenuItem value="">Todos los estados</MenuItem>
-                        {estados.map((estado) => (
-                          <MenuItem key={estado.id} value={estado.id}>
-                            {estado.nombre}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    {canViewServiceInfo(user) && (
-                      <FormControl size="small" sx={{ minWidth: 220 }}>
-                        <InputLabel>Servicio</InputLabel>
-                        <Select
-                          value={filters.servicioId || ''}
-                          label="Servicio"
-                          onChange={(e) => {
-                            console.log('Service filter onChange triggered:', e.target.value);
-                            handleFilterChange('servicioId', e.target.value);
-                          }}
-                          sx={{ 
-                            borderRadius: 1.5,
-                            backgroundColor: 'white',
-                            '&:hover': {
-                              backgroundColor: '#fafafa'
-                            }
-                          }}
-                        >
-                          <MenuItem value="">Todos los servicios</MenuItem>
-                          {/* Agrupar servicios por área usando la misma estructura que funciona */}
-                          {Object.entries(
-                            servicios.reduce((acc, servicio) => {
-                              if (servicio.activo && servicio.area?.activo) {
-                                const area = servicio.area?.nombre || 'Sin Área';
-                                if (!acc[area]) acc[area] = [];
-                                acc[area].push(servicio);
-                              }
-                              return acc;
-                            }, {})
-                          ).map(([areaNombre, serviciosArea]) => [
-                            <ListSubheader
-                              key={areaNombre}
-                              sx={{
-                                background: '#fff',
-                                color: '#174ea6',
-                                fontWeight: 'bold',
-                                fontSize: '1rem',
-                                letterSpacing: 0.5,
-                                py: 1,
-                                borderBottom: '1px solid #e0e0e0'
-                              }}
-                            >
-                              {areaNombre}
-                            </ListSubheader>,
-                            serviciosArea.map(servicio => (
-                              <MenuItem key={servicio.id} value={servicio.id}>
-                                {servicio.nombre}
-                              </MenuItem>
-                            ))
-                          ])}
-                        </Select>
-                      </FormControl>
-                    )}
-                    
-                    
-                  </Box>
-
-                  {/* Action Buttons */}
-                  <Box sx={{ display: 'flex', gap: 2, pt: 1 }}>
-                    <LoadingButton
-                      variant="contained"
-                      size="small"
-                      onClick={ejecutarBusqueda}
-                      startIcon={<SearchIcon />}
-                      loading={searching}
-                      disabled={!numeroDocumentoInput && !nombreCompletoInput && !filters.distritoId && !filters.estadoId && !(canViewServiceInfo(user) && filters.servicioId)}
-                      sx={{ 
-                        height: 40,
-                        px: 3,
-                        borderRadius: 1.5,
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        backgroundColor: '#1976d2',
-                        '&:hover': {
-                          backgroundColor: '#1565c0'
-                        }
-                      }}
-                                          >
-                        {searching ? 'Buscando...' : 'Buscar'}
-                      </LoadingButton>
-
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={clearFilters}
-                      sx={{ 
-                        height: 40,
-                        px: 3,
-                        borderRadius: 1.5,
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        borderColor: 'grey.400',
-                        color: 'grey.700',
-                        '&:hover': {
-                          borderColor: 'grey.600',
-                          backgroundColor: '#f5f5f5'
-                        }
-                      }}
-                    >
-                      Limpiar Filtros
-                    </Button>
-                    
-                    <Button
-                      variant={filtrosActivos ? "contained" : "outlined"}
-                      size="small"
-                      disabled={!filtrosActivos}
-                      sx={{ 
-                        height: 40,
-                        px: 3,
-                        borderRadius: 1.5,
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        backgroundColor: filtrosActivos ? 'success.main' : 'transparent',
-                        color: filtrosActivos ? 'white' : 'grey.500',
-                        borderColor: filtrosActivos ? 'success.main' : 'grey.300',
-                        '&:hover': {
-                          backgroundColor: filtrosActivos ? 'success.dark' : '#f5f5f5'
-                        }
-                      }}
-                    >
-                      {filtrosActivos ? `${filteredPacientes.length} resultados` : 'Sin filtros'}
-                    </Button>
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-          </Box>
-
-          {/* Results Section */}
-          <Box sx={{ mb: 3 }}>
-            <Typography 
-              variant="h6" 
-              component="h2"
-              sx={{ 
-                fontWeight: 500,
-                color: '#333',
-                mb: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-              }}
-            >
-              Resultados
-              {filtrosActivos && (
-                <Chip 
-                  label={`${filteredPacientes.length} pacientes`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ ml: 1 }}
-                />
-              )}
-            </Typography>
-          </Box>
-
-          {/* Main Content Grid */}
-          <Box sx={{ p: { xs: 0, md: 1 } }}>
-            <Grid container spacing={3}>
-              {/* Table Section */}
-              <Grid item xs={12} md={8}>
-                <Paper 
-                  sx={{ 
-                    width: '100%', 
-                    overflowX: 'auto', 
-                    borderRadius: 2,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    border: '1px solid #e0e0e0',
-                    backgroundColor: 'white'
-                  }}
-                >
-                  <TablaPacientes
-                    pacientes={paginatedPacientes}
-                    onSelect={handleSelectPaciente}
-                    pacienteSeleccionadoId={pacienteSeleccionadoId}
-                    user={user}
-                    emptyMessage={
-                      pacientes.length === 0 && !loading
-                        ? (filtrosActivos ? 'No se encontraron pacientes con los filtros aplicados' : 'No hay pacientes registrados')
-                        : filteredPacientes.length === 0 && pacientes.length > 0
-                        ? 'No se encontraron pacientes con los filtros aplicados'
-                        : null
-                    }
-                  />
-                  <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0', backgroundColor: '#fafafa' }}>
-                    <TablePagination
-                      component="div"
-                      count={filteredPacientes.length}
-                      page={page}
-                      onPageChange={(event, newPage) => setPage(newPage)}
-                      rowsPerPage={rowsPerPage}
-                      onRowsPerPageChange={e => {
-                        setRowsPerPage(parseInt(e.target.value, 10));
-                        setPage(0);
-                      }}
-                      rowsPerPageOptions={[5, 10, 25, 50]}
-                      labelRowsPerPage="Filas por página:"
-                      sx={{
-                        '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                          fontSize: '0.875rem'
-                        }
-                      }}
-                    />
-                  </Box>
-                </Paper>
-              </Grid>
-              
-              {/* Detail Panel */}
-              <Grid item xs={12} md={4}>
-                {loadingDetalle ? (
-                  <Paper 
-                    sx={{ 
-                      p: 4, 
-                      textAlign: 'center',
-                      borderRadius: 2,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      border: '1px solid #e0e0e0',
-                      minHeight: 200,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#f8f9fa'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                      <CircularProgress size={40} />
-                      <Typography color="text.secondary">Cargando detalles...</Typography>
-                    </Box>
-                  </Paper>
-                ) : pacienteDetalle ? (
-                  <DetallePacientePanel 
-                    paciente={pacienteDetalle} 
-                    onEditar={handleEditarPaciente} 
-                    user={user}
-                    onPacienteOcultado={(pacienteId) => {
-                      console.log('🎯 Callback onPacienteOcultado ejecutado con ID:', pacienteId);
-                      // Refrescar la lista después de ocultar el paciente
-                      console.log('🔄 Llamando a recargarPacientes...');
-                      recargarPacientes();
-                      // Limpiar el paciente seleccionado si era el que se ocultó
-                      if (pacienteDetalle && pacienteDetalle.id === pacienteId) {
-                        console.log('🧹 Limpiando pacienteDetalle...');
-                        setPacienteDetalle(null);
-                      }
-                    }}
-                  />
-                ) : (
-                  <Paper 
-                    sx={{ 
-                      p: 4, 
-                      textAlign: 'center', 
-                      color: 'text.secondary',
-                      borderRadius: 2,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      border: '1px solid #e0e0e0',
-                      minHeight: 200,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#f8f9fa'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="h6" color="text.secondary">
-                        {filteredPacientes.length === 0 
-                          ? 'No hay pacientes para mostrar' 
-                          : 'Selecciona un paciente'
-                        }
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {filteredPacientes.length === 0 
-                          ? 'Intenta ajustar los filtros de búsqueda' 
-                          : 'para ver el detalle completo'
-                        }
-                      </Typography>
-                    </Box>
-                  </Paper>
+                {searchParams.numeroDocumento && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#7B1FA2]/30 text-sm">
+                    <span className="font-medium text-[#7B1FA2]">Doc:</span>
+                    <span className="text-gray-700">{searchParams.numeroDocumento}</span>
+                  </div>
                 )}
-              </Grid>
-            </Grid>
-          </Box>
-        </Box>
+                
+                {searchParams.distritoId && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#7B1FA2]/30 text-sm">
+                    <span className="font-medium text-[#7B1FA2]">Distrito:</span>
+                    <span className="text-gray-700">{distritos.find(d => d.id === parseInt(searchParams.distritoId))?.nombre}</span>
+                  </div>
+                )}
+                
+                {searchParams.estadoId && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#7B1FA2]/30 text-sm">
+                    <span className="font-medium text-[#7B1FA2]">Estado:</span>
+                    <span className="text-gray-700">{estados.find(e => e.id === parseInt(searchParams.estadoId))?.nombre}</span>
+                  </div>
+                )}
+                
+                {searchParams.servicioId && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-[#7B1FA2]/30 text-sm">
+                    <span className="font-medium text-[#7B1FA2]">Servicio:</span>
+                    <span className="text-gray-700">{servicios.find(s => s.id === parseInt(searchParams.servicioId))?.nombre}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-        <Dialog 
-          open={showWizard} 
-          onClose={handleCloseWizard}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 2
-            }
-          }}
-        >
-          <DialogTitle>Registro de Paciente</DialogTitle>
-          <DialogContent>
-            <WizardRegistroPaciente onClose={handleCloseWizard} />
-          </DialogContent>
-        </Dialog>
-      </Box>
+          {/* Inputs de búsqueda */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              {/* Nombre Completo */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Nombre Completo"
+                  value={nombreCompletoInput}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
+                      setNombreCompletoInput(value);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      ejecutarBusqueda();
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Número de Documento */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="N° Documento"
+                  value={numeroDocumentoInput}
+                  maxLength={12}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\d*$/.test(value)) {
+                      setNumeroDocumentoInput(value);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      ejecutarBusqueda();
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Distrito */}
+              {!isTerapeuta(user) && (
+                <select
+                  value={filters.distritoId}
+                  onChange={(e) => handleFilterChange('distritoId', e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">Todos los distritos</option>
+                  {distritos.map((distrito) => (
+                    <option key={distrito.id} value={distrito.id}>
+                      {distrito.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* Estado */}
+              <select
+                value={filters.estadoId}
+                onChange={(e) => handleFilterChange('estadoId', e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+              >
+                <option value="">Todos los estados</option>
+                {estados.map((estado) => (
+                  <option key={estado.id} value={estado.id}>
+                    {estado.nombre}
+                  </option>
+                ))}
+              </select>
+
+              {/* Servicio */}
+              {canViewServiceInfo(user) && (
+                <select
+                  value={filters.servicioId || ''}
+                  onChange={(e) => handleFilterChange('servicioId', e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">Todos los servicios</option>
+                  {Object.entries(
+                    servicios.reduce((acc, servicio) => {
+                      if (servicio.activo && servicio.area?.activo) {
+                        const area = servicio.area?.nombre || 'Sin Área';
+                        if (!acc[area]) acc[area] = [];
+                        acc[area].push(servicio);
+                      }
+                      return acc;
+                    }, {})
+                  ).map(([areaNombre, serviciosArea]) => (
+                    <optgroup key={areaNombre} label={areaNombre}>
+                      {serviciosArea.map(servicio => (
+                        <option key={servicio.id} value={servicio.id}>
+                          {servicio.nombre}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Botones de acción */}
+            <div className="flex gap-3">
+              <button
+                onClick={ejecutarBusqueda}
+                disabled={searching || (!numeroDocumentoInput && !nombreCompletoInput && !filters.distritoId && !filters.estadoId && !(canViewServiceInfo(user) && filters.servicioId))}
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {searching ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Buscando...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    Buscar
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contador de resultados */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-gray-900">Resultados</h2>
+          <div className="px-4 py-1.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-full text-sm font-semibold">
+            {filteredPacientes.length} {filteredPacientes.length === 1 ? 'paciente' : 'pacientes'}
+          </div>
+        </div>
+      </div>
+
+      {/* Tarjetas de pacientes */}
+      <TarjetasPacientes
+        pacientes={paginatedPacientes}
+        pacienteSeleccionadoId={pacienteSeleccionadoId}
+        onSelect={handleSelectPaciente}
+        onEditar={handleEditarPaciente}
+        user={user}
+        emptyMessage={
+          pacientes.length === 0 && !loading
+            ? (filtrosActivos ? 'No se encontraron pacientes con los filtros aplicados' : 'No hay pacientes registrados')
+            : filteredPacientes.length === 0 && pacientes.length > 0
+            ? 'No se encontraron pacientes con los filtros aplicados'
+            : null
+        }
+        onPacienteOcultado={(pacienteId) => {
+          recargarPacientes();
+          if (pacienteSeleccionadoId === pacienteId) {
+            setPacienteSeleccionadoId(null);
+          }
+        }}
+      />
+
+      {/* Paginación moderna */}
+      {filteredPacientes.length > 0 && (
+        <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Mostrando <span className="font-semibold text-gray-900">{page * rowsPerPage + 1}</span> a{' '}
+              <span className="font-semibold text-gray-900">
+                {Math.min((page + 1) * rowsPerPage, filteredPacientes.length)}
+              </span>{' '}
+              de <span className="font-semibold text-gray-900">{filteredPacientes.length}</span> pacientes
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Selector de filas por página */}
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value));
+                  setPage(0);
+                }}
+                className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] cursor-pointer"
+              >
+                <option value={6}>6 por página</option>
+                <option value={12}>12 por página</option>
+                <option value={24}>24 por página</option>
+                <option value={48}>48 por página</option>
+              </select>
+
+              {/* Botones de paginación */}
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPage(0)}
+                  disabled={page === 0}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Primero
+                </button>
+                
+                <button
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 0}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Anterior
+                </button>
+
+                {/* Números de página */}
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i;
+                    } else if (page < 3) {
+                      pageNum = i;
+                    } else if (page > totalPages - 4) {
+                      pageNum = totalPages - 5 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                          page === pageNum
+                            ? 'bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white'
+                            : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {pageNum + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= totalPages - 1}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Siguiente
+                </button>
+                
+                <button
+                  onClick={() => setPage(totalPages - 1)}
+                  disabled={page >= totalPages - 1}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                >
+                  Último
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Box>
+    </div> 
   );
-}; 
+};
