@@ -10,7 +10,8 @@
       "Bash(npm install:*)",
       "Bash(nul)",
       "Bash(cat:*)",
-      "Bash(timeout /t 3)"
+      "Bash(timeout /t 3)",
+      "Bash(/tmp/entrevista_original.jsx)"
     ],
     "deny": [],
     "ask": []

@@ -1,33 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Grid,
-  TextField,
-  Button,
-  Divider,
-  Tabs,
-  Tab,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  InputAdornment,
-  Chip,
-  Alert,
-  Snackbar,
-  CircularProgress
-} from '@mui/material';
-import {
-  Assessment,
-  Save,
-  Description,
-  Timeline,
-  Psychology,
-  MedicalServices,
-  FamilyRestroom
-} from '@mui/icons-material';
+import { FileText, Users, Activity, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { guardarReporteEvolucion, actualizarReporteEvolucion, obtenerReporteEvolucion } from '../../services/historiaClinicaService';
 import { getServiciosPorPaciente } from '../../services/pacienteService';
 
@@ -37,34 +9,23 @@ import ReporteEvolucion from './HistoriaClinicaView/components/ReporteEvolucion'
 import { calcularEdad } from '../../utils/date';
 import EvaluacionTerapiaOcupacional from './HistoriaClinicaView/components/EvaluacionTOcupacionalView';
 
-// Componente para el contenido de las pestañas
-function TabPanel({ children, value, index, ...other }) {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`historia-tabpanel-${index}`}
-      aria-labelledby={`historia-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
 const HistoriaClinicaView = ({ paciente, user }) => {
-  console.log('user11', user);
-  const [tabValue, setTabValue] = useState(0);
   const [serviciosPaciente, setServiciosPaciente] = useState([]);
-  
+  const [seccionActiva, setSeccionActiva] = useState(null); // null = ninguna, 'reporte', 'entrevista', 'evaluacion'
+
+  // Función helper para obtener fecha local en formato YYYY-MM-DD
+  const getFechaLocal = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [reporteEvolucion, setReporteEvolucion] = useState({
     servicio: null,
     edad: paciente?.edad || '',
-    fechaEvaluacion: new Date().toISOString().split('T')[0],
+    fechaEvaluacion: getFechaLocal(),
     periodoIntervencion: '',
     frecuenciaAtencion: '',
     especialista: user?.nombres + ' ' + user?.apellidos,
@@ -88,10 +49,6 @@ const HistoriaClinicaView = ({ paciente, user }) => {
   // Filtrar tabs visibles según la configuración y servicios del paciente
   const visibleTabs = getVisibleTabs(paciente, serviciosPaciente);
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
-
   const handleInputChange = (field, value) => {
     setReporteEvolucion(prev => ({
       ...prev,
@@ -102,12 +59,22 @@ const HistoriaClinicaView = ({ paciente, user }) => {
   const handleCambiarReporte = (reporte) => {
     setReporteSeleccionado(reporte);
     setReporteId(reporte.id);
-    
+
+    // Función para convertir fecha sin afectar zona horaria
+    const formatearFecha = (fecha) => {
+      if (!fecha) return getFechaLocal();
+      const d = new Date(fecha);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     // Actualizar el formulario con los datos del reporte seleccionado
     setReporteEvolucion({
       servicio: reporte.servicio || '',
       edad: reporte.edad?.toString() || '',
-      fechaEvaluacion: reporte.fechaEvaluacion ? new Date(reporte.fechaEvaluacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      fechaEvaluacion: formatearFecha(reporte.fechaEvaluacion),
       periodoIntervencion: reporte.periodoIntervencion || '',
       frecuenciaAtencion: reporte.frecuenciaAtencion || '',
       especialista: reporte.especialista || user?.nombres + ' ' + user?.apellidos,
@@ -122,15 +89,15 @@ const HistoriaClinicaView = ({ paciente, user }) => {
   const handleNuevoReporte = () => {
     setReporteSeleccionado(null);
     setReporteId(null);
-    
+
     // Cambiar a vista completa para mostrar el formulario
     setVistaResumida(false);
-    
+
     // Limpiar el formulario para un nuevo reporte
     setReporteEvolucion({
       servicio: null,
       edad: '',
-      fechaEvaluacion: new Date().toISOString().split('T')[0],
+      fechaEvaluacion: getFechaLocal(),
       periodoIntervencion: '',
       frecuenciaAtencion: '',
       especialista: '',
@@ -145,7 +112,7 @@ const HistoriaClinicaView = ({ paciente, user }) => {
   const toggleVistaResumida = () => {
     const nuevaVistaResumida = !vistaResumida;
     setVistaResumida(nuevaVistaResumida);
-    
+
     // Si estamos cambiando a vista completa (crear nuevo reporte), limpiar el formulario
     if (!nuevaVistaResumida) {
       setReporteSeleccionado(null);
@@ -153,7 +120,7 @@ const HistoriaClinicaView = ({ paciente, user }) => {
       setReporteEvolucion({
         servicio: null,
         edad: '',
-        fechaEvaluacion: new Date().toISOString().split('T')[0],
+        fechaEvaluacion: getFechaLocal(),
         periodoIntervencion: '',
         frecuenciaAtencion: '',
         especialista: '',
@@ -234,12 +201,12 @@ const HistoriaClinicaView = ({ paciente, user }) => {
       
       // Cambiar a vista resumida para mostrar el reporte guardado
       setVistaResumida(true);
-      
+
       // Limpiar el formulario
       setReporteEvolucion({
         servicio: null,
         edad: paciente?.edad || '',
-        fechaEvaluacion: new Date().toISOString().split('T')[0],
+        fechaEvaluacion: getFechaLocal(),
         periodoIntervencion: '',
         frecuenciaAtencion: '',
         especialista: user?.nombres + ' ' + user?.apellidos,
@@ -345,97 +312,124 @@ const HistoriaClinicaView = ({ paciente, user }) => {
     }
   };
 
-  // Mostrar loading mientras se cargan los servicios (crítico para tabs correctos)
+  // Función para alternar sección
+  const toggleSeccion = (seccion) => {
+    setSeccionActiva(seccionActiva === seccion ? null : seccion);
+  };
+
+  // Configuración de las secciones con iconos
+  const secciones = [
+    {
+      id: 'reporte-evolucion',
+      title: 'Reportes de Evolución',
+      description: 'Historial y creación de reportes de evaluación',
+      icon: FileText,
+      color: 'amber',
+      visible: visibleTabs.some(tab => tab.id === 'reporte-evolucion')
+    },
+    {
+      id: 'entrevista-padres',
+      title: 'Entrevista a Padres',
+      description: 'Formulario de entrevista inicial',
+      icon: Users,
+      color: 'blue',
+      visible: visibleTabs.some(tab => tab.id === 'entrevista-padres')
+    },
+    {
+      id: 'evaluacion-terapia-ocupacional',
+      title: 'Evaluación de Terapia Ocupacional',
+      description: 'Evaluación completa de terapia ocupacional',
+      icon: Activity,
+      color: 'purple',
+      visible: visibleTabs.some(tab => tab.id === 'evaluacion-terapia-ocupacional')
+    }
+  ].filter(s => s.visible);
+
+  // Loading state
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="relative w-12 h-12 mx-auto mb-3">
+            <div className="absolute inset-0 border-2 border-gray-100 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-[#7B1FA2] rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400 text-xs font-medium">Cargando historia clínica...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Paper elevation={2} sx={{ background: 'white', borderRadius: 2, overflow: 'hidden' }}>
-        {/* Header con pestañas */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', backgroundColor: '#f8f9fa' }}>
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            allowScrollButtonsMobile
-            sx={{
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                minHeight: 48,
-                color: '#6c757d',
-                transition: 'all 0.3s ease',
-                borderRadius: '8px 8px 0 0',
-                margin: '0 2px',
-                '&.Mui-selected': {
-                  color: '#9575CD',
-                  backgroundColor: '#43217eff',
-                  boxShadow: '0 -2px 4px rgba(0,0,0,0.05)'
-                },
-                '&:hover': {
-                  backgroundColor: 'rgba(149, 117, 205, 0.08)'
-                }
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#9575CD',
-                height: 3
-              },
-              '& .MuiTabs-scrollButtons': {
-                color: '#9575CD',
-                '&.Mui-disabled': {
-                  opacity: 0.3
-                }
-              }
-            }}
-          >
-            {visibleTabs.map((tab, index) => {
-              const IconComponent = tab.icon;
-              return (
-                <Tab 
-                  key={tab.id}
-                  icon={<IconComponent sx={{ fontSize: 20 }} />} 
-                  label={tab.label} 
-                  iconPosition="start"
-                />
-              );
-            })}
-          </Tabs>
-        </Box>
+    <div className="space-y-4">
+      {/* Notification */}
+      {showSnackbar && (
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg border transform transition-all duration-300 ${
+          snackbarSeverity === 'success'
+            ? 'bg-white border-gray-100'
+            : 'bg-white border-red-100'
+        } flex items-center gap-2.5`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${snackbarSeverity === 'success' ? 'bg-[#A3C644]' : 'bg-red-500'}`}></div>
+          <span className="text-xs font-medium text-gray-700">{snackbarMessage}</span>
+          <button onClick={() => setShowSnackbar(false)} className="ml-2">
+            <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+          </button>
+        </div>
+      )}
 
-        {/* Contenido de las pestañas */}
-        <Box sx={{ p: 3 }}>
-          {visibleTabs.map((tab, index) => (
-            <TabPanel key={tab.id} value={tabValue} index={index}>
-              {renderTabContent(tab.id)}
-            </TabPanel>
-          ))}
-        </Box>
-      </Paper>
+      {/* Cards de Secciones */}
+      {secciones.map((seccion) => {
+        const Icon = seccion.icon;
+        const isActive = seccionActiva === seccion.id;
 
-      {/* Snackbar para notificaciones */}
-      <Snackbar
-        open={showSnackbar}
-        autoHideDuration={6000}
-        onClose={() => setShowSnackbar(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={() => setShowSnackbar(false)} 
-          severity={snackbarSeverity}
-          sx={{ width: '100%' }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+        const colorClasses = {
+          amber: { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-100', hover: 'hover:border-amber-200' },
+          blue: { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-100', hover: 'hover:border-blue-200' },
+          purple: { bg: 'bg-purple-50', icon: 'text-purple-600', border: 'border-purple-100', hover: 'hover:border-purple-200' }
+        };
+
+        const colors = colorClasses[seccion.color];
+
+        return (
+          <div key={seccion.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all">
+            {/* Header Card */}
+            <button
+              onClick={() => toggleSeccion(seccion.id)}
+              className={`w-full p-6 flex items-center justify-between transition-all ${
+                isActive ? 'bg-gray-50' : 'hover:bg-gray-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center`}>
+                  <Icon className={`w-6 h-6 ${colors.icon}`} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-base font-bold text-gray-900">{seccion.title}</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{seccion.description}</p>
+                </div>
+              </div>
+              <div className={`transition-transform ${isActive ? 'rotate-180' : ''}`}>
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              </div>
+            </button>
+
+            {/* Contenido expandible */}
+            {isActive && (
+              <div className="border-t border-gray-100 p-6 bg-white">
+                {renderTabContent(seccion.id)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Mensaje si no hay secciones disponibles */}
+      {secciones.length === 0 && (
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-8 text-center">
+          <p className="text-gray-500 text-sm">No hay secciones de historia clínica disponibles para este paciente</p>
+        </div>
+      )}
+    </div>
   );
 };
 

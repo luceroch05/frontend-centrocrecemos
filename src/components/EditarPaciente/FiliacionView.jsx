@@ -1,975 +1,444 @@
 import React, { useState } from 'react';
-import { Box, Grid, Paper, Typography, Divider, TextField, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress, Stack, Chip, IconButton, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Tooltip } from '@mui/material';
-import { Save } from '@mui/icons-material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import Add from '@mui/icons-material/Add';
-import { ThemePalette } from '../../theme/theme';
-import { canViewContactInfo, canEditPatient, canManageServices, ROLES, isTerapeuta, canManagePatientStatus } from '../../constants/roles';
-import { SERVICIOS } from '../../constants/areas';
-import { desasignarServicioPaciente } from '../../services/pacienteService';
+import { User, Phone, MapPin, Mail, Calendar, FileText, Heart, Pill, AlertCircle, Save, X, Edit2, Trash2, Plus } from 'lucide-react';
 
-// Componente simple de botón con carga
-const LoadingButton = ({ loading, children, ...props }) => (
-  <Button
-    {...props}
-    disabled={loading || props.disabled}
-    startIcon={loading ? <CircularProgress size={16} color="inherit" /> : props.startIcon}
-  >
-    {children}
-  </Button>
+// Componente de campo de formulario con iconos alineados
+const FormField = ({ icon: Icon, label, value, name, type = 'text', editable, onChange, error, iconColor = 'text-[#7B1FA2]', options = null }) => (
+  <div>
+    <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-2.5">
+      <Icon className={`w-4 h-4 ${iconColor}`} />
+      {label}
+    </label>
+    {editable ? (
+      <>
+        {options ? (
+          <div className="relative">
+            <select
+              name={name}
+              value={value || ''}
+              onChange={onChange}
+              className={`w-full px-4 py-3 text-sm border rounded-xl focus:outline-none transition-all bg-white text-gray-900 appearance-none cursor-pointer ${
+                error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-[#7B1FA2]'
+              }`}
+            >
+              <option value="">Seleccionar {label.toLowerCase()}</option>
+              {options.map(opt => (
+                <option key={opt.id} value={opt.id}>{opt.nombre}</option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        ) : (
+          <input
+            type={type}
+            name={name}
+            value={value || ''}
+            onChange={onChange}
+            className={`w-full px-4 py-3 text-sm border rounded-xl focus:outline-none transition-all bg-white text-gray-900 ${
+              error ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-[#7B1FA2]'
+            }`}
+            placeholder={`Ingresa ${label.toLowerCase()}`}
+          />
+        )}
+        {error && (
+          <p className="text-red-500 text-xs mt-2 flex items-center gap-1.5">
+            <AlertCircle className="w-3 h-3" />
+            {error}
+          </p>
+        )}
+      </>
+    ) : (
+      <div className="py-3 px-4 text-sm text-gray-900 bg-gray-50 rounded-xl border border-gray-100">
+        {value || '-'}
+      </div>
+    )}
+  </div>
 );
 
-// Componente para los datos del paciente (fuera del componente principal)
-const PacienteData = ({ paciente, setPaciente, isAdmision, generos, distritos, tiposDocumento, user, onLocalChange }) => {
-  // Estado local para manejar los cambios sin actualizar el estado del paciente inmediatamente
-  const [localPaciente, setLocalPaciente] = useState(paciente);
+// Sección con icono y diseño consistente
+const Section = ({ icon: Icon, title, iconColor = 'text-[#7B1FA2]', bgColor = 'bg-[#7B1FA2]/5', children }) => (
+  <div className="mb-10">
+    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+      <div className={`w-10 h-10 rounded-xl ${bgColor} flex items-center justify-center`}>
+        <Icon className={`w-5 h-5 ${iconColor}`} />
+      </div>
+      <h3 className="text-base font-bold text-gray-900">{title}</h3>
+    </div>
+    {children}
+  </div>
+);
 
-  // Actualizar el estado local cuando cambie el paciente desde el padre
-  React.useEffect(() => {
-    setLocalPaciente(paciente);
-  }, [paciente]);
-
-  // Función para actualizar el estado local
-  const handleLocalChange = (field, value) => {
-    const updatedPaciente = {
-      ...localPaciente,
-      [field]: value
-    };
-    setLocalPaciente(updatedPaciente);
-    // Notificar al componente padre sobre el cambio local
-    if (onLocalChange) {
-      onLocalChange(updatedPaciente);
-    }
-  };
-
-  // Función para actualizar el estado del paciente en el padre (solo cuando se guarde)
-  const updateParentPaciente = (field, value) => {
-    // Solo actualizar el estado del padre cuando se guarde el formulario
-    // Por ahora no hacemos nada aquí
-  };
-
-  return (
-  <Grid container spacing={2}>
-    {/* Datos Personales */}
-    
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Nombres"
-        value={localPaciente.nombres || ''}
-                 onChange={(e) => handleLocalChange('nombres', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Apellido Paterno"
-        value={localPaciente.apellido_paterno || ''}
-                 onChange={(e) => handleLocalChange('apellido_paterno', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Apellido Materno"
-        value={localPaciente.apellido_materno || ''}
-                 onChange={(e) => handleLocalChange('apellido_materno', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        type="date"
-        label="Fecha de Nacimiento"
-        value={localPaciente.fecha_nacimiento ? localPaciente.fecha_nacimiento.substring(0, 10) : ''}
-                 onChange={(e) => handleLocalChange('fecha_nacimiento', e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <FormControl fullWidth>
-        <InputLabel>Tipo de Documento</InputLabel>
-        <Select
-          value={localPaciente.tipo_documento?.id || ''}
-          label="Tipo de Documento"
-                     onChange={(e) => {
-             handleLocalChange('tipo_documento', { id: e.target.value });
-           }}
-          disabled={!canEditPatient(user)}
-        >
-          {tiposDocumento.map((tipo) => (
-            <MenuItem key={tipo.id} value={tipo.id}>
-              {tipo.nombre}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Número de Documento"
-        value={localPaciente.numero_documento || ''}
-                 onChange={(e) => handleLocalChange('numero_documento', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <FormControl fullWidth>
-        <InputLabel>Sexo</InputLabel>
-        <Select
-          value={localPaciente.sexo?.id || ''}
-          label="Sexo"
-                     onChange={(e) => {
-             handleLocalChange('sexo', { id: e.target.value });
-           }}
-          disabled={!canEditPatient(user)}
-        >
-          {generos.map((genero) => (
-            <MenuItem key={genero.id} value={genero.id}>
-              {genero.nombre}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </Grid>
-    
-    {canViewContactInfo(user) && (
-      <>
-      <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
-          <InputLabel>Distrito</InputLabel>
-          <Select
-            value={localPaciente.distrito?.id || ''}
-            label="Distrito"
-                         onChange={(e) => {
-               handleLocalChange('distrito', { id: e.target.value });
-             }}
-            disabled={!canEditPatient(user)}
-          >
-            {distritos.map((distrito) => (
-              <MenuItem key={distrito.id} value={distrito.id}>
-                {distrito.nombre}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          fullWidth
-          label="Dirección Completa"
-          value={localPaciente.direccion || ''}
-                     onChange={(e) => handleLocalChange('direccion', e.target.value)}
-          InputProps={{ readOnly: isAdmision }}
-        />
-      </Grid>
-        <Grid item xs={12} sm={6}>
-           <TextField
-             fullWidth
-             label="Celular"
-             value={localPaciente.celular || ''}
-                           onChange={(e) => handleLocalChange('celular', e.target.value)}
-             InputProps={{ readOnly: isAdmision }}
-           />
-         </Grid>
-         <Grid item xs={12} sm={6}>
-           <TextField
-             fullWidth
-             label="Celular 2"
-             value={localPaciente.celular2 || ''}
-                           onChange={(e) => handleLocalChange('celular2', e.target.value)}
-             InputProps={{ readOnly: isAdmision }}
-           />
-         </Grid>
-         <Grid item xs={12}>
-           <TextField
-             fullWidth
-             label="Correo Electrónico"
-             type="email"
-             value={localPaciente.correo || ''}
-                           onChange={(e) => handleLocalChange('correo', e.target.value)}
-             InputProps={{ readOnly: isAdmision }}
-           />
-         </Grid>
-      </>
-    )}
-
-    {/* Datos del Responsable (si es menor de edad) */}
-    {paciente.responsable_nombre && (
-      <>
-        <Grid item xs={12}>
-          <Divider sx={{ my: 3 }} />
-          <Typography variant="h6" gutterBottom>
-            Datos del Responsable
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Nombres del Responsable"
-            value={localPaciente.responsable_nombre || ''}
-                         onChange={(e) => handleLocalChange('responsable_nombre', e.target.value)}
-            InputProps={{ readOnly: isAdmision }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Apellido Paterno del Responsable"
-            value={localPaciente.responsable_apellido_paterno || ''}
-                         onChange={(e) => handleLocalChange('responsable_apellido_paterno', e.target.value)}
-            InputProps={{ readOnly: isAdmision }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Apellido Materno del Responsable"
-            value={localPaciente.responsable_apellido_materno || ''}
-                         onChange={(e) => handleLocalChange('responsable_apellido_materno', e.target.value)}
-            InputProps={{ readOnly: isAdmision }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Relación con el Paciente"
-            value={localPaciente.responsable_relacion?.nombre || ''}
-            InputProps={{ readOnly: true }}
-          />
-        </Grid>
-        {
-          !isTerapeuta(user) && (
-            <>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Tipo de Documento del Responsable"
-                value={localPaciente.responsable_tipo_documento?.nombre || ''}
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Número de Documento del Responsable"
-                value={localPaciente.responsable_numero_documento || ''}
-                               onChange={(e) => handleLocalChange('responsable_numero_documento', e.target.value)}
-                InputProps={{ readOnly: isAdmision }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Teléfono del Responsable"
-                value={localPaciente.responsable_telefono || ''}
-                               onChange={(e) => handleLocalChange('responsable_telefono', e.target.value)}
-                InputProps={{ readOnly: isAdmision }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Correo del Responsable"
-                type="email"
-                value={localPaciente.responsable_email || ''}
-                               onChange={(e) => handleLocalChange('responsable_email', e.target.value)}
-                InputProps={{ readOnly: isAdmision }}
-              />
-            </Grid>    
-            </>
-          )
-        }
-        
-      </>
-    )}
-    <Grid item xs={12}>
-      <Divider sx={{ my: 3 }} />
-      <Typography variant="h6" gutterBottom>
-        Información Adicional
-      </Typography>
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Motivo de consulta"
-        multiline
-        minRows={2}
-        value={localPaciente.motivo_consulta || ''}
-                 onChange={e => handleLocalChange('motivo_consulta', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Referido por"
-        value={localPaciente.referido_por || ''}
-                 onChange={e => handleLocalChange('referido_por', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Diagnóstico Médico"
-        multiline
-        minRows={2}
-        value={localPaciente.diagnostico_medico || ''}
-                 onChange={e => handleLocalChange('diagnostico_medico', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Alergias conocidas"
-        multiline
-        minRows={2}
-        value={localPaciente.alergias || ''}
-                 onChange={e => handleLocalChange('alergias', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-    <Grid item xs={12} sm={6}>
-      <TextField
-        fullWidth
-        label="Medicamentos actuales"
-        multiline
-        minRows={2}
-        value={localPaciente.medicamentos_actuales || ''}
-                 onChange={e => handleLocalChange('medicamentos_actuales', e.target.value)}
-        InputProps={{ readOnly: isAdmision }}
-      />
-    </Grid>
-  </Grid>
-  );
-};
-
-// Componente para los datos de la pareja (fuera del componente principal)
-const ParejaData = ({ paciente, tiposDocumento }) => {
-  const pareja = paciente.parejas && paciente.parejas.length > 0 ? paciente.parejas[0] : null;
-  
-  return (
-    <Grid container spacing={2}>
-      
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Nombres"
-          value={pareja?.nombres || ''}
-          InputProps={{ readOnly: true }}
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Apellido Paterno"
-          value={pareja?.apellido_paterno || ''}
-          InputProps={{ readOnly: true }}
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Apellido Materno"
-          value={pareja?.apellido_materno || ''}
-          InputProps={{ readOnly: true }}
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
-          <InputLabel>Tipo de Documento</InputLabel>
-          <Select
-            value={pareja?.tipo_documento?.id || ''}
-            label="Tipo de Documento"
-            InputProps={{ readOnly: true }}
-          >
-            {tiposDocumento.map((tipo) => (
-              <MenuItem key={tipo.id} value={tipo.id}>
-                {tipo.nombre}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Número de Documento"
-          value={pareja?.numero_documento || ''}
-          InputProps={{ readOnly: true }}
-        />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="Celular"
-          value={pareja?.celular || ''}
-          InputProps={{ readOnly: true }}
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          fullWidth
-          label="Dirección"
-          value={pareja?.direccion || ''}
-          InputProps={{ readOnly: true }}
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          fullWidth
-          label="Correo Electrónico"
-          type="email"
-          value={pareja?.email || ''}
-          InputProps={{ readOnly: true }}
-        />
-      </Grid>
-    </Grid>
-  );
-};
-
-const FiliacionView = ({ paciente, setPaciente, handleSubmit, saving, generos, distritos, tiposDocumento, setOpenAsignarServicio, setServicioAEditar, setNuevoTerapeuta, setOpenEditarTerapeuta, user }) => {
-  // Estado local para manejar los cambios sin afectar el estado del paciente
+const FiliacionView = ({ 
+  paciente, 
+  setPaciente, 
+  handleSubmit, 
+  saving, 
+  generos, 
+  distritos, 
+  tiposDocumento,
+  setOpenAsignarServicio,
+  setServicioAEditar,
+  setNuevoTerapeuta,
+  setOpenEditarTerapeuta,
+  user 
+}) => {
   const [localPacienteData, setLocalPacienteData] = useState(paciente);
+  const [modoEdicion, setModoEdicion] = useState(false);
 
-  // Actualizar el estado local cuando cambie el paciente desde el padre
   React.useEffect(() => {
     setLocalPacienteData(paciente);
   }, [paciente]);
 
-  // Función para manejar cambios locales
-  const handleLocalChange = (updatedPaciente) => {
-    setLocalPacienteData(updatedPaciente);
+  const handleLocalChange = (e) => {
+    const { name, value } = e.target;
+    setLocalPacienteData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // Función para manejar el envío del formulario
+  const handleSelectChange = (name, value) => {
+    setLocalPacienteData(prev => ({
+      ...prev,
+      [name]: { id: value }
+    }));
+  };
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    // Llamar al handleSubmit con los datos actualizados directamente
     handleSubmit(e, localPacienteData);
+    setModoEdicion(false);
   };
+
+  const handleCancelar = () => {
+    setLocalPacienteData(paciente);
+    setModoEdicion(false);
+  };
+
   if (!paciente) return null;
-  
-  // El rol de ADMISIÓN solo puede ver los datos (bloqueados) y gestionar servicios
-  const isAdmision = user?.rol?.id === ROLES.ADMISION || user?.rol?.id === ROLES.TERAPEUTA;
-  
-  // Verificar si es terapia de pareja
-  const isTerapiaPareja = paciente.servicio?.id === SERVICIOS.TERAPIA_PAREJA;
-  
-  // Estado para el tab activo
-  const [activeTab, setActiveTab] = useState(0);
-  
-  // Estado para el modal de confirmación de desasignar servicio
-  const [openDesasignarModal, setOpenDesasignarModal] = useState(false);
-  const [servicioADesasignar, setServicioADesasignar] = useState(null);
-  const [desasignando, setDesasignando] = useState(false);
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
-  const handleDesasignarServicio = async () => {
-    if (!servicioADesasignar) return;
-    
-    setDesasignando(true);
-    try {
-      await desasignarServicioPaciente(paciente.id, servicioADesasignar.servicio.id);
-      // Actualizar el estado del paciente en el padre
-      setPaciente(prev => ({
-        ...prev,
-        servicios: prev.servicios.filter(s => s.id !== servicioADesasignar.id)
-      }));
-      setOpenDesasignarModal(false);
-      setServicioADesasignar(null);
-    } catch (error) {
-      console.error('Error al desasignar servicio:', error);
-    } finally {
-      setDesasignando(false);
-    }
-  };
 
   return (
-    <>
-      <Paper 
-        elevation={4} 
-        sx={{ 
-          p: 4,
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-          borderRadius: 4,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(255,255,255,0.8)',
-          position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: 'linear-gradient(90deg, #9575CD, #B39DDB, #9575CD)',
-            borderRadius: '4px 4px 0 0'
-          }
-        }}
-      >
-        <Box sx={{ 
-          mb: 3,
-          p: 1.5,
-          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-          borderRadius: 3,
-          border: '1px solid #dee2e6',
-          position: 'relative'
-        }}>
-          <Typography variant="subtitle1" sx={{ 
-            fontWeight: 'bold', 
-            color: '#2c3e50',
-            textAlign: 'center',
-            mb: 0.5,
-            fontSize: '1.1rem'
-          }}>
-            {isAdmision ? 'Datos del Paciente' : 'Editar Datos del Paciente'}
-          </Typography>
-          <Typography variant="body2" sx={{ 
-            color: '#6c757d', 
-            textAlign: 'center',
-            fontStyle: 'italic',
-            fontSize: '0.85rem'
-          }}>
-            {isAdmision ? 'Vista de solo lectura' : 'Modifica la información del paciente'}
-          </Typography>
-        </Box>
-        
-        {isTerapiaPareja ? (
-          // Diseño con tabs para terapia de pareja
-          <Box>
-            <Paper elevation={2} sx={{ 
-              mb: 4, 
-              borderRadius: 3,
-              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-              border: '1px solid #dee2e6'
-            }}>
-              <Tabs 
-                value={activeTab} 
-                onChange={handleTabChange}
-                sx={{
-                  '& .MuiTab-root': {
-                    color: '#495057',
-                    fontWeight: 600,
-                    fontSize: '1rem',
-                    textTransform: 'none',
-                    minHeight: 60,
-                    '&.Mui-selected': {
-                      color: '#9575CD',
-                      fontWeight: 'bold',
-                    }
-                  },
-                  '& .MuiTabs-indicator': {
-                    backgroundColor: '#9575CD',
-                    height: 3,
-                    borderRadius: '2px'
-                  }
-                }}
-              >
-                <Tab label="Datos del Paciente" />
-                <Tab label="Datos de la Pareja" />
-              </Tabs>
-            </Paper>
-            
-                         <form onSubmit={handleFormSubmit}>
-               {activeTab === 0 && (
-                 <Box sx={{ 
-                   p: 3,
-                   background: 'white',
-                   borderRadius: 3,
-                   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                   border: '1px solid #e0e0e0'
-                 }}>
-                   <PacienteData 
-                     paciente={localPacienteData}
-                     setPaciente={setPaciente}
-                     isAdmision={isAdmision}
-                     generos={generos}
-                     distritos={distritos}
-                     tiposDocumento={tiposDocumento}
-                     user={user}
-                     onLocalChange={handleLocalChange}
-                   />
-                </Box>
-              )}
-              {activeTab === 1 && (
-                <Box sx={{ 
-                  p: 3,
-                  background: 'white',
-                  borderRadius: 3,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  border: '1px solid #e0e0e0'
-                }}>
-                  <ParejaData 
-                    paciente={paciente}
-                    tiposDocumento={tiposDocumento}
-                  />
-                </Box>
-              )}
-              
-              {/* Botón de Guardar solo en el tab del paciente */}
-              {activeTab === 0 && canEditPatient(user) && !isAdmision && (
-                <Box sx={{ mt: 2, textAlign: 'center' }}>
-                  <LoadingButton
-                    type="submit"   
-                    variant="contained"
-                    loading={saving}
-                    startIcon={<Save />}
-                    size="medium"
-                    sx={{ 
-                      px: 3,
-                      py: 1,
-                      background: 'linear-gradient(135deg, #9575CD 0%, #B39DDB 100%)',
-                      borderRadius: 2,
-                      fontWeight: 'bold',
-                      fontSize: '0.95rem',
-                      boxShadow: '0 3px 8px rgba(149, 117, 205, 0.3)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #7B68EE 0%, #9370DB 100%)',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(149, 117, 205, 0.4)',
-                        transition: 'all 0.3s ease'
-                      },
-                      '&:disabled': {
-                        background: '#ccc',
-                        transform: 'none',
-                        boxShadow: 'none'
-                      }
-                    }}
-                  >
-                    {saving ? 'Guardando...' : 'Guardar Cambios'}
-                  </LoadingButton>
-                </Box>
-              )}
-            </form>
-          </Box>
-        ) : (
-                     // Diseño normal para otros servicios
-           <form onSubmit={handleFormSubmit}>
-             <Box sx={{ 
-               p: 3,
-               background: 'white',
-               borderRadius: 3,
-               boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-               border: '1px solid #e0e0e0'
-             }}>
-               <PacienteData 
-                 paciente={localPacienteData}
-                 setPaciente={setPaciente}
-                 isAdmision={isAdmision}
-                 generos={generos}
-                 distritos={distritos}
-                 tiposDocumento={tiposDocumento}
-                 user={user}
-                 onLocalChange={handleLocalChange}
-               />
-            </Box>
-            
-            {/* Botón de Guardar */}
-            {canEditPatient(user) && !isAdmision && (
-              <Box sx={{ mt: 2, textAlign: 'center' }}>
-                <LoadingButton
-                  type="submit"   
-                  variant="contained"
-                  loading={saving}
-                  startIcon={<Save />}
-                  size="medium"
-                  sx={{ 
-                    px: 3,
-                    py: 1,
-                    background: 'linear-gradient(135deg, #9575CD 0%, #B39DDB 100%)',
-                    borderRadius: 2,
-                    fontWeight: 'bold',
-                    fontSize: '0.95rem',
-                    boxShadow: '0 3px 8px rgba(149, 117, 205, 0.3)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #7B68EE 0%, #9370DB 100%)',
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 12px rgba(149, 117, 205, 0.4)',
-                      transition: 'all 0.3s ease'
-                    },
-                    '&:disabled': {
-                      background: '#ccc',
-                      transform: 'none',
-                      boxShadow: 'none'
-                    }
-                  }}
-                >
-                  {saving ? 'Guardando...' : 'Guardar Cambios'}
-                </LoadingButton>
-              </Box>
-            )}
-          </form>
-        )}
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">
+              Información del Paciente
+            </h2>
+            <p className="text-sm text-gray-500">
+              Datos personales y médicos
+            </p>
+          </div>
+          {!modoEdicion && (
+            <button
+              onClick={() => setModoEdicion(true)}
+              className="flex items-center gap-2 bg-[#7B1FA2] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
+            >
+              <Edit2 className="w-4 h-4" />
+              Editar
+            </button>
+          )}
+        </div>
+      </div>
 
-                 {/* Servicios asignados (sección separada) - para todos los servicios */}
-         {canManageServices(user) && (
-          <Box sx={{ mt: 3 }}>
-            <Box sx={{ 
-              mb: 2,
-              p: 2,
-              background: 'linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%)',
-              borderRadius: 2,
-              border: '1px solid #c3e6cb'
-            }}>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 'bold', 
-                color: '#2c3e50',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-              }}>
-                🏥 Servicios Asignados
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#666', mt: 0.5 }}>
-                Gestiona los servicios y terapeutas asignados al paciente
-              </Typography>
-            </Box>
-            
-            <Paper elevation={2} sx={{ 
-              p: 2, 
-              borderRadius: 3, 
-              background: 'white',
-              border: '1px solid #e0e0e0',
-              boxShadow: '0 3px 8px rgba(0,0,0,0.08)'
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  startIcon={<Add />} 
-                  onClick={() => setOpenAsignarServicio(true)} 
-                  size="small"
-                  sx={{ 
-                    height: 36, 
-                    fontWeight: 'bold', 
-                    fontSize: '0.85rem', 
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
-                    boxShadow: '0 3px 8px rgba(76, 175, 80, 0.3)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #43A047 0%, #4CAF50 100%)',
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)',
-                      transition: 'all 0.3s ease'
-                    }
-                  }}
+      {/* Content */}
+      <form onSubmit={handleFormSubmit} className="p-8">
+        {/* Datos Personales */}
+        <Section icon={User} title="Datos Personales" iconColor="text-[#7B1FA2]" bgColor="bg-[#7B1FA2]/5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              icon={User}
+              label="Nombres"
+              value={localPacienteData.nombres}
+              name="nombres"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-[#7B1FA2]"
+            />
+            <FormField
+              icon={User}
+              label="Apellido Paterno"
+              value={localPacienteData.apellido_paterno}
+              name="apellido_paterno"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-[#7B1FA2]"
+            />
+            <FormField
+              icon={User}
+              label="Apellido Materno"
+              value={localPacienteData.apellido_materno}
+              name="apellido_materno"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-[#7B1FA2]"
+            />
+            <FormField
+              icon={Calendar}
+              label="Fecha de Nacimiento"
+              value={localPacienteData.fecha_nacimiento ? localPacienteData.fecha_nacimiento.substring(0, 10) : ''}
+              name="fecha_nacimiento"
+              type="date"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-[#7B1FA2]"
+            />
+            <FormField
+              icon={FileText}
+              label="Tipo de Documento"
+              value={localPacienteData.tipo_documento?.nombre}
+              name="tipo_documento"
+              editable={modoEdicion}
+              onChange={(e) => handleSelectChange('tipo_documento', e.target.value)}
+              options={tiposDocumento}
+              iconColor="text-[#7B1FA2]"
+            />
+            <FormField
+              icon={FileText}
+              label="Número de Documento"
+              value={localPacienteData.numero_documento}
+              name="numero_documento"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-[#7B1FA2]"
+            />
+            <FormField
+              icon={User}
+              label="Sexo"
+              value={localPacienteData.sexo?.nombre}
+              name="sexo"
+              editable={modoEdicion}
+              onChange={(e) => handleSelectChange('sexo', e.target.value)}
+              options={generos}
+              iconColor="text-[#7B1FA2]"
+            />
+          </div>
+        </Section>
+
+        {/* Contacto */}
+        <Section icon={Phone} title="Información de Contacto" iconColor="text-emerald-600" bgColor="bg-emerald-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              icon={Phone}
+              label="Celular Principal"
+              value={localPacienteData.celular}
+              name="celular"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-emerald-600"
+            />
+            <FormField
+              icon={Phone}
+              label="Celular Secundario"
+              value={localPacienteData.celular2}
+              name="celular2"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-emerald-600"
+            />
+            <div className="md:col-span-2">
+              <FormField
+                icon={Mail}
+                label="Correo Electrónico"
+                value={localPacienteData.correo}
+                name="correo"
+                type="email"
+                editable={modoEdicion}
+                onChange={handleLocalChange}
+                iconColor="text-emerald-600"
+              />
+            </div>
+          </div>
+        </Section>
+
+        {/* Dirección */}
+        <Section icon={MapPin} title="Dirección" iconColor="text-blue-600" bgColor="bg-blue-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              icon={MapPin}
+              label="Distrito"
+              value={localPacienteData.distrito?.nombre}
+              name="distrito"
+              editable={modoEdicion}
+              onChange={(e) => handleSelectChange('distrito', e.target.value)}
+              options={distritos}
+              iconColor="text-blue-600"
+            />
+            <FormField
+              icon={MapPin}
+              label="Dirección Completa"
+              value={localPacienteData.direccion}
+              name="direccion"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-blue-600"
+            />
+          </div>
+        </Section>
+
+        {/* Información Médica */}
+        <Section icon={Heart} title="Información Médica" iconColor="text-rose-600" bgColor="bg-rose-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              icon={FileText}
+              label="Motivo de Consulta"
+              value={localPacienteData.motivo_consulta}
+              name="motivo_consulta"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-rose-600"
+            />
+            <FormField
+              icon={User}
+              label="Referido Por"
+              value={localPacienteData.referido_por}
+              name="referido_por"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-rose-600"
+            />
+            <FormField
+              icon={Heart}
+              label="Diagnóstico Médico"
+              value={localPacienteData.diagnostico_medico}
+              name="diagnostico_medico"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-rose-600"
+            />
+            <FormField
+              icon={AlertCircle}
+              label="Alergias"
+              value={localPacienteData.alergias}
+              name="alergias"
+              editable={modoEdicion}
+              onChange={handleLocalChange}
+              iconColor="text-rose-600"
+            />
+            <div className="md:col-span-2">
+              <FormField
+                icon={Pill}
+                label="Medicamentos Actuales"
+                value={localPacienteData.medicamentos_actuales}
+                name="medicamentos_actuales"
+                editable={modoEdicion}
+                onChange={handleLocalChange}
+                iconColor="text-rose-600"
+              />
+            </div>
+          </div>
+        </Section>
+
+        {/* Servicios Asignados */}
+        <Section icon={FileText} title="Servicios Asignados" iconColor="text-[#A3C644]" bgColor="bg-[#A3C644]/10">
+          <button
+            type="button"
+            onClick={() => setOpenAsignarServicio(true)}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm mb-5"
+          >
+            <Plus className="w-4 h-4" />
+            Asignar Nuevo Servicio
+          </button>
+
+          {paciente.servicios && paciente.servicios.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {paciente.servicios.map(servicio => (
+                <div
+                  key={servicio.id}
+                  className="border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all bg-white"
                 >
-                  Asignar Nuevo Servicio
-                </Button>
-              </Box>
-              <Stack direction="column" spacing={2} alignItems="stretch">
-                {paciente && paciente.servicios && paciente.servicios.length > 0 && paciente.servicios.map(servicio => (
-                  <Paper key={servicio.id} elevation={1} sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: 1.5, 
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    border: '1px solid #e0e0e0',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-                    '&:hover': {
-                      boxShadow: '0 3px 12px rgba(0,0,0,0.12)',
-                      transform: 'translateY(-1px)',
-                      transition: 'all 0.3s ease'
-                    }
-                  }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ 
-                        fontWeight: 'bold', 
-                        fontSize: '1rem', 
-                        color: '#7B1FA2',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1
-                      }}>
-                        🎯 {servicio.servicio?.nombre || 'Sin nombre'}
-                      </Typography>
-                      <Stack direction="row" spacing={1}>
-                        <IconButton 
-                          size="small" 
-                          color="primary" 
-                          onClick={() => {
-                            setServicioAEditar(servicio);
-                            setNuevoTerapeuta(
-                              servicio.asignaciones && servicio.asignaciones.length > 0 && servicio.asignaciones[0].terapeuta
-                                ? `${servicio.asignaciones[0].terapeuta.nombres} ${servicio.asignaciones[0].terapeuta.apellidos}`
-                                : ''
-                            );
-                            setOpenEditarTerapeuta(true);
-                          }}
-                          sx={{
-                            background: 'linear-gradient(135deg, #9575CD 0%, #B39DDB 100%)',
-                            color: 'white',
-                            width: 32,
-                            height: 32,
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #7B68EE 0%, #9370DB 100%)',
-                              transform: 'scale(1.05)',
-                              transition: 'all 0.3s ease'
-                            }
-                          }}
-                        >
-                          <EditIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                        {canManagePatientStatus(user) && (
-                          <IconButton 
-                            size="small" 
-                            color="error" 
-                            onClick={() => {
-                              setServicioADesasignar(servicio);
-                              setOpenDesasignarModal(true);
-                            }}
-                            sx={{
-                              background: 'linear-gradient(135deg, #F44336 0%, #E57373 100%)',
-                              color: 'white',
-                              width: 32,
-                              height: 32,
-                              '&:hover': {
-                                background: 'linear-gradient(135deg, #EF5350 0%, #EC407A 100%)',
-                                transform: 'scale(1.05)',
-                                transition: 'all 0.3s ease'
-                              }
-                            }}
-                          >
-                            <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        )}
-                      </Stack>
-                    </Box>
-                    <Chip
-                      label={
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-2 h-2 rounded-full bg-[#7B1FA2]"></div>
+                        <span className="font-semibold text-gray-900">
+                          {servicio.servicio?.nombre || 'Sin nombre'}
+                        </span>
+                      </div>
+                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${
                         servicio.asignaciones && servicio.asignaciones.length > 0 && servicio.asignaciones[0].terapeuta
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        <User className="w-3 h-3" />
+                        {servicio.asignaciones && servicio.asignaciones.length > 0 && servicio.asignaciones[0].terapeuta
                           ? `${servicio.asignaciones[0].terapeuta.nombres} ${servicio.asignaciones[0].terapeuta.apellidos}`
-                          : 'Sin asignar'
-                      }
-                      color="primary"
-                      size="small"
-                      sx={{ 
-                        fontWeight: 'bold', 
-                        fontSize: '0.8rem', 
-                        px: 1.5, 
-                        py: 0.5,
-                        alignSelf: 'flex-start',
-                        background: servicio.asignaciones && servicio.asignaciones.length > 0 && servicio.asignaciones[0].terapeuta
-                          ? 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)'
-                          : 'linear-gradient(135deg, #FF9800 0%, #FFB74D 100%)'
-                      }}
-                    />
-                  </Paper>
-                ))}
-              </Stack>
-            </Paper>
-          </Box>
-        )}
-      </Paper>
+                          : 'Sin asignar'}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setServicioAEditar(servicio);
+                          setNuevoTerapeuta(
+                            servicio.asignaciones && servicio.asignaciones.length > 0 && servicio.asignaciones[0].terapeuta
+                              ? `${servicio.asignaciones[0].terapeuta.nombres} ${servicio.asignaciones[0].terapeuta.apellidos}`
+                              : ''
+                          );
+                          setOpenEditarTerapeuta(true);
+                        }}
+                        className="p-2 text-[#7B1FA2] hover:bg-purple-50 rounded-lg transition-all"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 border border-dashed border-gray-200 rounded-xl">
+              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No hay servicios asignados</p>
+            </div>
+          )}
+        </Section>
 
-      {/* Modal de confirmación para desasignar servicio */}
-      <Dialog
-        open={openDesasignarModal}
-        onClose={() => setOpenDesasignarModal(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-            border: '1px solid #e0e0e0',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          color: '#d32f2f', 
-          fontWeight: 'bold',
-          textAlign: 'center',
-          background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
-          borderBottom: '1px solid #ffcdd2'
-        }}>
-          🚫 Desasignar Servicio
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <DialogContentText sx={{ textAlign: 'center', fontSize: '1rem' }}>
-            ¿Estás seguro de que quieres desasignar el servicio{' '}
-            <strong style={{ color: '#7B1FA2' }}>
-              "{servicioADesasignar?.servicio?.nombre}"
-            </strong>{' '}
-            del paciente <strong>{paciente.nombres} {paciente.apellido_paterno}</strong>?
-            <br /><br />
-            <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>
-              ⚠️ Esta acción no se puede deshacer
-            </span>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ 
-          p: 3, 
-          justifyContent: 'center',
-          gap: 2
-        }}>
-          <Button 
-            onClick={() => setOpenDesasignarModal(false)} 
-            color="secondary"
-            variant="outlined"
-            disabled={desasignando}
-            sx={{
-              borderRadius: 2,
-              px: 3,
-              py: 1,
-              fontWeight: 'bold',
-              border: '2px solid',
-              '&:hover': {
-                border: '2px solid',
-                transform: 'translateY(-1px)',
-                transition: 'all 0.3s ease'
-              }
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleDesasignarServicio} 
-            color="error" 
-            variant="contained"
-            disabled={desasignando}
-            startIcon={desasignando ? <CircularProgress size={16} color="inherit" /> : <DeleteOutlineIcon />}
-            sx={{
-              borderRadius: 2,
-              px: 3,
-              py: 1,
-              fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #F44336 0%, #E57373 100%)',
-              boxShadow: '0 3px 8px rgba(244, 67, 54, 0.3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #EF5350 0%, #EC407A 100%)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)',
-                transition: 'all 0.3s ease'
-              },
-              '&:disabled': {
-                background: '#ccc',
-                transform: 'none',
-                boxShadow: 'none'
-              }
-            }}
-          >
-            {desasignando ? 'Desasignando...' : 'Desasignar Servicio'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+        {/* Botones de acción */}
+        {modoEdicion && (
+          <div className="flex items-center justify-end gap-3 pt-8 border-t border-gray-100 mt-8">
+            <button
+              type="button"
+              onClick={handleCancelar}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-200 rounded-xl transition-all disabled:opacity-50"
+            >
+              <X className="w-4 h-4" />
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Guardar Cambios
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </form>
+    </div>
   );
 };
 
-export default FiliacionView; 
+export default FiliacionView;
