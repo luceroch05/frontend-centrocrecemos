@@ -17,7 +17,11 @@ export default function BlogDetailPage() {
       date: '15 Enero 2025',
       category: 'Nutrición',
       readTime: '8 min lectura',
+<<<<<<< HEAD
       heroImage: '/assets/img/blog/cuch.png',
+=======
+      heroImage: '/assets/img/blog/cushuro-hero.jpg',
+>>>>>>> 593bdd3 (primer blog falta imagenes)
       author: 'Centro Crecemos'
     }
   };
