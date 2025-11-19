@@ -40,6 +40,8 @@ import Mantenimiento from '../pages/Mantenimiento';
 import LibroReclamaciones from '../pages/LibroReclamaciones';
 import VerificarDocumentos from '../pages/VerificarDocumento';
 import ArchivosOficiales from '../pages/ArchivosOficiales';
+import BlogPage from '../pages/BlogPage';
+import BlogDetailPage from '../pages/BlogDetailPage';
 
 import GestionPopup from '../pages/GestionPopup';
 import PostulacionesDashboard from '../pages/PostulacionesDashboard';
@@ -105,6 +107,8 @@ export const AppRouter = () => {
         <Route path="/preguntas" element={<Preguntas />} />
         <Route path="/" element={<BasicLayout />}>
           <Route index element={<HomePage />} />
+          <Route path="blog" element={<BlogPage />} />
+          <Route path="blog/:slug" element={<BlogDetailPage />} />
           <Route path="nosotros" element={<UsPage />} />
           <Route path="servicios" element={<Servicios/>} />
           <Route path="staff" element={<Staff />} />
