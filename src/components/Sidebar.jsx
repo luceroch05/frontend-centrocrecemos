@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROLES_NAMES, ROLES } from '../constants/roles';
 import {
@@ -10,8 +10,32 @@ import {
   BriefcaseIcon,
   DocumentCheckIcon,
   ArrowRightOnRectangleIcon,
-  UserCircleIcon
+  UserCircleIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
+
+// Contexto para compartir el estado del sidebar
+export const SidebarContext = createContext();
+
+export const useSidebar = () => {
+  const context = useContext(SidebarContext);
+  if (!context) {
+    return { isCollapsed: false }; // Valor por defecto
+  }
+  return context;
+};
+
+// Provider del contexto del sidebar
+export const SidebarProvider = ({ children }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  return (
+    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+};
 
 const menuItems = [
   { text: 'Agenda', path: '/intranet/agenda', icon: CalendarDaysIcon },
@@ -27,7 +51,25 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, setIsCollapsed } = useSidebar();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Cerrar menú móvil al cambiar de ruta
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
+  // Cerrar menú móvil al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isMobileOpen && !e.target.closest('.mobile-sidebar') && !e.target.closest('.mobile-hamburger')) {
+        setIsMobileOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isMobileOpen]);
 
   const getFilteredMenuItems = () => {
     if (!user || !user.rol?.id) return menuItems;
@@ -58,10 +100,33 @@ const Sidebar = () => {
 
   return (
     <>
+      {/* Botón hamburguesa para móvil */}
+      <button
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        className="mobile-hamburger fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-all"
+      >
+        {isMobileOpen ? (
+          <XMarkIcon className="w-6 h-6" />
+        ) : (
+          <Bars3Icon className="w-6 h-6" />
+        )}
+      </button>
+
+      {/* Overlay para móvil */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen transition-all duration-300 z-50 flex flex-col shadow-sm ${
+        className={`mobile-sidebar fixed top-0 left-0 h-screen transition-all duration-300 z-50 flex flex-col shadow-sm ${
           isCollapsed ? 'w-20' : 'w-64'
-        }`}
+        } ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}
         style={{ backgroundColor: '#f8f9fa', borderRight: '1px solid #e9ecef' }}
       >
         {/* Logo */}
@@ -83,10 +148,10 @@ const Sidebar = () => {
           )}
         </div>
 
-        {/* Toggle Button */}
+        {/* Toggle Button - Solo en desktop */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute top-7 -right-3 w-6 h-6 bg-white rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all shadow-sm outline-none"
+          className="hidden lg:flex absolute top-7 -right-3 w-6 h-6 bg-white rounded-full items-center justify-center text-gray-400 hover:text-gray-600 transition-all shadow-sm outline-none"
           style={{ border: '1px solid #e5e7eb' }}
         >
           <svg
@@ -237,7 +302,8 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <div className={`${isCollapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`} />
+      {/* Spacer - Solo en desktop */}
+      <div className={`hidden lg:block ${isCollapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`} />
     </>
   );
 };

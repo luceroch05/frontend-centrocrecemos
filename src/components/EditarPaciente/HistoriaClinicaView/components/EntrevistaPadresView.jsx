@@ -116,6 +116,7 @@ const EntrevistaPadresView = ({ paciente, user }) => {
     setLoading(true);
     try {
       const data = await obtenerEntrevistaPadres(paciente.id);
+      console.log('Datos de entrevista cargados desde el backend:', data);
       if (data) {
         setEntrevistaExistente(data);
         setExpandedEntrevista(true);
@@ -282,6 +283,7 @@ const EntrevistaPadresView = ({ paciente, user }) => {
   };
 
   const handleEditar = () => {
+    console.log('handleEditar - entrevistaExistente:', entrevistaExistente);
     if (entrevistaExistente) {
       const nombreCompleto = `${paciente?.nombres || ''} ${paciente?.apellido_paterno || ''} ${paciente?.apellido_materno || ''}`.trim();
 
@@ -521,6 +523,15 @@ const EntrevistaPadresView = ({ paciente, user }) => {
 
 // Componente de Vista Resumen
 const VistaResumenEntrevista = ({ entrevista, expandida, onToggle }) => {
+  console.log('VistaResumenEntrevista - entrevista:', entrevista);
+
+  const DataRow = ({ label, value, fullWidth = false }) => (
+    <div className={`py-3 border-b border-gray-100 ${fullWidth ? 'md:col-span-2' : ''}`}>
+      <p className="text-xs font-semibold text-gray-500 uppercase mb-1">{label}</p>
+      <p className="text-sm text-gray-900 whitespace-pre-line">{value || 'No especificado'}</p>
+    </div>
+  );
+
   return (
     <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
       <button
@@ -533,12 +544,131 @@ const VistaResumenEntrevista = ({ entrevista, expandida, onToggle }) => {
 
       {expandida && (
         <div className="p-6">
-          <p className="text-sm text-gray-600">Vista resumida de la entrevista registrada</p>
+          {/* I. DATOS GENERALES */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#A3C644] uppercase mb-4 pb-2 border-b-2 border-[#A3C644]">I. DATOS GENERALES</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Grado Escolar Actual" value={entrevista.escolaridad ? `Grado ${entrevista.escolaridad}` : 'No especificado'} />
+              <DataRow label="Otras Atenciones" value={entrevista.atenciones?.nombre || 'No especificado'} />
+              <DataRow label="Motivo Principal de Consulta" value={entrevista.motivoConsulta || entrevista.motivo_consulta} fullWidth />
+            </div>
+          </div>
+
+          {/* II. HISTORIA FAMILIAR */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#A3C644] uppercase mb-4 pb-2 border-b-2 border-[#A3C644]">II. HISTORIA FAMILIAR</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Relación entre los padres" value={entrevista.relacionPadres?.nombre || 'No especificado'} />
+              <DataRow label="Cantidad de hermanos" value={entrevista.cantidadHermanos || entrevista.cantidad_hermanos} />
+              <DataRow label="Detalle de la relación entre los padres" value={entrevista.detalleRelacionPadres || entrevista.detalle_relacion_padres} fullWidth />
+
+              {/* Mostrar hermanos */}
+              {entrevista.hermanos && entrevista.hermanos.length > 0 && (
+                <div className="py-3 border-b border-gray-100 md:col-span-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Hermanos</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {entrevista.hermanos.map((hermano, index) => (
+                      <div key={hermano.id} className="text-sm text-gray-900">
+                        <span className="font-medium">Hermano {index + 1}:</span> {hermano.nombre} - {hermano.edad} años - {hermano.sexo?.nombre || 'No especificado'}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mostrar familiares */}
+              {entrevista.familiares && entrevista.familiares.length > 0 && (
+                <div className="py-3 border-b border-gray-100 md:col-span-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Miembros de la Familia</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {entrevista.familiares.map((familiar, index) => (
+                      <div key={familiar.id} className="text-sm text-gray-900">
+                        <span className="font-medium">{familiar.tipo}:</span> {familiar.nombre} - {familiar.edad} años - {familiar.ocupacion?.nombre || 'No especificado'}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <DataRow label="Tiempo de juego libre (hrs/día)" value={entrevista.tiempoJuego || entrevista.tiempo_juego} />
+              <DataRow label="Tiempo en dispositivos (hrs/día)" value={entrevista.tiempoDispositivos || entrevista.tiempo_dispositivos} />
+              <DataRow label="¿Existen antecedentes familiares de enfermedades?" value={entrevista.antecedentesFamiliares || entrevista.antecedentes_familiares} />
+
+              {(entrevista.antecedentesFamiliares === 'Si' || entrevista.antecedentes_familiares === 'Si') && (
+                <>
+                  <DataRow label="Antecedentes médicos" value={entrevista.antecedentesMedicos || entrevista.antecedentes_medicos} fullWidth />
+                  <DataRow label="Antecedentes psiquiátricos" value={entrevista.antecedentesPsiquiatricos || entrevista.antecedentes_psiquiatricos} fullWidth />
+                  <DataRow label="Antecedentes toxicológicos" value={entrevista.antecedentesToxicologicos || entrevista.antecedentes_toxicologicos} fullWidth />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* III. HISTORIA DEL DESARROLLO */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#A3C644] uppercase mb-4 pb-2 border-b-2 border-[#A3C644]">III. HISTORIA DEL DESARROLLO</h4>
+            <div className="grid grid-cols-1 gap-x-6">
+              <DataRow label="Antecedentes prenatales, perinatales y postnatales" value={entrevista.antecedentesPrenatales || entrevista.antecedentes_prenatales} />
+              <DataRow label="Desarrollo motor" value={entrevista.desarrolloMotor || entrevista.desarrollo_motor} />
+              <DataRow label="Desarrollo del lenguaje" value={entrevista.desarrolloLenguaje || entrevista.desarrollo_lenguaje} />
+              <DataRow label="Alimentación" value={entrevista.alimentacion} />
+              <DataRow label="Sueño" value={entrevista.sueno} />
+              <DataRow label="Control de esfínteres" value={entrevista.controlEsfinteres || entrevista.control_esfinteres} />
+              <DataRow label="Antecedentes médicos del niño" value={entrevista.antecedentesMedicosNino || entrevista.antecedentes_medicos_nino} />
+              <DataRow label="Antecedentes escolares" value={entrevista.antecedentesEscolares || entrevista.antecedentes_escolares} />
+            </div>
+          </div>
+
+          {/* IV. ASPECTOS DE SOCIALIZACIÓN Y AFECTIVO */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#A3C644] uppercase mb-4 pb-2 border-b-2 border-[#A3C644]">IV. ASPECTOS DE SOCIALIZACIÓN Y AFECTIVO</h4>
+            <div className="grid grid-cols-1 gap-x-6">
+              <DataRow label="Relación con pares" value={entrevista.relacionPares || entrevista.relacion_pares} />
+              <DataRow label="Expresión emocional" value={entrevista.expresionEmocional || entrevista.expresion_emocional} />
+              <DataRow label="Relación con figuras de autoridad" value={entrevista.relacionAutoridad || entrevista.relacion_autoridad} />
+            </div>
+          </div>
+
+          {/* V. INTERESES Y PASATIEMPOS */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#A3C644] uppercase mb-4 pb-2 border-b-2 border-[#A3C644]">V. INTERESES Y PASATIEMPOS</h4>
+            <div className="grid grid-cols-1 gap-x-6">
+              <DataRow label="Juegos preferidos" value={entrevista.juegosPreferidos || entrevista.juegos_preferidos} />
+              <DataRow label="Actividades favoritas" value={entrevista.actividadesFavoritas || entrevista.actividades_favoritas} />
+            </div>
+          </div>
+
+          {/* VI. RECOMENDACIONES */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#A3C644] uppercase mb-4 pb-2 border-b-2 border-[#A3C644]">VI. RECOMENDACIONES</h4>
+            <div className="grid grid-cols-1 gap-x-6">
+              <DataRow label="Recomendaciones y observaciones finales" value={entrevista.recomendaciones} />
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 };
+
+// Componentes auxiliares para el formulario (fuera del componente principal para evitar re-renders)
+const Section = ({ title, children }) => (
+  <div className="bg-white border border-gray-100 rounded-xl p-6 mb-6">
+    <h3 className="text-sm font-semibold text-[#7B1FA2] uppercase tracking-wide mb-6 pb-2 border-b-2 border-[#7B1FA2]">{title}</h3>
+    {children}
+  </div>
+);
+
+const FormField = ({ label, required, error, children, className = '' }) => (
+  <div className={className}>
+    <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </label>
+    {children}
+    {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+  </div>
+);
 
 // Componente de Formulario COMPLETO
 const FormularioEntrevista = ({
@@ -565,30 +695,13 @@ const FormularioEntrevista = ({
   saving,
   esNuevo
 }) => {
-  const Section = ({ title, children }) => (
-    <div className="bg-white border border-gray-100 rounded-xl p-6 mb-6">
-      <h3 className="text-sm font-semibold text-[#7B1FA2] uppercase tracking-wide mb-6 pb-2 border-b-2 border-[#7B1FA2]">{title}</h3>
-      {children}
-    </div>
-  );
-
-  const FormField = ({ label, required, error, children, className = '' }) => (
-    <div className={className}>
-      <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      {children}
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-    </div>
-  );
 
   return (
     <div className="space-y-6">
       {/* I. DATOS GENERALES */}
       <Section title="I. DATOS GENERALES">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField label="Grado Escolar Actual" required error={errors.escolaridad}>
+          <FormField label="GRADO ESCOLAR ACTUAL" required error={errors.escolaridad}>
             <select
               value={entrevistaPadres.escolaridad}
               onChange={(e) => handleInputChange('escolaridad', e.target.value)}
@@ -603,7 +716,7 @@ const FormularioEntrevista = ({
             </select>
           </FormField>
 
-          <FormField label="Motivo de Consulta" required error={errors.motivoConsulta} className="md:col-span-2">
+          <FormField label="MOTIVO PRINCIPAL DE CONSULTA" required error={errors.motivoConsulta} className="md:col-span-2">
             <textarea
               value={entrevistaPadres.motivoConsulta}
               onChange={(e) => handleInputChange('motivoConsulta', e.target.value)}
@@ -613,7 +726,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Otras Atenciones" required error={errors.derivacionInterna}>
+          <FormField label="OTRAS ATENCIONES" required error={errors.derivacionInterna}>
             <select
               value={entrevistaPadres.derivacionInterna}
               onChange={(e) => handleInputChange('derivacionInterna', e.target.value)}
@@ -634,7 +747,7 @@ const FormularioEntrevista = ({
       <Section title="II. HISTORIA FAMILIAR">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Relación entre padres */}
-          <FormField label="Relación entre los padres" required error={errors.relacionEntrePadres}>
+          <FormField label="RELACIÓN ENTRE LOS PADRES" required error={errors.relacionEntrePadres}>
             <select
               value={entrevistaPadres.relacionEntrePadres}
               onChange={(e) => handleInputChange('relacionEntrePadres', e.target.value)}
@@ -649,7 +762,7 @@ const FormularioEntrevista = ({
             </select>
           </FormField>
 
-          <FormField label="Detalle de la relación" className="md:col-span-2">
+          <FormField label="DETALLE DE LA RELACIÓN ENTRE LOS PADRES" className="md:col-span-2">
             <textarea
               value={entrevistaPadres.detalleRelacionPadres}
               onChange={(e) => handleInputChange('detalleRelacionPadres', e.target.value)}
@@ -660,7 +773,7 @@ const FormularioEntrevista = ({
           </FormField>
 
           {/* Cantidad de hermanos */}
-          <FormField label="Cantidad de Hermanos" required error={errors.cantidadHermanos}>
+          <FormField label="CANTIDAD DE HERMANOS" required error={errors.cantidadHermanos}>
             <input
               type="number"
               min="0"
@@ -679,7 +792,7 @@ const FormularioEntrevista = ({
                   <div key={hermano.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-xs font-semibold text-gray-600 mb-3">Hermano {index + 1}</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <FormField label="Nombre" required error={errors[`hermano_${hermano.id}_nombre`]}>
+                      <FormField label="NOMBRE COMPLETO" required error={errors[`hermano_${hermano.id}_nombre`]}>
                         <input
                           type="text"
                           value={hermano.nombre}
@@ -688,7 +801,7 @@ const FormularioEntrevista = ({
                           placeholder="Nombre del hermano"
                         />
                       </FormField>
-                      <FormField label="Edad" required error={errors[`hermano_${hermano.id}_edad`]}>
+                      <FormField label="EDAD" required error={errors[`hermano_${hermano.id}_edad`]}>
                         <input
                           type="number"
                           value={hermano.edad}
@@ -696,7 +809,7 @@ const FormularioEntrevista = ({
                           className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#7B1FA2] transition-all bg-white text-gray-900 font-medium"
                         />
                       </FormField>
-                      <FormField label="Sexo" required error={errors[`hermano_${hermano.id}_sexo`]}>
+                      <FormField label="SEXO" required error={errors[`hermano_${hermano.id}_sexo`]}>
                         <select
                           value={hermano.sexo}
                           onChange={(e) => handleHermanoChange(hermano.id, 'sexo', e.target.value)}
@@ -734,18 +847,24 @@ const FormularioEntrevista = ({
 
             {mostrarAgregarFamiliar && (
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-medium text-gray-700 mb-3">Seleccione el tipo de familiar:</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {['Padre', 'Madre', 'Abuelo/a', 'Tío/a', 'Otro'].map((tipo) => (
-                    <button
-                      key={tipo}
-                      onClick={() => handleTipoFamiliarChange(tipo)}
-                      className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-all"
-                    >
-                      {tipo}
-                    </button>
-                  ))}
-                </div>
+                <FormField label="TIPO DE FAMILIAR">
+                  <select
+                    value={tipoFamiliar}
+                    onChange={(e) => handleTipoFamiliarChange(e.target.value)}
+                    className="w-full px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#7B1FA2] transition-all bg-white text-gray-900 font-medium hover:border-gray-300"
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Madre">Madre</option>
+                    <option value="Padre">Padre</option>
+                    <option value="Hermano">Hermano</option>
+                    <option value="Hermana">Hermana</option>
+                    <option value="Abuelo">Abuelo</option>
+                    <option value="Abuela">Abuela</option>
+                    <option value="Tío">Tío</option>
+                    <option value="Tía">Tía</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </FormField>
                 <button
                   onClick={() => setMostrarAgregarFamiliar(false)}
                   className="mt-3 text-sm text-gray-500 hover:text-gray-700"
@@ -769,7 +888,7 @@ const FormularioEntrevista = ({
                       </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <FormField label="Nombre" required error={errors[`familiar_${familiar.id}_nombre`]}>
+                      <FormField label="NOMBRE COMPLETO" required error={errors[`familiar_${familiar.id}_nombre`]}>
                         <input
                           type="text"
                           value={familiar.nombre}
@@ -777,7 +896,7 @@ const FormularioEntrevista = ({
                           className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#7B1FA2] transition-all bg-white text-gray-900 font-medium"
                         />
                       </FormField>
-                      <FormField label="Edad" required error={errors[`familiar_${familiar.id}_edad`]}>
+                      <FormField label="EDAD" required error={errors[`familiar_${familiar.id}_edad`]}>
                         <input
                           type="number"
                           value={familiar.edad}
@@ -785,7 +904,7 @@ const FormularioEntrevista = ({
                           className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#7B1FA2] transition-all bg-white text-gray-900 font-medium"
                         />
                       </FormField>
-                      <FormField label="Ocupación" required error={errors[`familiar_${familiar.id}_ocupacion`]}>
+                      <FormField label="OCUPACIÓN" required error={errors[`familiar_${familiar.id}_ocupacion`]}>
                         <select
                           value={familiar.ocupacion}
                           onChange={(e) => handleFamiliarChange(familiar.id, 'ocupacion', e.target.value)}
@@ -807,7 +926,7 @@ const FormularioEntrevista = ({
           </div>
 
           {/* Tiempo de juego y dispositivos */}
-          <FormField label="Tiempo de Juego (horas/día)" required error={errors.tiempoJuego}>
+          <FormField label="TIEMPO DE JUEGO LIBRE (horas/día)" required error={errors.tiempoJuego}>
             <input
               type="text"
               value={entrevistaPadres.tiempoJuego}
@@ -817,7 +936,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Tiempo de Dispositivos (horas/día)" required error={errors.tiempoDispositivos}>
+          <FormField label="TIEMPO EN DISPOSITIVOS ELECTRÓNICOS (horas/día)" required error={errors.tiempoDispositivos}>
             <input
               type="text"
               value={entrevistaPadres.tiempoDispositivos}
@@ -828,7 +947,7 @@ const FormularioEntrevista = ({
           </FormField>
 
           {/* Antecedentes Familiares */}
-          <FormField label="¿Antecedentes Familiares?" required error={errors.antecedentesFamiliares}>
+          <FormField label="¿EXISTEN ANTECEDENTES FAMILIARES DE ENFERMEDADES?" required error={errors.antecedentesFamiliares}>
             <select
               value={entrevistaPadres.antecedentesFamiliares}
               onChange={(e) => handleInputChange('antecedentesFamiliares', e.target.value)}
@@ -842,7 +961,7 @@ const FormularioEntrevista = ({
 
           {entrevistaPadres.antecedentesFamiliares === 'Si' && (
             <>
-              <FormField label="Antecedentes Médicos" required error={errors.antecedentesMedicos} className="md:col-span-2">
+              <FormField label="ANTECEDENTES MÉDICOS (enfermedades, tratamientos, hospitalizaciones)" required error={errors.antecedentesMedicos} className="md:col-span-2">
                 <textarea
                   value={entrevistaPadres.antecedentesMedicos}
                   onChange={(e) => handleInputChange('antecedentesMedicos', e.target.value)}
@@ -851,7 +970,7 @@ const FormularioEntrevista = ({
                 />
               </FormField>
 
-              <FormField label="Antecedentes Psiquiátricos" required error={errors.antecedentesPsiquiatricos} className="md:col-span-2">
+              <FormField label="ANTECEDENTES PSIQUIÁTRICOS (trastornos mentales, tratamientos psicológicos)" required error={errors.antecedentesPsiquiatricos} className="md:col-span-2">
                 <textarea
                   value={entrevistaPadres.antecedentesPsiquiatricos}
                   onChange={(e) => handleInputChange('antecedentesPsiquiatricos', e.target.value)}
@@ -860,7 +979,7 @@ const FormularioEntrevista = ({
                 />
               </FormField>
 
-              <FormField label="Antecedentes Toxicológicos" required error={errors.antecedentesToxicologicos} className="md:col-span-2">
+              <FormField label="ANTECEDENTES TOXICOLÓGICOS (consumo de sustancias, adicciones)" required error={errors.antecedentesToxicologicos} className="md:col-span-2">
                 <textarea
                   value={entrevistaPadres.antecedentesToxicologicos}
                   onChange={(e) => handleInputChange('antecedentesToxicologicos', e.target.value)}
@@ -876,7 +995,7 @@ const FormularioEntrevista = ({
       {/* III. HISTORIA DEL DESARROLLO */}
       <Section title="III. HISTORIA DEL DESARROLLO">
         <div className="grid grid-cols-1 gap-6">
-          <FormField label="Antecedentes Prenatales" required error={errors.antecedentesPrenatales}>
+          <FormField label="ANTECEDENTES PRENATALES, PERINATALES Y POSTNATALES (embarazo, parto, complicaciones)" required error={errors.antecedentesPrenatales}>
             <textarea
               value={entrevistaPadres.antecedentesPrenatales}
               onChange={(e) => handleInputChange('antecedentesPrenatales', e.target.value)}
@@ -886,7 +1005,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Desarrollo Motor" required error={errors.desarrolloMotor}>
+          <FormField label="DESARROLLO MOTOR (sostén cefálico, sedestación, gateo, marcha)" required error={errors.desarrolloMotor}>
             <textarea
               value={entrevistaPadres.desarrolloMotor}
               onChange={(e) => handleInputChange('desarrolloMotor', e.target.value)}
@@ -896,7 +1015,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Desarrollo del Lenguaje" required error={errors.desarrolloLenguaje}>
+          <FormField label="DESARROLLO DEL LENGUAJE (balbuceo, primeras palabras, frases)" required error={errors.desarrolloLenguaje}>
             <textarea
               value={entrevistaPadres.desarrolloLenguaje}
               onChange={(e) => handleInputChange('desarrolloLenguaje', e.target.value)}
@@ -906,7 +1025,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Alimentación" required error={errors.alimentacion}>
+          <FormField label="ALIMENTACIÓN (lactancia, tipo de alimentación, hábitos actuales)" required error={errors.alimentacion}>
             <textarea
               value={entrevistaPadres.alimentacion}
               onChange={(e) => handleInputChange('alimentacion', e.target.value)}
@@ -916,7 +1035,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Sueño" required error={errors.sueno}>
+          <FormField label="SUEÑO (rutinas, horarios, dificultades)" required error={errors.sueno}>
             <textarea
               value={entrevistaPadres.sueno}
               onChange={(e) => handleInputChange('sueno', e.target.value)}
@@ -926,7 +1045,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Control de Esfínteres" required error={errors.controlEsfinteres}>
+          <FormField label="CONTROL DE ESFÍNTERES (edad de inicio, método utilizado, dificultades)" required error={errors.controlEsfinteres}>
             <textarea
               value={entrevistaPadres.controlEsfinteres}
               onChange={(e) => handleInputChange('controlEsfinteres', e.target.value)}
@@ -936,7 +1055,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Antecedentes Médicos del Niño" required error={errors.antecedentesMedicosNino}>
+          <FormField label="ANTECEDENTES MÉDICOS DEL NIÑO (enfermedades, cirugías, medicación actual)" required error={errors.antecedentesMedicosNino}>
             <textarea
               value={entrevistaPadres.antecedentesMedicosNino}
               onChange={(e) => handleInputChange('antecedentesMedicosNino', e.target.value)}
@@ -946,7 +1065,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Antecedentes Escolares" required error={errors.antecedentesEscolares}>
+          <FormField label="ANTECEDENTES ESCOLARES (adaptación, rendimiento, relación con docentes)" required error={errors.antecedentesEscolares}>
             <textarea
               value={entrevistaPadres.antecedentesEscolares}
               onChange={(e) => handleInputChange('antecedentesEscolares', e.target.value)}
@@ -961,7 +1080,7 @@ const FormularioEntrevista = ({
       {/* IV. ASPECTOS DE SOCIALIZACIÓN Y AFECTIVO */}
       <Section title="IV. ASPECTOS DE SOCIALIZACIÓN Y AFECTIVO">
         <div className="grid grid-cols-1 gap-6">
-          <FormField label="Relación con Pares" required error={errors.relacionPares}>
+          <FormField label="RELACIÓN CON PARES (amigos, interacción social, conflictos)" required error={errors.relacionPares}>
             <textarea
               value={entrevistaPadres.relacionPares}
               onChange={(e) => handleInputChange('relacionPares', e.target.value)}
@@ -971,7 +1090,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Expresión Emocional" required error={errors.expresionEmocional}>
+          <FormField label="EXPRESIÓN EMOCIONAL (manejo de emociones, reacciones, conductas)" required error={errors.expresionEmocional}>
             <textarea
               value={entrevistaPadres.expresionEmocional}
               onChange={(e) => handleInputChange('expresionEmocional', e.target.value)}
@@ -981,7 +1100,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Relación con Figuras de Autoridad" required error={errors.relacionAutoridad}>
+          <FormField label="RELACIÓN CON FIGURAS DE AUTORIDAD (padres, profesores, límites)" required error={errors.relacionAutoridad}>
             <textarea
               value={entrevistaPadres.relacionAutoridad}
               onChange={(e) => handleInputChange('relacionAutoridad', e.target.value)}
@@ -996,7 +1115,7 @@ const FormularioEntrevista = ({
       {/* V. INTERESES Y PASATIEMPOS */}
       <Section title="V. INTERESES Y PASATIEMPOS">
         <div className="grid grid-cols-1 gap-6">
-          <FormField label="Juegos Preferidos" required error={errors.juegosPreferidos}>
+          <FormField label="JUEGOS PREFERIDOS (tipos de juego, juguetes favoritos)" required error={errors.juegosPreferidos}>
             <textarea
               value={entrevistaPadres.juegosPreferidos}
               onChange={(e) => handleInputChange('juegosPreferidos', e.target.value)}
@@ -1006,7 +1125,7 @@ const FormularioEntrevista = ({
             />
           </FormField>
 
-          <FormField label="Actividades Favoritas" required error={errors.actividadesFavoritas}>
+          <FormField label="ACTIVIDADES FAVORITAS (hobbies, deportes, actividades recreativas)" required error={errors.actividadesFavoritas}>
             <textarea
               value={entrevistaPadres.actividadesFavoritas}
               onChange={(e) => handleInputChange('actividadesFavoritas', e.target.value)}
@@ -1020,7 +1139,7 @@ const FormularioEntrevista = ({
 
       {/* VI. RECOMENDACIONES */}
       <Section title="VI. RECOMENDACIONES">
-        <FormField label="Recomendaciones" required error={errors.recomendaciones}>
+        <FormField label="RECOMENDACIONES Y OBSERVACIONES FINALES" required error={errors.recomendaciones}>
           <textarea
             value={entrevistaPadres.recomendaciones}
             onChange={(e) => handleInputChange('recomendaciones', e.target.value)}

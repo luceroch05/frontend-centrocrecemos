@@ -115,7 +115,15 @@ const DetallePaciente = () => {
               <Typography variant="subtitle1">
                 <strong>Nombre Completo:</strong>
               </Typography>
-              <Typography variant="body1" gutterBottom>
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                  hyphens: 'auto'
+                }}
+              >
                 {paciente.nombres} {paciente.apellido_paterno} {paciente.apellido_materno}
               </Typography>
 

@@ -19,6 +19,35 @@ const calcularEdad = (fechaNacimiento) => {
   return `${edad} años`;
 };
 
+const formatearFecha = (fechaStr) => {
+  if (!fechaStr) return 'No especificada';
+
+  try {
+    // Si la fecha está en formato yyyy-mm-dd
+    if (typeof fechaStr === 'string' && fechaStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = fechaStr.split('-');
+      const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      return `${day} ${monthNames[parseInt(month) - 1]}, ${year}`;
+    }
+
+    // Si la fecha viene como timestamp
+    const fecha = new Date(fechaStr);
+    if (isNaN(fecha.getTime())) {
+      return 'Fecha inválida';
+    }
+
+    const day = String(fecha.getDate()).padStart(2, '0');
+    const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const month = monthNames[fecha.getMonth()];
+    const year = fecha.getFullYear();
+    return `${day} ${month}, ${year}`;
+  } catch (error) {
+    console.error('Error al formatear fecha:', error);
+    return 'Fecha inválida';
+  }
+};
+
 const getEstadoColor = (nombreEstado) => {
   const colorMap = {
     'Nuevo': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500' },
@@ -172,29 +201,29 @@ const ModalDetallesPaciente = ({ paciente, onClose, onEditar, user, onPacienteOc
       />
 
       {/* Panel lateral */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-2xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
         {/* Header con gradiente morado suave */}
-        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-4 sm:p-6">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-white text-xl font-bold shadow-sm">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-sm">
                   {paciente.nombres?.[0]}{paciente.apellido_paterno?.[0]}
                 </div>
               </div>
               
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-white mb-1.5 truncate">
+                <h1 className="text-xl sm:text-2xl font-bold text-white mb-1.5 break-words leading-tight">
                   {paciente.nombres} {paciente.apellido_paterno} {paciente.apellido_materno}
                 </h1>
-                <div className="flex items-center gap-2.5 text-sm text-white/90">
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>{paciente.tipo_documento?.nombre}: {paciente.numero_documento}</span>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs sm:text-sm text-white/90">
+                  <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                  <span className="break-words">{paciente.tipo_documento?.nombre}: {paciente.numero_documento}</span>
                   {paciente.servicio && (
                     <>
-                      <span className="w-1 h-1 rounded-full bg-white/60"></span>
-                      <span className="font-medium">{paciente.servicio.nombre}</span>
+                      <span className="w-1 h-1 rounded-full bg-white/60 flex-shrink-0"></span>
+                      <span className="font-medium break-words">{paciente.servicio.nombre}</span>
                     </>
                   )}
                 </div>
@@ -211,7 +240,7 @@ const ModalDetallesPaciente = ({ paciente, onClose, onEditar, user, onPacienteOc
           </div>
 
           {/* Estado y badges */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <div className={`
               flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border bg-white/95
               ${estadoColors.border}
@@ -224,13 +253,13 @@ const ModalDetallesPaciente = ({ paciente, onClose, onEditar, user, onPacienteOc
             
             <div className="px-3.5 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg text-xs text-white font-medium border border-white/30 flex items-center gap-1.5">
               <Clock className="w-3 h-3" />
-              {new Date(paciente.fecha_creacion).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
+              {formatearFecha(paciente.fecha_creacion || paciente.created_at)}
             </div>
           </div>
         </div>
 
         {/* Botones de acción */}
-        <div className="flex-shrink-0 px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+        <div className="flex-shrink-0 px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center gap-2">
           <button
             onClick={() => onEditar(paciente.id)}
             className="flex items-center gap-2 bg-[#A3C644] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm"
@@ -252,7 +281,7 @@ const ModalDetallesPaciente = ({ paciente, onClose, onEditar, user, onPacienteOc
 
         {/* Contenido scrolleable con colores variados */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-10">
+          <div className="p-4 sm:p-6 space-y-8 sm:space-y-10">
             {/* Datos Personales - Azul */}
             <Section 
               title="Datos Personales" 
@@ -261,10 +290,10 @@ const ModalDetallesPaciente = ({ paciente, onClose, onEditar, user, onPacienteOc
               bgColor="bg-blue-50"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                <Field 
-                  icon={Calendar} 
-                  label="Fecha de Nacimiento" 
-                  value={paciente.fecha_nacimiento ? new Date(paciente.fecha_nacimiento).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null}
+                <Field
+                  icon={Calendar}
+                  label="Fecha de Nacimiento"
+                  value={paciente.fecha_nacimiento ? formatearFecha(paciente.fecha_nacimiento) : null}
                   iconColor="text-blue-500"
                 />
                 <Field icon={User} label="Sexo" value={paciente.sexo?.nombre} iconColor="text-blue-500" />

@@ -515,11 +515,11 @@ export const ListaPacientes = () => {
             </div>
 
             {/* Botones de acción */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={ejecutarBusqueda}
                 disabled={searching || (!numeroDocumentoInput && !nombreCompletoInput && !filters.distritoId && !filters.estadoId && !(canViewServiceInfo(user) && filters.servicioId))}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
               >
                 {searching ? (
                   <>
@@ -536,7 +536,7 @@ export const ListaPacientes = () => {
 
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all w-full sm:w-auto"
               >
                 <RefreshCw className="w-4 h-4" />
                 Limpiar
@@ -581,8 +581,8 @@ export const ListaPacientes = () => {
       {/* Paginación moderna */}
       {filteredPacientes.length > 0 && (
         <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
               Mostrando <span className="font-semibold text-gray-900">{page * rowsPerPage + 1}</span> a{' '}
               <span className="font-semibold text-gray-900">
                 {Math.min((page + 1) * rowsPerPage, filteredPacientes.length)}
@@ -590,7 +590,7 @@ export const ListaPacientes = () => {
               de <span className="font-semibold text-gray-900">{filteredPacientes.length}</span> pacientes
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-2 w-full sm:w-auto">
               {/* Selector de filas por página */}
               <select
                 value={rowsPerPage}
@@ -598,7 +598,7 @@ export const ListaPacientes = () => {
                   setRowsPerPage(parseInt(e.target.value));
                   setPage(0);
                 }}
-                className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] cursor-pointer"
+                className="w-full sm:w-auto px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] cursor-pointer"
               >
                 <option value={6}>6 por página</option>
                 <option value={12}>12 por página</option>
@@ -607,42 +607,44 @@ export const ListaPacientes = () => {
               </select>
 
               {/* Botones de paginación */}
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1 justify-center">
                 <button
                   onClick={() => setPage(0)}
                   disabled={page === 0}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                  className="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
                 >
-                  Primero
+                  <span className="hidden sm:inline">Primero</span>
+                  <span className="sm:hidden">««</span>
                 </button>
                 
                 <button
                   onClick={() => setPage(page - 1)}
                   disabled={page === 0}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                  className="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
                 >
-                  Anterior
+                  <span className="hidden sm:inline">Anterior</span>
+                  <span className="sm:hidden">«</span>
                 </button>
 
                 {/* Números de página */}
                 <div className="flex gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  {Array.from({ length: Math.min(totalPages <= 3 ? totalPages : 3, totalPages) }, (_, i) => {
                     let pageNum;
-                    if (totalPages <= 5) {
+                    if (totalPages <= 3) {
                       pageNum = i;
-                    } else if (page < 3) {
+                    } else if (page < 2) {
                       pageNum = i;
-                    } else if (page > totalPages - 4) {
-                      pageNum = totalPages - 5 + i;
+                    } else if (page > totalPages - 3) {
+                      pageNum = totalPages - 3 + i;
                     } else {
-                      pageNum = page - 2 + i;
+                      pageNum = page - 1 + i;
                     }
 
                     return (
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                           page === pageNum
                             ? 'bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white'
                             : 'hover:bg-gray-100 text-gray-700'
@@ -657,17 +659,19 @@ export const ListaPacientes = () => {
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={page >= totalPages - 1}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                  className="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
                 >
-                  Siguiente
+                  <span className="hidden sm:inline">Siguiente</span>
+                  <span className="sm:hidden">»</span>
                 </button>
-                
+
                 <button
                   onClick={() => setPage(totalPages - 1)}
                   disabled={page >= totalPages - 1}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                  className="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
                 >
-                  Último
+                  <span className="hidden sm:inline">Último</span>
+                  <span className="sm:hidden">»»</span>
                 </button>
               </div>
             </div>

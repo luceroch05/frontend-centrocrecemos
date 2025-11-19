@@ -28,7 +28,7 @@ import { ReportesEvaluaciones } from '../pages/ReportesEvaluaciones';
 import RegistroPacientePage from '../pages/RegistroPacientePage';
 import EditarPacientePage from '../pages/EditarPacientePage';
 import  AdultoEvalPsicolUniverPage  from '../pages/service-adulto/AdultoEvalPsicolUniverPage';
-import Sidebar from '../components/Sidebar';
+import Sidebar, { SidebarProvider } from '../components/Sidebar';
 import Login from '../components/Login';
 import PrivateRoute from '../components/PrivateRoute';
 import Usuarios from '../pages/Usuarios';
@@ -94,7 +94,14 @@ export const AppRouter = () => {
           </PrivateRoute>
         } />
 
-        <Route path="/editar-paciente/:id" element={<><Sidebar /><EditarPacientePage /></>} />
+        <Route path="/editar-paciente/:id" element={
+          <PrivateRoute>
+            <SidebarProvider>
+              <Sidebar />
+              <EditarPacientePage />
+            </SidebarProvider>
+          </PrivateRoute>
+        } />
         <Route path="/preguntas" element={<Preguntas />} />
         <Route path="/" element={<BasicLayout />}>
           <Route index element={<HomePage />} />

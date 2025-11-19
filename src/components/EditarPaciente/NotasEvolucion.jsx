@@ -68,19 +68,19 @@ const NotasEvolucion = ({
     <>
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
         {/* Header más grande */}
-        <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-12 h-12 rounded-xl bg-[#7B1FA2]/10 flex items-center justify-center">
-              <FileText className="w-6 h-6 text-[#7B1FA2]" />
+        <div className="p-4 sm:p-6 lg:p-8 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#7B1FA2]/10 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-[#7B1FA2]" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Notas de Evolución</h2>
-              <p className="text-sm text-gray-500">Seguimiento del paciente</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Notas de Evolución</h2>
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Seguimiento del paciente</p>
             </div>
           </div>
           <button
             onClick={() => setOpenNotaModal(true)}
-            className="w-full flex items-center justify-center gap-2 bg-[#7B1FA2] text-white px-5 py-3 rounded-xl text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
+            className="w-full flex items-center justify-center gap-2 bg-[#7B1FA2] text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Nueva Nota
@@ -88,7 +88,7 @@ const NotasEvolucion = ({
         </div>
 
         {/* Notas List con más espacio */}
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           <style>{`
             .notas-scroll::-webkit-scrollbar {
               width: 6px;

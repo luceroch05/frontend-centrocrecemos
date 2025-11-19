@@ -11,7 +11,8 @@
       "Bash(nul)",
       "Bash(cat:*)",
       "Bash(timeout /t 3)",
-      "Bash(/tmp/entrevista_original.jsx)"
+      "Bash(/tmp/entrevista_original.jsx)",
+      "Bash(dir /s /b *entrevista* 2)"
     ],
     "deny": [],
     "ask": []

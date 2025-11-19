@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, InputLabel, FormControl, LinearProgress, Card, CardContent, Chip, Stack, CircularProgress, Snackbar, Alert } from '@mui/material';
-import CloudQueueIcon from '@mui/icons-material/CloudQueue';
-import AddIcon from '@mui/icons-material/Add';
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DownloadIcon from '@mui/icons-material/Download';
-import DescriptionIcon from '@mui/icons-material/Description';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import WarningIcon from '@mui/icons-material/Warning';
+import { Upload, X, Trash2, Download, Eye, FileText, Cloud, AlertCircle } from 'lucide-react';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { getTiposArchivo, subirArchivo, getArchivosPorPaciente, eliminarArchivo, descargarArchivo } from '../../services/archivosDigitalesService';
+import { API_BASE_URL } from '../../services/api';
 
 const ArchivosDigitales = ({ paciente }) => {
   const currentUser = useCurrentUser();
@@ -34,7 +27,6 @@ const ArchivosDigitales = ({ paciente }) => {
   const [openConfirmacion, setOpenConfirmacion] = useState(false);
   const [archivoAEliminar, setArchivoAEliminar] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const [requiereVerificacion, setRequiereVerificacion] = useState('TERAPIA');
 
   // Obtener tipos de archivo del backend
   useEffect(() => {
@@ -44,7 +36,6 @@ const ArchivosDigitales = ({ paciente }) => {
         setTiposArchivo(data);
       } catch (error) {
         console.error('Error al obtener tipos de archivo:', error);
-        // En caso de error, usar tipos por defecto
         setTiposArchivo([
           { id: 1, nombre: 'Informe de evaluación' },
           { id: 2, nombre: 'Receta médica' },
@@ -63,7 +54,7 @@ const ArchivosDigitales = ({ paciente }) => {
   useEffect(() => {
     const cargarArchivos = async () => {
       if (!paciente?.id || !currentUser?.id) return;
-      
+
       try {
         setLoadingArchivos(true);
         const data = await getArchivosPorPaciente(currentUser.id, paciente.id);
@@ -81,19 +72,19 @@ const ArchivosDigitales = ({ paciente }) => {
 
   const validarFormulario = () => {
     const nuevosErrores = {};
-    
+
     if (!form.tipoArchivoId || form.tipoArchivoId === '') {
       nuevosErrores.tipoArchivoId = 'Debe seleccionar un tipo de archivo';
     }
-    
+
     if (!form.descripcion || form.descripcion.trim() === '') {
       nuevosErrores.descripcion = 'La descripción es obligatoria';
     }
-    
+
     if (!form.archivo) {
       nuevosErrores.archivo = 'Debe seleccionar un archivo';
     }
-    
+
     setErrors(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
   };
@@ -119,13 +110,12 @@ const ArchivosDigitales = ({ paciente }) => {
 
     try {
       await eliminarArchivo(archivoAEliminar.id);
-      // Recargar la lista de archivos
       const archivosActualizados = await getArchivosPorPaciente(currentUser.id, paciente.id);
       setArchivos(archivosActualizados || []);
       mostrarNotificacion('Archivo eliminado exitosamente', 'success');
     } catch (error) {
       console.error('Error al eliminar archivo:', error);
-      mostrarNotificacion('Error al eliminar el archivo. Por favor, inténtalo de nuevo.', 'error');
+      mostrarNotificacion('Error al eliminar el archivo', 'error');
     } finally {
       setOpenConfirmacion(false);
       setArchivoAEliminar(null);
@@ -173,12 +163,32 @@ const ArchivosDigitales = ({ paciente }) => {
     return tipoMime === 'application/pdf';
   };
 
+  const esWord = (tipoMime) => {
+    return tipoMime === 'application/msword' ||
+           tipoMime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  };
+
+  const esExcel = (tipoMime) => {
+    return tipoMime === 'application/vnd.ms-excel' ||
+           tipoMime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  };
+
+  const esPowerPoint = (tipoMime) => {
+    return tipoMime === 'application/vnd.ms-powerpoint' ||
+           tipoMime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  };
+
   const esTexto = (tipoMime) => {
     return tipoMime?.startsWith('text/');
   };
 
   const puedeVistaPrevia = (archivo) => {
-    return esImagen(archivo.tipoMime) || esPDF(archivo.tipoMime) || esTexto(archivo.tipoMime);
+    return esImagen(archivo.tipoMime) ||
+           esPDF(archivo.tipoMime) ||
+           esWord(archivo.tipoMime) ||
+           esExcel(archivo.tipoMime) ||
+           esPowerPoint(archivo.tipoMime) ||
+           esTexto(archivo.tipoMime);
   };
 
   const mostrarNotificacion = (message, severity = 'success') => {
@@ -187,68 +197,47 @@ const ArchivosDigitales = ({ paciente }) => {
       message,
       severity
     });
-  };
-
-  const cerrarNotificacion = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
-  };
-
-  const formatearTexto = (texto) => {
-    if (!texto) return '';
-    return texto.replace(/\\r\\n|\\n|\\r/g, '\n');
+    setTimeout(() => {
+      setSnackbar(prev => ({ ...prev, open: false }));
+    }, 4000);
   };
 
   const handleDescargarArchivo = async (archivo) => {
     try {
       const blob = await descargarArchivo(archivo.id);
-      
-      // Crear URL del blob
       const url = window.URL.createObjectURL(blob);
-      
-      // Crear elemento de descarga
       const link = document.createElement('a');
       link.href = url;
       link.download = archivo.nombreOriginal;
-      
-      // Agregar al DOM, hacer click y remover
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Limpiar URL del blob
       window.URL.revokeObjectURL(url);
-      
       mostrarNotificacion('Archivo descargado exitosamente', 'success');
     } catch (error) {
       console.error('Error al descargar archivo:', error);
-      mostrarNotificacion('Error al descargar el archivo. Por favor, inténtalo de nuevo.', 'error');
+      mostrarNotificacion('Error al descargar el archivo', 'error');
     }
   };
 
   const handleGuardar = async () => {
-    // Validar formulario antes de guardar
     if (!validarFormulario()) {
       return;
     }
-    
+
     setGuardando(true);
-    
+
     try {
-      // Crear FormData para enviar archivo
       const formData = new FormData();
-      
-      // Agregar el archivo
       formData.append('archivo', form.archivo);
-      
-      // Obtener información básica del archivo
+
       const nombreOriginal = form.archivo.name;
       const tipoMime = form.archivo.type;
       const tamano = form.archivo.size;
-      const requiereVerificacion = (currentUser?.rol?.id === 1 || currentUser?.rol?.id === 2) 
-      ? 'OFICIAL'  // Admin y Admisión suben archivos OFICIALES
-      : 'TERAPIA';
-      
-      // Agregar solo los datos básicos - el backend generará nombreArchivo y rutaArchivo
+      const requiereVerificacion = (currentUser?.rol?.id === 1 || currentUser?.rol?.id === 2)
+        ? 'OFICIAL'
+        : 'TERAPIA';
+
       formData.append('terapeutaId', currentUser?.id);
       formData.append('tipoArchivoId', form.tipoArchivoId);
       formData.append('pacienteId', paciente?.id || null);
@@ -258,753 +247,441 @@ const ArchivosDigitales = ({ paciente }) => {
       formData.append('tamano', tamano);
       formData.append('requiereVerificacion', requiereVerificacion);
 
-      console.log('FormData a enviar al backend:', {
-        terapeutaId: currentUser?.id,
-        tipoArchivoId: parseInt(form.tipoArchivoId),
-        pacienteId: paciente?.id || null,
-        descripcion: form.descripcion,
-        nombreOriginal: nombreOriginal,
-        tipoMime: tipoMime,
-        tamano: tamano,
-        archivo: form.archivo?.name
-      });
-      
-      // Enviar al servidor usando el servicio
-      const data = await subirArchivo(formData);
-      console.log('Archivo subido exitosamente:', data);
-      
-      // Recargar la lista de archivos
+      await subirArchivo(formData);
+
       const archivosActualizados = await getArchivosPorPaciente(currentUser.id, paciente.id);
       setArchivos(archivosActualizados || []);
-      
-      // Mostrar notificación de éxito
+
       mostrarNotificacion('Archivo subido exitosamente', 'success');
-      
-      // Cerrar modal y limpiar formulario
-      setOpenModal(false);
-      setForm({
-        tipoArchivoId: '',
-        descripcion: '',
-        archivo: null
-      });
-      setErrors({});
-      
+      handleCerrarModal();
+
     } catch (error) {
       console.error('Error al subir archivo:', error);
-      mostrarNotificacion('Error al subir el archivo. Por favor, inténtalo de nuevo.', 'error');
+      mostrarNotificacion('Error al subir el archivo', 'error');
     } finally {
       setGuardando(false);
     }
   };
 
   return (
-    <Box sx={{ background: '#fff', borderRadius: 2, p: 3, boxShadow: 1 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: { xs: 'flex-start', sm: 'center' },
-        flexDirection: { xs: 'column', sm: 'row' },
-        gap: { xs: 2, sm: 0 },
-        mb: 2 
-      }}>
-        <Typography variant="h6" sx={{ color: '#0097a7', fontWeight: 'bold' }}>
-          Archivos digitales
-        </Typography>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: { xs: 1, sm: 2 },
-          flexDirection: { xs: 'column', sm: 'row' },
-          width: { xs: '100%', sm: 'auto' }
-        }}>          
-          <Button 
-            variant="contained" 
-            sx={{ 
-              background: '#4dd0e1', 
-              color: '#fff', 
-              borderRadius: 2, 
-              textTransform: 'none', 
-              fontWeight: 'bold', 
-              boxShadow: 'none',
-              width: { xs: '100%', sm: 'auto' },
-              '&:hover': { background: '#26c6da' } 
-            }} 
-            startIcon={<AddIcon />} 
-            onClick={() => setOpenModal(true)}
-          >
-            Subir archivo
-          </Button>
-        </Box>
-      </Box>
+    <div className="bg-white rounded-xl p-6 border border-gray-100">
+      {/* Notificación */}
+      {snackbar.open && (
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg border transform transition-all duration-300 ${
+          snackbar.severity === 'success'
+            ? 'bg-white border-gray-100'
+            : 'bg-white border-red-100'
+        } flex items-center gap-2.5`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${snackbar.severity === 'success' ? 'bg-[#A3C644]' : 'bg-red-500'}`}></div>
+          <span className="text-xs font-medium text-gray-700">{snackbar.message}</span>
+          <button onClick={() => setSnackbar(prev => ({ ...prev, open: false }))} className="ml-2">
+            <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+          </button>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Archivos Digitales</h2>
+            <p className="text-sm text-gray-500">Gestiona los documentos del paciente</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setOpenModal(true)}
+          className="flex items-center gap-2 bg-[#A3C644] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm"
+        >
+          <Upload className="w-4 h-4" />
+          Subir Archivo
+        </button>
+      </div>
+
       {/* Lista de archivos */}
       {loadingArchivos ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex items-center justify-center py-12">
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 border-2 border-gray-100 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
+          </div>
+        </div>
       ) : archivos.length === 0 ? (
-        <Box sx={{ border: '1px solid #cfd8dc', borderRadius: 2, p: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 180 }}>
-          <CloudQueueIcon sx={{ fontSize: 60, color: '#b2ebf2', mb: 1 }} />
-          <Typography variant="body1" sx={{ color: '#90a4ae', mt: 1 }}>No se encontró ningún archivo médico</Typography>
-        </Box>
+        <div className="border-2 border-dashed border-gray-200 rounded-xl p-12 flex flex-col items-center justify-center">
+          <Cloud className="w-16 h-16 text-gray-300 mb-3" />
+          <p className="text-gray-500 text-sm font-medium">No se encontró ningún archivo</p>
+          <p className="text-gray-400 text-xs mt-1">Sube el primer archivo del paciente</p>
+        </div>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="space-y-3">
           {archivos.map((archivo) => (
-            <Card key={archivo.id} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'flex-start', 
-                  mb: 1,
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 2, sm: 0 }
-                }}>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start', 
-                    gap: 1, 
-                    flex: 1,
-                    width: { xs: '100%', sm: 'auto' }
-                  }}>
-                    <DescriptionIcon sx={{ color: '#1976d2', fontSize: { xs: 20, sm: 24 } }} />
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography 
-                        variant="subtitle1" 
-                        sx={{ 
-                          fontWeight: 600, 
-                          color: '#333',
-                          fontSize: { xs: '0.9rem', sm: '1rem' },
-                          wordBreak: 'break-word'
-                        }}
-                      >
-                        {archivo.nombreOriginal}
-                      </Typography>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: '#666', 
-                          mb: 1,
-                          fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                          wordBreak: 'break-word',
-                          whiteSpace: 'pre-line'
-                        }}
-                      >
-                        {formatearTexto(archivo.descripcion)}
-                      </Typography>
-                      <Stack 
-                        direction={{ xs: 'column', sm: 'row' }} 
-                        spacing={1} 
-                        sx={{ 
-                          mb: 1,
-                          flexWrap: 'wrap',
-                          gap: 0.5
-                        }}
-                      >
-                        <Chip 
-                          label={archivo.tipoArchivo?.nombre || 'Sin tipo'} 
-                          size="small" 
-                          color="primary" 
-                          variant="outlined"
-                          sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                        />
-                        <Chip 
-                          label={formatearTamano(archivo.tamano)} 
-                          size="small" 
-                          color="default" 
-                          variant="outlined"
-                          sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                        />
-                        <Chip 
-                          label={formatearFecha(archivo.fechaCreacion)} 
-                          size="small" 
-                          color="default" 
-                          variant="outlined"
-                          sx={{ 
-                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                            display: { xs: 'none', md: 'flex' }
-                          }}
-                        />
-                      </Stack>
-                    </Box>
-                  </Box>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: { xs: 0.5, sm: 1 },
-                    alignSelf: { xs: 'flex-end', sm: 'flex-start' },
-                    flexWrap: 'wrap'
-                  }}>
-                    {puedeVistaPrevia(archivo) && (
-                      <IconButton 
-                        size="small" 
-                        color="info"
-                        title="Vista previa"
-                        onClick={() => handleVistaPrevia(archivo)}
-                        sx={{ 
-                          fontSize: { xs: '1rem', sm: '1.25rem' },
-                          p: { xs: 0.5, sm: 1 }
-                        }}
-                      >
-                        <VisibilityIcon />
-                      </IconButton>
-                    )}
-                    <IconButton 
-                      size="small" 
-                      color="primary"
-                      title="Descargar archivo"
-                      onClick={() => handleDescargarArchivo(archivo)}
-                      sx={{ 
-                        fontSize: { xs: '1rem', sm: '1.25rem' },
-                        p: { xs: 0.5, sm: 1 }
-                      }}
+            <div key={archivo.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-all">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-gray-900 truncate">{archivo.nombreOriginal}</h3>
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">{archivo.descripcion}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                        {archivo.tipoArchivo?.nombre || 'Sin tipo'}
+                      </span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                        {formatearTamano(archivo.tamano)}
+                      </span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs hidden md:inline">
+                        {formatearFecha(archivo.fechaCreacion)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {puedeVistaPrevia(archivo) && (
+                    <button
+                      onClick={() => handleVistaPrevia(archivo)}
+                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                      title="Vista previa"
                     >
-                      <DownloadIcon />
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      color="error"
-                      title="Eliminar archivo"
-                      onClick={() => handleEliminarArchivo(archivo)}
-                      sx={{ 
-                        fontSize: { xs: '1rem', sm: '1.25rem' },
-                        p: { xs: 0.5, sm: 1 }
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDescargarArchivo(archivo)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                    title="Descargar"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleEliminarArchivo(archivo)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           ))}
-        </Box>
+        </div>
       )}
 
       {/* Modal para subir archivo */}
-      <Dialog 
-        open={openModal} 
-        onClose={() => setOpenModal(false)} 
-        maxWidth="sm" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            m: { xs: 1, sm: 2 },
-            maxHeight: { xs: '95vh', sm: '90vh' }
-          }
-        }}
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 'bold' }}>
-          NUEVO ARCHIVO
-          <IconButton onClick={handleCerrarModal}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box component="form" sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              fullWidth
-              label="Terapeuta"
-              value={currentUser?.nombres + ' ' + currentUser?.apellidos || ''}
-              InputProps={{
-                readOnly: true,
-              }}
-              sx={{
-                '& .MuiInputBase-input.Mui-readOnly': {
-                  backgroundColor: '#f5f5f5',
-                  color: '#666'
-                }
-              }}
-            />
-            <FormControl fullWidth error={!!errors.tipoArchivoId}>
-              <InputLabel>Nombre del archivo *</InputLabel>
-              <Select
-                value={form.tipoArchivoId}
-                label="Nombre del archivo *"
-                onChange={e => {
-                  setForm({ ...form, tipoArchivoId: e.target.value });
-                  if (errors.tipoArchivoId) {
-                    setErrors({ ...errors, tipoArchivoId: '' });
-                  }
-                }}
-                disabled={loading}
-              >
-                {tiposArchivo.map((tipo) => (
-                  <MenuItem key={tipo.id} value={tipo.id}>{tipo.nombre}</MenuItem>
-                ))}
-              </Select>
-              {errors.tipoArchivoId && (
-                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
-                  {errors.tipoArchivoId}
-                </Typography>
-              )}
-            </FormControl>
-            <TextField
-              fullWidth
-              required
-              label="Descripción *"
-              multiline
-              minRows={2}
-              value={form.descripcion}
-              onChange={e => {
-                setForm({ ...form, descripcion: e.target.value });
-                if (errors.descripcion) {
-                  setErrors({ ...errors, descripcion: '' });
-                }
-              }}
-              error={!!errors.descripcion}
-              helperText={errors.descripcion}
-            />
-            <Box>
-              <Button
-                variant="outlined"
-                component="label"
-                sx={{ 
-                  borderStyle: 'dashed', 
-                  borderColor: errors.archivo ? '#d32f2f' : '#b2ebf2', 
-                  color: errors.archivo ? '#d32f2f' : '#0097a7', 
-                  minHeight: 120, 
-                  justifyContent: 'center', 
-                  alignItems: 'center', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: 1,
-                  width: '100%'
-                }}
-              >
-                {form.archivo ? form.archivo.name : 'Arrastra y suelta uno o más archivos en esta zona o haz click aquí para seleccionarlos...'}
+      {openModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">Subir Nuevo Archivo</h3>
+              <button onClick={handleCerrarModal} className="p-1 hover:bg-gray-100 rounded-lg transition-all">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Terapeuta */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Terapeuta</label>
                 <input
-                  type="file"
-                  hidden
-                  onChange={e => {
-                    setForm({ ...form, archivo: e.target.files[0] });
-                    if (errors.archivo) {
-                      setErrors({ ...errors, archivo: '' });
+                  type="text"
+                  value={currentUser?.nombres + ' ' + currentUser?.apellidos || ''}
+                  readOnly
+                  className="w-full px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              {/* Tipo de archivo */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
+                  Tipo de Archivo <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={form.tipoArchivoId}
+                  onChange={(e) => {
+                    setForm({ ...form, tipoArchivoId: e.target.value });
+                    if (errors.tipoArchivoId) {
+                      setErrors({ ...errors, tipoArchivoId: '' });
                     }
                   }}
+                  className={`w-full px-4 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all ${
+                    errors.tipoArchivoId
+                      ? 'border-red-500 focus:border-red-500'
+                      : 'border-gray-200 focus:border-[#A3C644]'
+                  }`}
+                >
+                  <option value="">Seleccionar tipo</option>
+                  {tiposArchivo.map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                  ))}
+                </select>
+                {errors.tipoArchivoId && <p className="text-xs text-red-500 mt-1">{errors.tipoArchivoId}</p>}
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
+                  Descripción <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={form.descripcion}
+                  onChange={(e) => {
+                    setForm({ ...form, descripcion: e.target.value });
+                    if (errors.descripcion) {
+                      setErrors({ ...errors, descripcion: '' });
+                    }
+                  }}
+                  rows={3}
+                  className={`w-full px-4 py-3 text-sm border-2 rounded-lg focus:outline-none transition-all resize-none ${
+                    errors.descripcion
+                      ? 'border-red-500 focus:border-red-500'
+                      : 'border-gray-200 focus:border-[#A3C644]'
+                  }`}
+                  placeholder="Describe el contenido del archivo..."
                 />
-              </Button>
-              {errors.archivo && (
-                <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
-                  {errors.archivo}
-                </Typography>
-              )}
-            </Box>
-            <Typography variant="caption" sx={{ color: '#757575', mt: 1 }}>
-              Tamaño de la carga total y tamaño máximo por archivo: 10MB.<br/>                            
-            </Typography>
-          </Box>
-        </DialogContent>
-                 <DialogActions>
-           <Button 
-             onClick={handleCerrarModal} 
-             color="secondary"
-             disabled={guardando}
-           >
-             Cancelar
-           </Button>
-           <Button 
-             onClick={handleGuardar} 
-             color="primary" 
-             variant="contained"
-             disabled={guardando}
-             startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : null}
-           >
-             {guardando ? 'Guardando...' : 'Guardar'}
-           </Button>
-         </DialogActions>
-      </Dialog>
+                {errors.descripcion && <p className="text-xs text-red-500 mt-1">{errors.descripcion}</p>}
+              </div>
+
+              {/* Archivo */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
+                  Archivo <span className="text-red-500">*</span>
+                </label>
+
+                {/* Aviso de formatos recomendados */}
+                <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-blue-900 mb-1">Formatos Recomendados con Vista Previa</p>
+                      <div className="text-xs text-blue-700 space-y-1">
+                        <p><strong>✓ PDF:</strong> Mejor opción para documentos (vista previa completa)</p>
+                        <p><strong>✓ Imágenes:</strong> JPG, PNG, GIF, BMP, WEBP (vista previa con zoom)</p>
+                        <p><strong>• Word/Excel/PowerPoint:</strong> Requieren descarga para visualizar</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-[#A3C644] transition-all ${
+                  errors.archivo ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-gray-50'
+                }`}>
+                  <input
+                    type="file"
+                    className="hidden"
+                    id="file-upload"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.txt,.csv"
+                    onChange={(e) => {
+                      setForm({ ...form, archivo: e.target.files[0] });
+                      if (errors.archivo) {
+                        setErrors({ ...errors, archivo: '' });
+                      }
+                    }}
+                  />
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 font-medium">
+                      {form.archivo ? form.archivo.name : 'Haz click para seleccionar un archivo'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Tamaño máximo: 10MB</p>
+                  </label>
+                </div>
+                {errors.archivo && <p className="text-xs text-red-500 mt-1">{errors.archivo}</p>}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+              <button
+                onClick={handleCerrarModal}
+                disabled={guardando}
+                className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGuardar}
+                disabled={guardando}
+                className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {guardando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Guardar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Vista Previa */}
-      <Dialog 
-        open={openVistaPrevia} 
-        onClose={handleCerrarVistaPrevia} 
-        maxWidth="lg" 
-        fullWidth
-        PaperProps={{
-          sx: { 
-            height: { xs: '95vh', sm: '90vh' },
-            m: { xs: 1, sm: 2 }
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          fontWeight: 'bold',
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: { xs: 1, sm: 0 }
-        }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontSize: { xs: '1rem', sm: '1.25rem' },
-              wordBreak: 'break-word',
-              textAlign: { xs: 'center', sm: 'left' }
-            }}
-          >
-            Vista Previa - {archivoVistaPrevia?.nombreOriginal}
-          </Typography>
-          <IconButton onClick={handleCerrarVistaPrevia}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ p: 0, height: '100%' }}>
-          {archivoVistaPrevia && (
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {/* Información del archivo */}
-              <Box sx={{ p: { xs: 1.5, sm: 2 }, borderBottom: '1px solid #e0e0e0', backgroundColor: '#f8f9fa' }}>
-                <Stack 
-                  direction={{ xs: 'column', sm: 'row' }} 
-                  spacing={{ xs: 1, sm: 2 }} 
-                  alignItems={{ xs: 'flex-start', sm: 'center' }}
-                >
-                  <DescriptionIcon sx={{ color: '#1976d2', fontSize: { xs: 20, sm: 24 } }} />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography 
-                      variant="subtitle1" 
-                      sx={{ 
-                        fontWeight: 600,
-                        fontSize: { xs: '0.9rem', sm: '1rem' },
-                        wordBreak: 'break-word'
-                      }}
-                    >
-                      {archivoVistaPrevia.nombreOriginal}
-                    </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#666',
-                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                        wordBreak: 'break-word',
-                        whiteSpace: 'pre-line'
-                      }}
-                    >
-                      {formatearTexto(archivoVistaPrevia.descripcion)}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    ml: { xs: 0, sm: 'auto' },
-                    width: { xs: '100%', sm: 'auto' }
-                  }}>
-                    <Stack 
-                      direction={{ xs: 'column', sm: 'row' }} 
-                      spacing={1}
-                      sx={{ 
-                        flexWrap: 'wrap',
-                        gap: 0.5
-                      }}
-                    >
-                      <Chip 
-                        label={archivoVistaPrevia.tipoArchivo?.nombre || 'Sin tipo'} 
-                        size="small" 
-                        color="primary" 
-                        variant="outlined"
-                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                      />
-                      <Chip 
-                        label={formatearTamano(archivoVistaPrevia.tamano)} 
-                        size="small" 
-                        color="default" 
-                        variant="outlined"
-                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                      />
-                    </Stack>
-                  </Box>
-                </Stack>
-              </Box>
-
-              {/* Contenido de vista previa */}
-              <Box sx={{ flex: 1, p: 2, overflow: 'auto' }}>
-                {esImagen(archivoVistaPrevia.tipoMime) && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                    <img 
-                      src={`https://www.crecemos.com.pe/backend_api/${archivoVistaPrevia.rutaArchivo}`}
-                      alt={archivoVistaPrevia.nombreOriginal}
-                      style={{ 
-                        maxWidth: '100%', 
-                        maxHeight: '100%', 
-                        objectFit: 'contain',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        display: 'none', 
-                        color: '#666', 
-                        textAlign: 'center',
-                        p: 4
-                      }}
-                    >
-                      No se pudo cargar la imagen
-                    </Typography>
-                  </Box>
-                )}
-
-                {esPDF(archivoVistaPrevia.tipoMime) && (
-                  <Box sx={{ height: '100%', width: '100%' }}>
-                    <iframe
-                      src={`https://www.crecemos.com.pe/backend_api/${archivoVistaPrevia.rutaArchivo}#toolbar=1&navpanes=1&scrollbar=1`}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 'none', borderRadius: '8px' }}
-                      title={archivoVistaPrevia.nombreOriginal}
-                    />
-                  </Box>
-                )}
-
-                {esTexto(archivoVistaPrevia.tipoMime) && (
-                  <Box sx={{ height: '100%', width: '100%' }}>
-                    <iframe
-                      src={`https://www.crecemos.com.pe/backend_api/${archivoVistaPrevia.rutaArchivo}`}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 'none', borderRadius: '8px' }}
-                      title={archivoVistaPrevia.nombreOriginal}
-                    />
-                  </Box>
-                )}
-
-                {!puedeVistaPrevia(archivoVistaPrevia) && (
-                  <Box sx={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    height: '100%',
-                    textAlign: 'center',
-                    p: 4
-                  }}>
-                    <DescriptionIcon sx={{ fontSize: 64, color: '#b2ebf2', mb: 2 }} />
-                    <Typography variant="h6" sx={{ color: '#666', mb: 1 }}>
-                      Vista previa no disponible
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#999' }}>
-                      Este tipo de archivo no se puede previsualizar. 
-                      <br />
-                      Usa el botón de descarga para abrirlo.
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCerrarVistaPrevia} color="secondary">
-            Cerrar
-          </Button>
-          <Button 
-            color="primary" 
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={() => handleDescargarArchivo(archivoVistaPrevia)}
-          >
-            Descargar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog de Confirmación para Eliminar */}
-      <Dialog
-        open={openConfirmacion}
-        onClose={cancelarEliminacion}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            m: { xs: 1, sm: 2 }
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: { xs: 1, sm: 2 }, 
-          pb: 1,
-          borderBottom: '1px solid #e0e0e0',
-          flexDirection: { xs: 'column', sm: 'row' },
-          textAlign: { xs: 'center', sm: 'left' }
-        }}>
-          <WarningIcon sx={{ color: '#f44336', fontSize: { xs: 24, sm: 28 } }} />
-          <Box>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontWeight: 600, 
-                color: '#333',
-                fontSize: { xs: '1rem', sm: '1.25rem' }
-              }}
-            >
-              Confirmar Eliminación
-            </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: '#666', 
-                mt: 0.5,
-                fontSize: { xs: '0.8rem', sm: '0.875rem' }
-              }}
-            >
-              Esta acción no se puede deshacer
-            </Typography>
-          </Box>
-        </DialogTitle>
-        
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, pb: 2 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'flex-start', 
-            gap: { xs: 1, sm: 2 }, 
-            p: { xs: 1.5, sm: 2 }, 
-            backgroundColor: '#f8f9fa', 
-            borderRadius: 2, 
-            border: '1px solid #e0e0e0',
-            flexDirection: { xs: 'column', sm: 'row' }
-          }}>
-            <DescriptionIcon sx={{ color: '#1976d2', fontSize: { xs: 24, sm: 32 } }} />
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography 
-                variant="subtitle1" 
-                sx={{ 
-                  fontWeight: 600, 
-                  color: '#333', 
-                  mb: 0.5,
-                  fontSize: { xs: '0.9rem', sm: '1rem' },
-                  wordBreak: 'break-word'
-                }}
-              >
-                {archivoAEliminar?.nombreOriginal}
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: '#666', 
-                  mb: 1,
-                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                  wordBreak: 'break-word',
-                  whiteSpace: 'pre-line'
-                }}
-              >
-                {formatearTexto(archivoAEliminar?.descripcion)}
-              </Typography>
-              <Stack 
-                direction={{ xs: 'column', sm: 'row' }} 
-                spacing={1}
-                sx={{ 
-                  flexWrap: 'wrap',
-                  gap: 0.5
-                }}
-              >
-                <Chip 
-                  label={archivoAEliminar?.tipoArchivo?.nombre || 'Sin tipo'} 
-                  size="small" 
-                  color="primary" 
-                  variant="outlined"
-                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+      {openVistaPrevia && archivoVistaPrevia && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 truncate">Vista Previa - {archivoVistaPrevia.nombreOriginal}</h3>
+              <button onClick={handleCerrarVistaPrevia} className="p-1 hover:bg-gray-100 rounded-lg transition-all">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6 bg-gray-50">
+              {esImagen(archivoVistaPrevia.tipoMime) && (
+                <div className="flex items-center justify-center h-full">
+                  <img
+                    src={`${API_BASE_URL.replace('/backend_api', '')}/${archivoVistaPrevia.rutaArchivo}`}
+                    alt={archivoVistaPrevia.nombreOriginal}
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg cursor-zoom-in hover:scale-105 transition-transform"
+                    onClick={(e) => {
+                      if (e.target.requestFullscreen) {
+                        e.target.requestFullscreen();
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              {esPDF(archivoVistaPrevia.tipoMime) && (
+                <iframe
+                  src={`${API_BASE_URL.replace('/backend_api', '')}/${archivoVistaPrevia.rutaArchivo}#toolbar=1&navpanes=1&scrollbar=1`}
+                  className="w-full h-full rounded-lg border-0 shadow-lg"
+                  title={archivoVistaPrevia.nombreOriginal}
                 />
-                <Chip 
-                  label={formatearTamano(archivoAEliminar?.tamano || 0)} 
-                  size="small" 
-                  color="default" 
-                  variant="outlined"
-                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+              )}
+              {(esWord(archivoVistaPrevia.tipoMime) || esExcel(archivoVistaPrevia.tipoMime) || esPowerPoint(archivoVistaPrevia.tipoMime)) && (
+                <div className="w-full h-full flex flex-col">
+                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                    <FileText className="w-20 h-20 text-blue-500 mb-4" />
+                    <p className="text-lg font-semibold text-gray-700 mb-2">
+                      {esWord(archivoVistaPrevia.tipoMime) && 'Documento de Word'}
+                      {esExcel(archivoVistaPrevia.tipoMime) && 'Hoja de Cálculo Excel'}
+                      {esPowerPoint(archivoVistaPrevia.tipoMime) && 'Presentación PowerPoint'}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-4 max-w-md">
+                      Los archivos de Office requieren aplicaciones especiales para visualizarse correctamente.
+                      Descarga el archivo para abrirlo con Microsoft Office o aplicaciones compatibles.
+                    </p>
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-w-md mb-4">
+                      <p className="text-xs text-gray-500 mb-2">
+                        <strong>Nombre:</strong> {archivoVistaPrevia.nombreOriginal}
+                      </p>
+                      <p className="text-xs text-gray-500 mb-2">
+                        <strong>Tipo:</strong> {
+                          esWord(archivoVistaPrevia.tipoMime) ? 'Microsoft Word' :
+                          esExcel(archivoVistaPrevia.tipoMime) ? 'Microsoft Excel' :
+                          'Microsoft PowerPoint'
+                        }
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        <strong>Tamaño:</strong> {formatearTamano(archivoVistaPrevia.tamano)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDescargarArchivo(archivoVistaPrevia)}
+                      className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm"
+                    >
+                      <Download className="w-5 h-5" />
+                      Descargar y Abrir con Office
+                    </button>
+                  </div>
+                </div>
+              )}
+              {esTexto(archivoVistaPrevia.tipoMime) && (
+                <iframe
+                  src={`${API_BASE_URL.replace('/backend_api', '')}/${archivoVistaPrevia.rutaArchivo}`}
+                  className="w-full h-full rounded-lg border-0 shadow-lg bg-white p-4"
+                  title={archivoVistaPrevia.nombreOriginal}
                 />
-              </Stack>
-            </Box>
-          </Box>
-          
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              mt: { xs: 2, sm: 3 }, 
-              textAlign: 'center', 
-              color: '#333',
-              fontSize: { xs: '0.9rem', sm: '1rem' }
-            }}
-          >
-            ¿Estás seguro de que quieres eliminar este archivo?
-          </Typography>
-        </DialogContent>
-        
-        <DialogActions sx={{ 
-          p: { xs: 2, sm: 3 }, 
-          pt: 2, 
-          gap: 1,
-          flexDirection: { xs: 'column', sm: 'row' }
-        }}>
-          <Button 
-            onClick={cancelarEliminacion} 
-            color="inherit"
-            sx={{ 
-              textTransform: 'none',
-              fontWeight: 500,
-              px: { xs: 2, sm: 3 },
-              width: { xs: '100%', sm: 'auto' },
-              order: { xs: 2, sm: 1 }
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={confirmarEliminacion} 
-            color="error" 
-            variant="contained"
-            sx={{ 
-              textTransform: 'none',
-              fontWeight: 500,
-              px: { xs: 2, sm: 3 },
-              width: { xs: '100%', sm: 'auto' },
-              boxShadow: 'none',
-              order: { xs: 1, sm: 2 },
-              '&:hover': {
-                boxShadow: '0 2px 8px rgba(244, 67, 54, 0.3)'
-              }
-            }}
-            startIcon={<DeleteIcon />}
-          >
-            Eliminar Archivo
-          </Button>
-        </DialogActions>
-      </Dialog>
+              )}
+              {!puedeVistaPrevia(archivoVistaPrevia) && (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <FileText className="w-16 h-16 text-gray-300 mb-4" />
+                  <p className="text-lg font-semibold text-gray-700 mb-2">Vista previa no disponible</p>
+                  <p className="text-sm text-gray-500">Este tipo de archivo no se puede previsualizar</p>
+                  <p className="text-xs text-gray-400 mt-2">Puedes descargarlo para verlo en tu dispositivo</p>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+              <button
+                onClick={handleCerrarVistaPrevia}
+                className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => handleDescargarArchivo(archivoVistaPrevia)}
+                className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                Descargar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Snackbar para notificaciones */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={cerrarNotificacion}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ 
-          mt: { xs: 6, sm: 8 },
-          mx: { xs: 1, sm: 0 }
-        }}
-      >
-        <Alert 
-          onClose={cerrarNotificacion} 
-          severity={snackbar.severity} 
-          sx={{ 
-            width: { xs: '100%', sm: 'auto' },
-            minWidth: { xs: 'auto', sm: 300 },
-            borderRadius: 2,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            '& .MuiAlert-message': {
-              fontWeight: 500,
-              fontSize: { xs: '0.875rem', sm: '1rem' }
-            }
-          }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+      {/* Modal de Confirmación de Eliminación */}
+      {openConfirmacion && archivoAEliminar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Confirmar Eliminación</h3>
+                  <p className="text-sm text-gray-500 mt-1">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{archivoAEliminar.nombreOriginal}</p>
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">{archivoAEliminar.descripcion}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+                        {archivoAEliminar.tipoArchivo?.nombre || 'Sin tipo'}
+                      </span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                        {formatearTamano(archivoAEliminar.tamano)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-gray-700 text-center mt-6">
+                ¿Estás seguro de que quieres eliminar este archivo?
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+              <button
+                onClick={cancelarEliminacion}
+                className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEliminacion}
+                className="flex items-center gap-2 bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-all shadow-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar Archivo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default ArchivosDigitales; 
+export default ArchivosDigitales;

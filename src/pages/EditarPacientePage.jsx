@@ -15,39 +15,43 @@ import { useTerapeutas } from '../hooks/useTerapeutas';
 import { calcularEdad } from '../utils/date';
 import { obtenerNotasEvolucionPorPaciente } from '../services/notaEvolucionService';
 import { ROLES, canManagePatientStatus } from '../constants/roles';
+import { useSidebar } from '../components/Sidebar';
 
 // Skeleton de carga
-const EditarPacienteSkeleton = () => (
-  <div className="min-h-screen bg-gray-50/50">
-    <div className="max-w-[1600px] mx-auto px-8 py-8">
-      <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-6">
-        <div className="flex items-center gap-6">
+const EditarPacienteSkeleton = () => {
+  const { isCollapsed } = useSidebar();
+
+  return (
+  <div className={`min-h-screen bg-gray-50/50 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 lg:pl-8">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 lg:p-8 mb-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <div className="w-20 h-20 rounded-2xl bg-gray-100 animate-pulse"></div>
           <div className="flex-1">
-            <div className="h-7 w-64 bg-gray-100 rounded-lg animate-pulse mb-3"></div>
-            <div className="h-4 w-48 bg-gray-100 rounded animate-pulse"></div>
+            <div className="h-7 w-48 sm:w-64 bg-gray-100 rounded-lg animate-pulse mb-3"></div>
+            <div className="h-4 w-32 sm:w-48 bg-gray-100 rounded animate-pulse"></div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-8">
-          <div className="bg-white rounded-2xl border border-gray-100 p-8">
-            <div className="h-8 w-56 bg-gray-100 rounded-lg animate-pulse mb-8"></div>
-            <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8">
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 lg:p-8">
+            <div className="h-8 w-40 sm:w-56 bg-gray-100 rounded-lg animate-pulse mb-6 sm:mb-8"></div>
+            <div className="space-y-4 sm:space-y-6">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-14 bg-gray-50 rounded-xl animate-pulse"></div>
+                <div key={i} className="h-12 sm:h-14 bg-gray-50 rounded-xl animate-pulse"></div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="col-span-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <div className="h-6 w-40 bg-gray-100 rounded animate-pulse mb-6"></div>
-            <div className="space-y-4">
+        <div className="lg:col-span-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6">
+            <div className="h-6 w-32 sm:w-40 bg-gray-100 rounded animate-pulse mb-4 sm:mb-6"></div>
+            <div className="space-y-3 sm:space-y-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 bg-gray-50 rounded-xl animate-pulse"></div>
+                <div key={i} className="h-24 sm:h-32 bg-gray-50 rounded-xl animate-pulse"></div>
               ))}
             </div>
           </div>
@@ -55,7 +59,8 @@ const EditarPacienteSkeleton = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // Estado colors
 const getEstadoColor = (nombreEstado) => {
@@ -73,6 +78,7 @@ const EditarPacientePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = useCurrentUser();
+  const { isCollapsed } = useSidebar();
   const user_id = user?.id;
   
   const [paciente, setPaciente] = useState(null);
@@ -289,7 +295,7 @@ const EditarPacientePage = () => {
   const estadoColors = getEstadoColor(paciente.estado?.nombre);
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pl-20">
+    <div className={`min-h-screen bg-gray-50/50 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
       {/* Notification */}
       {snackbar.open && (
         <div className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-xl shadow-lg border transform transition-all duration-300 ${
@@ -313,11 +319,11 @@ const EditarPacientePage = () => {
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 lg:pl-8">
         {/* Header minimalista */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 lg:p-8 mb-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 sm:gap-6">
               {/* Avatar */}
               <div className="relative group">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#7B1FA2] to-[#6A1B9A] flex items-center justify-center text-white text-xl font-bold shadow-sm">
@@ -338,18 +344,18 @@ const EditarPacientePage = () => {
               </div>
 
               {/* Información */}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1.5">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 break-words line-clamp-2">
                   {paciente.nombres} {paciente.apellido_paterno} {paciente.apellido_materno}
                 </h1>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
                   <span>{edad}</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                  <span>{paciente.numero_documento}</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-300 hidden sm:block"></span>
+                  <span className="hidden sm:inline">{paciente.numero_documento}</span>
                   {paciente.created_at && (
                     <>
-                      <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                      <span className="flex items-center gap-1.5 text-gray-400">
+                      <span className="w-1 h-1 rounded-full bg-gray-300 hidden sm:block"></span>
+                      <span className="hidden md:flex items-center gap-1.5 text-gray-400">
                         <Clock className="w-3.5 h-3.5" />
                         {new Date(paciente.created_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
@@ -363,9 +369,9 @@ const EditarPacientePage = () => {
             <button
               onClick={canManagePatientStatus(user) ? (e) => setAnchorEstado(e.currentTarget) : undefined}
               disabled={!canManagePatientStatus(user)}
-              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl ${estadoColors.bg} ${
+              className={`flex items-center gap-2.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl ${estadoColors.bg} ${
                 canManagePatientStatus(user) ? 'cursor-pointer hover:shadow-sm transition-all' : 'cursor-default'
-              }`}
+              } w-full sm:w-auto justify-center sm:justify-start`}
             >
               <div className={`w-2 h-2 rounded-full ${estadoColors.dot}`}></div>
               <span className={`text-sm font-semibold ${estadoColors.text}`}>
@@ -378,34 +384,36 @@ const EditarPacientePage = () => {
           </div>
 
           {/* Tabs minimalistas */}
-          <div className="flex gap-1 mt-8 pt-6 border-t border-gray-100">
+          <div className="flex flex-wrap gap-1 sm:gap-2 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">
             <button
               onClick={() => setTabSeleccionado('filiacion')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 tabSeleccionado === 'filiacion'
                   ? 'bg-[#7B1FA2] text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
               <User className="w-4 h-4" />
-              Filiación
+              <span className="hidden sm:inline">Filiación</span>
+              <span className="sm:hidden">Datos</span>
             </button>
 
             <button
               onClick={() => setTabSeleccionado('historia')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 tabSeleccionado === 'historia'
                   ? 'bg-[#7B1FA2] text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
               <Heart className="w-4 h-4" />
-              Historia Clínica
+              <span className="hidden sm:inline">Historia Clínica</span>
+              <span className="sm:hidden">Historia</span>
             </button>
 
             <button
               onClick={() => setTabSeleccionado('archivos')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 tabSeleccionado === 'archivos'
                   ? 'bg-[#7B1FA2] text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -418,9 +426,9 @@ const EditarPacientePage = () => {
         </div>
 
         {/* Contenido */}
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Área principal */}
-          <div className="col-span-8">
+          <div className="lg:col-span-8">
             {tabSeleccionado === 'filiacion' && (
               <FiliacionView
                 paciente={paciente}
@@ -442,7 +450,7 @@ const EditarPacientePage = () => {
           </div>
 
           {/* Sidebar - Notas */}
-          <div className="col-span-4">
+          <div className="lg:col-span-4">
             <NotasEvolucion
               notas={comentarios}
               setNotas={setComentarios}
