@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { blogMetadata, getBlogsByCategory } from '../data/blogMetadata';
+import { initializePageScripts } from '../utils/initScripts';
 
 export default function BlogPage() {
   const [categoriaActiva, setCategoriaActiva] = useState('todos');
 
   useEffect(() => {
+    initializePageScripts();
     window.scrollTo(0, 0);
   }, []);
 
@@ -53,23 +56,8 @@ export default function BlogPage() {
     }
   ];
 
-  const blogPosts = [
-    {
-      id: 1,
-      slug: 'cushuro-superalimento-peruano-ninos-neurodivergentes',
-      title: 'Cushuro: Un superalimento peruano ideal para niños neurodivergentes desde el primer año',
-      excerpt: 'El cushuro, también conocido como llullucha, es una alga andina que crece en lagunas de altura. Su textura suave, fresca y gelatinosa lo convierte en un alimento muy interesante para niños neurodivergentes.',
-      image: '/assets/img/blog/cuch.png',
-      date: '15 Enero 2025',
-      category: 'nutricion',
-      categoryName: 'Nutrición',
-      readTime: '8 min lectura'
-    }
-  ];
-
-  const postsFiltrados = categoriaActiva === 'todos' 
-    ? blogPosts 
-    : blogPosts.filter(post => post.category === categoriaActiva);
+  // Obtener posts filtrados por categoría
+  const postsFiltrados = getBlogsByCategory(categoriaActiva);
 
   return (
     <main className="main">
@@ -77,7 +65,7 @@ export default function BlogPage() {
       <section id="hero" className="hero section" style={{ paddingTop: '140px', paddingBottom: '80px', background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)' }}>
         <div className="container">
           <div className="row align-items-center">
-            <div className="col-lg-7">
+            <div className="col-lg-7" data-aos="fade-right">
               <div className="company-badge mb-4" style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -137,7 +125,7 @@ export default function BlogPage() {
               </div>
             </div>
 
-            <div className="col-lg-5">
+            <div className="col-lg-5" data-aos="fade-left" data-aos-delay="100">
               <div className="position-relative" style={{
                 background: 'white',
                 padding: '2.5rem',
@@ -229,11 +217,11 @@ export default function BlogPage() {
         <div className="container">
           <div className="row">
             <div className="col-12">
-              <h3 className="text-center mb-4" style={{ color: '#2d465e', fontWeight: '700', fontSize: '1.5rem' }}>
+              <h3 className="text-center mb-4" style={{ color: '#2d465e', fontWeight: '700', fontSize: '1.5rem' }} data-aos="fade-up">
                 Explora por Categoría
               </h3>
-              <div className="categories-filter">
-                {categoriasBlog.map((categoria) => (
+              <div className="categories-filter" data-aos="fade-up" data-aos-delay="100">
+                {categoriasBlog.map((categoria, index) => (
                   <button
                     key={categoria.id}
                     onClick={() => setCategoriaActiva(categoria.id)}
@@ -241,15 +229,17 @@ export default function BlogPage() {
                     style={{
                       '--category-color': categoria.color
                     }}
+                    data-aos="zoom-in"
+                    data-aos-delay={100 + (index * 50)}
                   >
                     <i className={`bi ${categoria.icon} me-2`}></i>
                     {categoria.nombre}
                     {categoria.id === 'todos' && (
-                      <span className="badge-count">{blogPosts.length}</span>
+                      <span className="badge-count">{blogMetadata.length}</span>
                     )}
                     {categoria.id !== 'todos' && (
                       <span className="badge-count">
-                        {blogPosts.filter(post => post.category === categoria.id).length}
+                        {blogMetadata.filter(post => post.category === categoria.id).length}
                       </span>
                     )}
                   </button>
@@ -265,7 +255,7 @@ export default function BlogPage() {
         <div className="container">
           <div className="row">
             <div className="col-lg-12">
-              <div className="section-header text-center mb-5">
+              <div className="section-header text-center mb-5" data-aos="fade-up">
                 <h2 style={{ color: '#2d465e' }}>
                   {categoriaActiva === 'todos' 
                     ? 'Todos los Artículos' 
@@ -281,7 +271,7 @@ export default function BlogPage() {
           <div className="row gy-4">
             {postsFiltrados.length > 0 ? (
               postsFiltrados.map((post, index) => (
-                <div className="col-lg-4 col-md-6" key={post.id}>
+                <div className="col-lg-4 col-md-6" key={post.id} data-aos="fade-up" data-aos-delay={index * 100}>
                   <article className="blog-card">
                     <div className="blog-card-img">
                       <img
@@ -375,8 +365,8 @@ export default function BlogPage() {
         }
 
         .category-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+          transform: translateY(-3px) scale(1.05);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
           border-color: var(--category-color);
           color: var(--category-color);
         }
@@ -422,8 +412,8 @@ export default function BlogPage() {
         }
 
         .blog-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 40px rgba(194, 99, 249, 0.15);
+          transform: translateY(-12px) scale(1.02);
+          box-shadow: 0 16px 48px rgba(194, 99, 249, 0.2);
         }
 
         .blog-card-img {
@@ -442,7 +432,7 @@ export default function BlogPage() {
         }
 
         .blog-card:hover .blog-card-img img {
-          transform: scale(1.1);
+          transform: scale(1.15) rotate(1deg);
         }
 
         .blog-card-category {
