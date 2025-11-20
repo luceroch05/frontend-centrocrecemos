@@ -475,7 +475,7 @@ export default function HomePage() {
           }
         })
       }} />
-      <div className="swiper-wrapper align-items-center" style={{ marginBottom: '50px' }}>
+          <div className="swiper-wrapper align-items-center" style={{ marginBottom: '50px' }}>
         {[
           { img: '/assets/img/index/Logo alianzas.png', name: 'Vaxa - Desarrollo Web e Historias Clinicas' },
           { img: '/assets/img/index/san_marcos.png', name: 'Universidad Mayor de San Marcos' },
@@ -490,15 +490,28 @@ export default function HomePage() {
           { img: '/assets/img/index/fisioestudio360.png', name: 'Fisioestudio 360' },
           { img: '/assets/img/index/UCH.png', name: 'Universidad de Ciencias y Humanidades' },
           { img: '/assets/img/index/sos.png', name: 'Aldeas Infantiles Sos' }
-
         ].map((ally, index) => (
-          <div key={index} className="swiper-slide text-center" style={{ padding: '20px 10px' }}>
+          <div 
+            key={index} 
+            className="swiper-slide text-center" 
+            style={{ 
+              padding: '20px 10px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
             <div style={{ 
               height: '180px', 
+              width: '250px',
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              marginBottom: '15px'
+              marginBottom: '15px',
+              overflow: 'hidden',
+              borderRadius: '20px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)'
             }}>
               <img 
                 src={ally.img} 
@@ -506,19 +519,36 @@ export default function HomePage() {
                 alt={ally.name} 
                 style={{ 
                   maxHeight: '180px', 
-                  maxWidth: '280px',
+                  maxWidth: '250px',
                   minHeight: '120px',
                   objectFit: 'contain',
                   width: 'auto',
-                  height: 'auto'
+                  height: 'auto',
+                  borderRadius: '20px'
                 }} 
               />
             </div>
-            <h6 className="mt-2" style={{ fontSize: '0.9rem', lineHeight: '1.3' }}>{ally.name}</h6>
+            <h6 
+              className="mt-2" 
+              style={{ 
+                fontSize: '0.9rem', 
+                lineHeight: '1.3',
+                margin: '0',
+                padding: '0 5px'
+              }}
+            >
+              {ally.name}
+            </h6>
           </div>
         ))}
       </div>
-      <div className="swiper-pagination"></div>
+      <div  className="mt-2" 
+        style={{ 
+          fontSize: '0.9rem', 
+          lineHeight: '1.3',
+          textAlign: 'center',
+          marginTop: 'auto'
+        }}></div>
     </div>
   </div>
 </section>
