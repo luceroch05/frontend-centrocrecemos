@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   UserPlus, Edit2, Power, Check, X, Search, Filter,
   Mail, Phone, MapPin, User, Users, Briefcase, AlertCircle,
-  ChevronRight, Shield, Calendar, Building, Trash2
+  ChevronRight, Shield, Calendar, Building, Trash2, Eye, Shirt
 } from 'lucide-react';
 import { getTrabajadores, crearTrabajador, getRoles, getEspecialidades, activarTrabajador, desactivarTrabajador, updateTrabajador } from '../services/trabajadorService';
 
@@ -18,7 +18,9 @@ const Usuarios = () => {
   // Modales
   const [modalNuevo, setModalNuevo] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
+  const [modalDetalle, setModalDetalle] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState(null);
+  const [usuarioDetalle, setUsuarioDetalle] = useState(null);
   
   // Notificación
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
@@ -71,6 +73,11 @@ const Usuarios = () => {
   const handleEditar = (usuario) => {
     setUsuarioEditando(usuario);
     setModalEditar(true);
+  };
+
+  const handleVerDetalle = (usuario) => {
+    setUsuarioDetalle(usuario);
+    setModalDetalle(true);
   };
 
   // Filtrar usuarios
@@ -188,6 +195,7 @@ const Usuarios = () => {
                 usuario={usuario}
                 onEditar={handleEditar}
                 onToggleActivo={handleToggleActivo}
+                onVerDetalle={handleVerDetalle}
               />
             ))}
           </div>
@@ -225,12 +233,27 @@ const Usuarios = () => {
           onError={(msg) => showNotification(msg, 'error')}
         />
       )}
+
+      {/* Modal Detalle Usuario */}
+      {modalDetalle && usuarioDetalle && (
+        <ModalDetalleUsuario
+          usuario={usuarioDetalle}
+          onClose={() => {
+            setModalDetalle(false);
+            setUsuarioDetalle(null);
+          }}
+          onEditar={() => {
+            setModalDetalle(false);
+            handleEditar(usuarioDetalle);
+          }}
+        />
+      )}
     </div>
   );
 };
 
 // Componente Tarjeta Usuario
-const TarjetaUsuario = ({ usuario, onEditar, onToggleActivo }) => {
+const TarjetaUsuario = ({ usuario, onEditar, onToggleActivo, onVerDetalle }) => {
   const esActivo = usuario.estado === 1 || usuario.estado === true;
   
   return (
@@ -300,13 +323,22 @@ const TarjetaUsuario = ({ usuario, onEditar, onToggleActivo }) => {
       {/* Acciones */}
       <div className="flex gap-2 pt-3 border-t border-gray-100">
         <button
+          onClick={() => onVerDetalle(usuario)}
+          className="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 border border-blue-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-100 transition-all"
+          title="Ver información completa"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          Ver
+        </button>
+
+        <button
           onClick={() => onEditar(usuario)}
           className="flex-1 flex items-center justify-center gap-2 bg-[#A3C644] text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#8FB82D] transition-all"
         >
           <Edit2 className="w-3.5 h-3.5" />
           Editar
         </button>
-        
+
         <button
           onClick={() => onToggleActivo(usuario)}
           className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
@@ -333,7 +365,8 @@ const ModalNuevoUsuario = ({ onClose, roles, especialidades, onSuccess, onError 
     contrasena: '',
     email: '',
     rol: '',
-    especialidad: ''
+    especialidad: '',
+    cargo: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -348,8 +381,8 @@ const ModalNuevoUsuario = ({ onClose, roles, especialidades, onSuccess, onError 
 
   const validarFormulario = () => {
     const erroresNuevos = {};
-    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'contrasena', 'email', 'rol'];
-    
+    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'contrasena', 'email', 'rol', 'cargo'];
+
     // Agregar especialidad si es terapeuta
     const rolObj = roles.find(r => r.nombre === formData.rol);
     if (rolObj?.nombre === 'Terapeuta') {
@@ -393,8 +426,15 @@ const ModalNuevoUsuario = ({ onClose, roles, especialidades, onSuccess, onError 
         password: formData.contrasena,
         email: formData.email,
         rol_id: rolObj?.id,
-        especialidad_id: especialidadObj?.id || null
+        rol: formData.rol, // Agregar rol como string
+        especialidad_id: especialidadObj?.id || null,
+        cargo: formData.cargo
       };
+
+      console.log('=== DATA ENVIADA AL BACKEND ===');
+      console.log('formData.rol:', formData.rol);
+      console.log('rolObj:', rolObj);
+      console.log('data completa:', data);
 
       await crearTrabajador(data);
       onSuccess();
@@ -487,15 +527,27 @@ const ModalNuevoUsuario = ({ onClose, roles, especialidades, onSuccess, onError 
               />
             </div>
 
-            <SelectField
-              label="Rol"
-              name="rol"
-              value={formData.rol}
-              onChange={handleChange}
-              error={errors.rol}
-              options={roles.map(r => r.nombre)}
-              required
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SelectField
+                label="Rol"
+                name="rol"
+                value={formData.rol}
+                onChange={handleChange}
+                error={errors.rol}
+                options={roles.map(r => r.nombre)}
+                required
+              />
+
+              <InputField
+                label="Cargo"
+                name="cargo"
+                value={formData.cargo}
+                onChange={handleChange}
+                error={errors.cargo}
+                placeholder="Ej: Director, Coordinador, etc."
+                required
+              />
+            </div>
 
             {esTerapeuta && (
               <SelectField
@@ -554,6 +606,7 @@ const ModalEditarUsuario = ({ usuario, onClose, roles, especialidades, onSuccess
     rol: usuario.rol?.nombre || '',
     especialidad: usuario.especialidad?.nombre || '',
     contrasena: '',
+    cargo: usuario.cargo || '',
     telefono: usuario.telefono || '',
     direccion: usuario.direccion || '',
     distrito: usuario.distrito || '',
@@ -573,8 +626,8 @@ const ModalEditarUsuario = ({ usuario, onClose, roles, especialidades, onSuccess
 
   const validarFormulario = () => {
     const erroresNuevos = {};
-    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'email', 'rol'];
-    
+    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'email', 'rol', 'cargo'];
+
     const rolObj = roles.find(r => r.nombre === formData.rol);
     if (rolObj?.nombre === 'Terapeuta') {
       camposObligatorios.push('especialidad');
@@ -616,7 +669,9 @@ const ModalEditarUsuario = ({ usuario, onClose, roles, especialidades, onSuccess
         username: formData.usuario,
         email: formData.email,
         rol_id: rolObj?.id,
+        rol: formData.rol, // Agregar rol como string
         especialidad_id: especialidadObj?.id || null,
+        cargo: formData.cargo,
         telefono: formData.telefono || null,
         direccion: formData.direccion || null,
         distrito: formData.distrito || null,
@@ -731,6 +786,15 @@ const ModalEditarUsuario = ({ usuario, onClose, roles, especialidades, onSuccess
                   onChange={handleChange}
                   error={errors.rol}
                   options={roles.map(r => r.nombre)}
+                  required
+                />
+                <InputField
+                  label="Cargo"
+                  name="cargo"
+                  value={formData.cargo}
+                  onChange={handleChange}
+                  error={errors.cargo}
+                  placeholder="Ej: Director, Coordinador, etc."
                   required
                 />
                 {esTerapeuta && (
@@ -901,6 +965,178 @@ const SelectField = ({ label, name, value, onChange, error, options, required })
         {error}
       </p>
     )}
+  </div>
+);
+
+// Modal Detalle Usuario
+const ModalDetalleUsuario = ({ usuario, onClose, onEditar }) => {
+  const esActivo = usuario.estado === 1 || usuario.estado === true;
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-2xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-sm">
+                {usuario.nombres?.[0]}{usuario.apellidos?.[0]}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  {usuario.nombres} {usuario.apellidos}
+                </h2>
+                <p className="text-sm text-white/90">@{usuario.username}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Estado Badge */}
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 ${
+            esActivo
+              ? 'bg-green-50 border-green-300 text-green-700'
+              : 'bg-gray-50 border-gray-300 text-gray-700'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${esActivo ? 'bg-green-500' : 'bg-gray-500'}`} />
+            <span className="text-xs font-bold uppercase tracking-wide">
+              {esActivo ? 'Usuario Activo' : 'Usuario Inactivo'}
+            </span>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {/* Datos Personales */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Datos Personales</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pl-11">
+                <InfoField label="Nombres" value={usuario.nombres} />
+                <InfoField label="Apellidos" value={usuario.apellidos} />
+                <InfoField label="DNI" value={usuario.dni} />
+                <InfoField label="Email" value={usuario.email} />
+              </div>
+            </div>
+
+            {/* Información Profesional */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-purple-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Información Profesional</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pl-11">
+                <InfoField
+                  label="Rol"
+                  value={usuario.rol ? (typeof usuario.rol === 'object' ? usuario.rol.nombre : usuario.rol) : 'N/A'}
+                />
+                <InfoField
+                  label="Cargo"
+                  value={usuario.cargo || 'N/A'}
+                />
+                {usuario.especialidad && (
+                  <InfoField
+                    label="Especialidad"
+                    value={typeof usuario.especialidad === 'object' ? usuario.especialidad.nombre : usuario.especialidad}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Información de Contacto */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-green-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Información de Contacto</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pl-11">
+                <InfoField label="Teléfono Personal" value={usuario.telefono || 'No registrado'} />
+                <InfoField label="Teléfono de Emergencia" value={usuario.telefono_emergencia || 'No registrado'} />
+                <div className="col-span-2">
+                  <InfoField label="Contacto de Emergencia" value={usuario.contacto_emergencia || 'No registrado'} />
+                </div>
+              </div>
+            </div>
+
+            {/* Dirección */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-orange-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Dirección</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pl-11">
+                <div className="col-span-2">
+                  <InfoField label="Dirección Completa" value={usuario.direccion || 'No registrada'} />
+                </div>
+                <InfoField label="Distrito" value={usuario.distrito || 'N/A'} />
+                <InfoField label="Provincia" value={usuario.provincia || 'N/A'} />
+                <InfoField label="Departamento" value={usuario.departamento || 'N/A'} />
+              </div>
+            </div>
+
+            {/* Tallas */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
+                  <Shirt className="w-4 h-4 text-pink-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Tallas</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-4 pl-11">
+                <InfoField label="Polo/Camisa" value={usuario.talla_polo || 'No registrada'} />
+                <InfoField label="Pantalón" value={usuario.talla_pantalon || 'No registrada'} />
+                <InfoField label="Zapatos" value={usuario.talla_zapatos || 'No registrada'} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+          >
+            Cerrar
+          </button>
+          <button
+            onClick={onEditar}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all"
+          >
+            <Edit2 className="w-4 h-4" />
+            Editar Usuario
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Componente InfoField
+const InfoField = ({ label, value }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+      {label}
+    </label>
+    <p className="text-sm text-gray-900 font-medium">{value || 'N/A'}</p>
   </div>
 );
 
