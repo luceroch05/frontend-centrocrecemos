@@ -59,7 +59,7 @@ export default function BlogPage() {
       slug: 'cushuro-superalimento-peruano-ninos-neurodivergentes',
       title: 'Cushuro: Un superalimento peruano ideal para niños neurodivergentes desde el primer año',
       excerpt: 'El cushuro, también conocido como llullucha, es una alga andina que crece en lagunas de altura. Su textura suave, fresca y gelatinosa lo convierte en un alimento muy interesante para niños neurodivergentes.',
-      image: '/assets/img/blog/cushuro-hero.jpg',
+      image: '/assets/img/blog/cuch.png',
       date: '15 Enero 2025',
       category: 'nutricion',
       categoryName: 'Nutrición',
