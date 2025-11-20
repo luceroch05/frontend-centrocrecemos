@@ -1201,40 +1201,21 @@ const FormularioEvaluacionCompleto = ({
   );
 };
 
-// Componente para la vista de resumen MEJORADO Y COMPLETO
+// Componente para la vista de resumen - Estilo EntrevistaPadres
 const VistaResumen = ({ evaluacion }) => {
   const mostrarSiNo = (valor) => valor ? 'Sí' : 'No';
   const mostrarValor = (valor) => valor || 'No especificado';
 
-  const ItemConChip = ({ label, valor, esBooleano = true }) => (
-    <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-gray-200 min-h-16 mb-2">
-      <span className="text-sm font-medium text-gray-700 pr-4 flex-1">{label}</span>
-      {esBooleano ? (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          valor ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-        }`}>
-          {mostrarSiNo(valor)}
-        </span>
-      ) : (
-        <span className="text-sm font-semibold text-[#7B1FA2] text-right flex-0 max-w-[200px] break-words">
-          {mostrarValor(valor)}
-        </span>
-      )}
-    </div>
-  );
-
-  const GrupoItems = ({ titulo, children }) => (
-    <div className="mb-4">
-      <h5 className="text-sm font-semibold text-gray-700 mb-3">{titulo}</h5>
-      <div className="grid grid-cols-1 gap-2">
-        {children}
-      </div>
+  const DataRow = ({ label, value, fullWidth = false }) => (
+    <div className={`py-3 border-b border-gray-100 ${fullWidth ? 'md:col-span-2' : ''}`}>
+      <p className="text-xs font-semibold text-gray-500 uppercase mb-1">{label}</p>
+      <p className="text-sm text-gray-900 whitespace-pre-line">{value || 'No especificado'}</p>
     </div>
   );
 
   const SeccionResumen = ({ titulo, children }) => (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-      <h4 className="text-base font-semibold text-[#7B1FA2] mb-4 pb-2 border-b-2 border-[#7B1FA2]">
+    <div className="mb-6">
+      <h4 className="text-sm font-semibold text-[#7B1FA2] uppercase mb-4 pb-2 border-b-2 border-[#7B1FA2]">
         {titulo}
       </h4>
       {children}
@@ -1242,345 +1223,226 @@ const VistaResumen = ({ evaluacion }) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* DATOS DE LA EVALUACIÓN */}
       <SeccionResumen titulo="DATOS DE LA EVALUACIÓN">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="mb-4">
-            <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Fecha de Evaluación</h5>
-            <p className="text-gray-900">{formatearFechaSinZonaHoraria(evaluacion.fecha_evaluacion)}</p>
-          </div>
-          <div className="mb-4">
-            <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Motivo de Consulta</h5>
-            <p className="text-gray-900 leading-relaxed">{evaluacion.motivo_consulta}</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <DataRow label="Fecha de Evaluación" value={formatearFechaSinZonaHoraria(evaluacion.fecha_evaluacion)} />
+          <DataRow label="Motivo de Consulta" value={evaluacion.motivo_consulta} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 1. DATOS GENERALES */}
       <SeccionResumen titulo="1. DATOS GENERALES">
-        <div className="grid grid-cols-1 gap-4">
-          <ItemConChip label="Tipo de Parto" valor={evaluacion.tipo_parto} esBooleano={false} />
-          <ItemConChip label="Estimulación Temprana" valor={evaluacion.estimulacion_temprana} />
-          <ItemConChip label="Terapias Anteriores" valor={evaluacion.terapias_anteriores} />
-          
-          {evaluacion.observaciones_datos_generales && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Observaciones</h5>
-              <p className="text-gray-900 leading-relaxed">{evaluacion.observaciones_datos_generales}</p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <DataRow label="Tipo de Parto" value={mostrarValor(evaluacion.tipo_parto)} />
+          <DataRow label="Estimulación Temprana" value={mostrarSiNo(evaluacion.estimulacion_temprana)} />
+          <DataRow label="Terapias Anteriores" value={mostrarSiNo(evaluacion.terapias_anteriores)} />
+          <DataRow label="Observaciones" value={evaluacion.observaciones_datos_generales} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 2. OBSERVACIONES GENERALES */}
       <SeccionResumen titulo="2. OBSERVACIONES GENERALES">
-        <div className="grid grid-cols-1 gap-2">
-          <ItemConChip label="Nivel de Alerta" valor={evaluacion.nivel_alerta} esBooleano={false} />
-          <ItemConChip label="Nivel de Atención" valor={evaluacion.nivel_atencion} esBooleano={false} />
-          <ItemConChip label="Nivel de Actividad" valor={evaluacion.nivel_actividad} esBooleano={false} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
+          <DataRow label="Nivel de Alerta" value={evaluacion.nivel_alerta} />
+          <DataRow label="Nivel de Atención" value={evaluacion.nivel_atencion} />
+          <DataRow label="Nivel de Actividad" value={evaluacion.nivel_actividad} />
         </div>
       </SeccionResumen>
 
       {/* 3. COMPONENTE SENSORIAL */}
       <SeccionResumen titulo="3. COMPONENTE SENSORIAL">
-        {/* Visuales */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Visuales</h5>
-          <div className="grid grid-cols-1 gap-2">
-            <ItemConChip label="Usa Lentes" valor={evaluacion.usa_lentes} />
-            <ItemConChip label="Fijación Visual" valor={evaluacion.fijacion_visual} />
-            <ItemConChip label="Contacto Visual" valor={evaluacion.contacto_visual} />
-            <ItemConChip label="Seguimiento Visual" valor={evaluacion.seguimiento_visual} />
+        <div className="grid grid-cols-1 gap-x-6">
+          {/* Visuales */}
+          <div className="py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">VISUALES</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Usa Lentes" value={mostrarSiNo(evaluacion.usa_lentes)} />
+              <DataRow label="Fijación Visual" value={mostrarSiNo(evaluacion.fijacion_visual)} />
+              <DataRow label="Contacto Visual" value={mostrarSiNo(evaluacion.contacto_visual)} />
+              <DataRow label="Seguimiento Visual" value={mostrarSiNo(evaluacion.seguimiento_visual)} />
+              <DataRow label="Observaciones" value={evaluacion.observaciones_visuales} fullWidth />
+            </div>
           </div>
-          {evaluacion.observaciones_visuales && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observaciones:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observaciones_visuales}</p>
-            </div>
-          )}
-        </div>
 
-        {/* Auditivas */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Auditivas</h5>
-          <div className="grid grid-cols-1 gap-2">
-            <ItemConChip label="Reconoce Fuentes Sonoras" valor={evaluacion.reconoce_fuentes_sonoras} />
-            <ItemConChip label="Busca Sonido" valor={evaluacion.busca_sonido} />
+          {/* Auditivas */}
+          <div className="py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">AUDITIVAS</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Reconoce Fuentes Sonoras" value={mostrarSiNo(evaluacion.reconoce_fuentes_sonoras)} />
+              <DataRow label="Busca Sonido" value={mostrarSiNo(evaluacion.busca_sonido)} />
+              <DataRow label="Observaciones" value={evaluacion.observaciones_auditivas} fullWidth />
+            </div>
           </div>
-          {evaluacion.observaciones_auditivas && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observaciones:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observaciones_auditivas}</p>
-            </div>
-          )}
-        </div>
 
-        {/* Táctiles */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Táctiles</h5>
-          <div className="grid grid-cols-1 gap-2">
-            <ItemConChip label="Desórdenes Modulación" valor={evaluacion.desordenes_modulacion} />
-            <ItemConChip label="Hiperresponsividad" valor={evaluacion.hiperresponsividad_tactil} />
-            <ItemConChip label="Hiporresponsividad" valor={evaluacion.hiporresponsividad_tactil} />
+          {/* Táctiles */}
+          <div className="py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">TÁCTILES</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Desórdenes Modulación" value={mostrarSiNo(evaluacion.desordenes_modulacion)} />
+              <DataRow label="Hiperresponsividad" value={mostrarSiNo(evaluacion.hiperresponsividad_tactil)} />
+              <DataRow label="Hiporresponsividad" value={mostrarSiNo(evaluacion.hiporresponsividad_tactil)} />
+              <DataRow label="Observaciones" value={evaluacion.observaciones_tactiles} fullWidth />
+            </div>
           </div>
-          {evaluacion.observaciones_tactiles && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observaciones:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observaciones_tactiles}</p>
-            </div>
-          )}
-        </div>
 
-        {/* Gustativos */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Gustativos</h5>
-          <ItemConChip label="Selectividad en Comidas" valor={evaluacion.selectividad_comidas} />
-          {evaluacion.observaciones_gustativos && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observaciones:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observaciones_gustativos}</p>
+          {/* Gustativos */}
+          <div className="py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">GUSTATIVOS</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Selectividad en Comidas" value={mostrarSiNo(evaluacion.selectividad_comidas)} />
+              <DataRow label="Observaciones" value={evaluacion.observaciones_gustativos} fullWidth />
             </div>
-          )}
-        </div>
-
-        {/* Propioceptivo */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Propioceptivo</h5>
-          <div className="grid grid-cols-1 gap-2">
-            <ItemConChip label="Hiperresponsividad" valor={evaluacion.hiperresponsividad_propioceptivo} />
-            <ItemConChip label="Hiporresponsividad" valor={evaluacion.hiporresponsividad_propioceptivo} />
           </div>
-          {evaluacion.observaciones_propioceptivo && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observaciones:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observaciones_propioceptivo}</p>
-            </div>
-          )}
-        </div>
 
-        {/* Vestibular */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Vestibular</h5>
-          <div className="grid grid-cols-1 gap-2">
-            <ItemConChip label="Inseguridad Gravitacional" valor={evaluacion.inseguridad_gravitacional} />
-            <ItemConChip label="Intolerancia Movimiento" valor={evaluacion.intolerancia_movimiento} />
-            <ItemConChip label="Hiporrespuesta Movimiento" valor={evaluacion.hiporrespuesta_movimiento} />
-          </div>
-          {evaluacion.observaciones_vestibular && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observaciones:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observaciones_vestibular}</p>
+          {/* Propioceptivo */}
+          <div className="py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">PROPIOCEPTIVO</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Hiperresponsividad" value={mostrarSiNo(evaluacion.hiperresponsividad_propioceptivo)} />
+              <DataRow label="Hiporresponsividad" value={mostrarSiNo(evaluacion.hiporresponsividad_propioceptivo)} />
+              <DataRow label="Observaciones" value={evaluacion.observaciones_propioceptivo} fullWidth />
             </div>
-          )}
+          </div>
+
+          {/* Vestibular */}
+          <div className="py-3">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">VESTIBULAR</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Inseguridad Gravitacional" value={mostrarSiNo(evaluacion.inseguridad_gravitacional)} />
+              <DataRow label="Intolerancia Movimiento" value={mostrarSiNo(evaluacion.intolerancia_movimiento)} />
+              <DataRow label="Hiporrespuesta Movimiento" value={mostrarSiNo(evaluacion.hiporrespuesta_movimiento)} />
+              <DataRow label="Observaciones" value={evaluacion.observaciones_vestibular} fullWidth />
+            </div>
+          </div>
         </div>
       </SeccionResumen>
 
       {/* 4. COMPONENTE MOTOR */}
       <SeccionResumen titulo="4. COMPONENTE MOTOR">
-        <div className="grid grid-cols-1 gap-2">
-          <ItemConChip label="Fuerza Muscular" valor={evaluacion.fuerza_muscular} esBooleano={false} />
-          <ItemConChip label="Rango Articular" valor={evaluacion.rango_articular} esBooleano={false} />
-          <ItemConChip label="Dominación Manual" valor={evaluacion.dominacion_manual} esBooleano={false} />
-          <ItemConChip label="Coordinación Bimanual" valor={evaluacion.coordinacion_bimanual} esBooleano={false} />
-          <ItemConChip label="Cruce Línea Media" valor={evaluacion.cruce_linea_media} />
-
-          {evaluacion.observaciones_motor && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Observaciones</h5>
-              <p className="text-gray-900 leading-relaxed">{evaluacion.observaciones_motor}</p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <DataRow label="Fuerza Muscular" value={evaluacion.fuerza_muscular} />
+          <DataRow label="Rango Articular" value={evaluacion.rango_articular} />
+          <DataRow label="Coordinación Bimanual" value={evaluacion.coordinacion_bimanual} />
+          <DataRow label="Dominación Manual" value={evaluacion.dominacion_manual} />
+          <DataRow label="Cruce Línea Media" value={mostrarSiNo(evaluacion.cruce_linea_media)} />
+          <DataRow label="Observaciones" value={evaluacion.observaciones_motor} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 5. COMPONENTE PSICOLÓGICO */}
       <SeccionResumen titulo="5. COMPONENTE PSICOLÓGICO">
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Intereses</h5>
-          <p className="text-gray-900 leading-relaxed">{mostrarValor(evaluacion.intereses)}</p>
+        <div className="grid grid-cols-1 gap-x-6">
+          <DataRow label="Intereses" value={evaluacion.intereses} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 6. COMPONENTE COGNITIVO */}
       <SeccionResumen titulo="6. COMPONENTE COGNITIVO">
-        <div className="grid grid-cols-1 gap-2">
-          <ItemConChip label="Atención-Concentración" valor={evaluacion.atencion_concentracion} esBooleano={false} />
-          <ItemConChip label="Seguimiento de Órdenes" valor={evaluacion.seguimiento_ordenes} esBooleano={false} />
-
-          {evaluacion.otros_cognitivo && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Otros</h5>
-              <p className="text-gray-900 leading-relaxed">{evaluacion.otros_cognitivo}</p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <DataRow label="Atención-Concentración" value={evaluacion.atencion_concentracion} />
+          <DataRow label="Seguimiento de Órdenes" value={evaluacion.seguimiento_ordenes} />
+          <DataRow label="Otros" value={evaluacion.otros_cognitivo} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 7. AVD */}
       <SeccionResumen titulo="7. ACTIVIDADES DE VIDA DIARIA">
-        {/* Alimentación */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Alimentación</h5>
-          <ItemConChip label="Nivel de Independencia" valor={evaluacion.alimentacion_independiente} esBooleano={false} />
-          {evaluacion.observacion_alimentacion && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observación:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observacion_alimentacion}</p>
+        <div className="grid grid-cols-1 gap-x-6">
+          {/* Alimentación */}
+          <div className="py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">ALIMENTACIÓN</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Nivel de Independencia" value={evaluacion.alimentacion_independiente} />
+              <DataRow label="Observación" value={evaluacion.observacion_alimentacion} fullWidth />
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Vestido */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Vestido</h5>
-          
-          <GrupoItems titulo="Desvestido">
-            <ItemConChip label="Prenda Superior" valor={evaluacion.desvestido_superior} />
-            <ItemConChip label="Prenda Inferior" valor={evaluacion.desvestido_inferior} />
-          </GrupoItems>
-
-          <GrupoItems titulo="Vestido">
-            <ItemConChip label="Prenda Superior" valor={evaluacion.vestido_superior} />
-            <ItemConChip label="Prenda Inferior" valor={evaluacion.vestido_inferior} />
-          </GrupoItems>
-
-          <GrupoItems titulo="Manejo de Accesorios">
-            <ItemConChip label="Botones" valor={evaluacion.manejo_botones} />
-            <ItemConChip label="Cierre" valor={evaluacion.manejo_cierre} />
-            <ItemConChip label="Lazos" valor={evaluacion.manejo_lazos} />
-          </GrupoItems>
-
-          {evaluacion.observacion_vestido && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observación:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observacion_vestido}</p>
+          {/* Vestido */}
+          <div className="py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">VESTIDO</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Desvestido Prenda Superior" value={mostrarSiNo(evaluacion.desvestido_superior)} />
+              <DataRow label="Desvestido Prenda Inferior" value={mostrarSiNo(evaluacion.desvestido_inferior)} />
+              <DataRow label="Vestido Prenda Superior" value={mostrarSiNo(evaluacion.vestido_superior)} />
+              <DataRow label="Vestido Prenda Inferior" value={mostrarSiNo(evaluacion.vestido_inferior)} />
+              <DataRow label="Manejo de Botones" value={mostrarSiNo(evaluacion.manejo_botones)} />
+              <DataRow label="Manejo de Cierre" value={mostrarSiNo(evaluacion.manejo_cierre)} />
+              <DataRow label="Manejo de Lazos" value={mostrarSiNo(evaluacion.manejo_lazos)} />
+              <DataRow label="Observación" value={evaluacion.observacion_vestido} fullWidth />
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Higiene */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Higiene</h5>
-          
-          <GrupoItems titulo="Control de Esfínteres">
-            <ItemConChip label="Esfínter Vesical" valor={evaluacion.esfinter_vesical} />
-            <ItemConChip label="Esfínter Anal" valor={evaluacion.esfinter_anal} />
-          </GrupoItems>
-
-          <GrupoItems titulo="Higiene Personal">
-            <ItemConChip label="Lavado de Manos" valor={evaluacion.lavado_manos} />
-            <ItemConChip label="Lavado de Cara" valor={evaluacion.lavado_cara} />
-            <ItemConChip label="Cepillado de Dientes" valor={evaluacion.cepillado_dientes} />
-          </GrupoItems>
-
-          {evaluacion.observacion_higiene && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observación:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observacion_higiene}</p>
+          {/* Higiene */}
+          <div className="py-3">
+            <p className="text-xs font-semibold text-[#7B1FA2] uppercase mb-2">HIGIENE</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <DataRow label="Esfínter Vesical" value={mostrarSiNo(evaluacion.esfinter_vesical)} />
+              <DataRow label="Esfínter Anal" value={mostrarSiNo(evaluacion.esfinter_anal)} />
+              <DataRow label="Lavado de Manos" value={mostrarSiNo(evaluacion.lavado_manos)} />
+              <DataRow label="Lavado de Cara" value={mostrarSiNo(evaluacion.lavado_cara)} />
+              <DataRow label="Cepillado de Dientes" value={mostrarSiNo(evaluacion.cepillado_dientes)} />
+              <DataRow label="Observación" value={evaluacion.observacion_higiene} fullWidth />
             </div>
-          )}
+          </div>
         </div>
       </SeccionResumen>
 
       {/* 8. ÁREA ESCOLAR */}
       <SeccionResumen titulo="8. ÁREA ESCOLAR">
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-gray-700 mb-4">Prensión en Lápiz</h5>
-          
-          <div className="grid grid-cols-1 gap-2 mb-4">
-            <ItemConChip label="Imitado" valor={evaluacion.prension_lapiz_imitado} />
-            <ItemConChip label="Copiado" valor={evaluacion.prension_lapiz_copiado} />
-            <ItemConChip label="Coloreado" valor={evaluacion.prension_lapiz_coloreado} />
-            <ItemConChip label="Recortado" valor={evaluacion.recortado} />
-          </div>
-          
-          <ItemConChip label="Prensión Tijeras" valor={evaluacion.prension_tijeras} esBooleano={false} />
-          
-          {evaluacion.observacion_escolar && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-200">
-              <h6 className="text-xs font-semibold text-[#7B1FA2] mb-1">Observación:</h6>
-              <p className="text-sm text-gray-900">{evaluacion.observacion_escolar}</p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <DataRow label="Prensión Lápiz - Imitado" value={mostrarSiNo(evaluacion.prension_lapiz_imitado)} />
+          <DataRow label="Prensión Lápiz - Copiado" value={mostrarSiNo(evaluacion.prension_lapiz_copiado)} />
+          <DataRow label="Prensión Lápiz - Coloreado" value={mostrarSiNo(evaluacion.prension_lapiz_coloreado)} />
+          <DataRow label="Recortado" value={mostrarSiNo(evaluacion.recortado)} />
+          <DataRow label="Prensión en Tijeras" value={evaluacion.prension_tijeras} />
+          <DataRow label="Observación" value={evaluacion.observacion_escolar} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 9. ÁREA DEL DESEMPEÑO - JUEGO */}
       <SeccionResumen titulo="9. ÁREA DEL DESEMPEÑO - JUEGO">
-        <div className="grid grid-cols-1 gap-4">
-          <ItemConChip label="Juguetes Preferidos" valor={evaluacion.juguetes_preferidos} esBooleano={false} />
-
-          <div className="p-4 bg-gray-50 rounded-lg mb-4">
-            <h5 className="text-sm font-semibold text-gray-700 mb-3">Tipo de Juego</h5>
-            <div className="space-y-2">
-              {evaluacion.tipo_juego_sensoriomotor && (
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-[#7B1FA2] rounded-full mr-3"></div>
-                  <span className="text-sm text-gray-900">Sensoriomotor</span>
-                </div>
-              )}
-              {evaluacion.tipo_juego_simbolico && (
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-[#7B1FA2] rounded-full mr-3"></div>
-                  <span className="text-sm text-gray-900">Simbólico</span>
-                </div>
-              )}
-              {evaluacion.tipo_juego_otro && (
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-[#7B1FA2] rounded-full mr-3"></div>
-                  <span className="text-sm text-gray-900">Otro</span>
-                </div>
-              )}
-              {!evaluacion.tipo_juego_sensoriomotor && !evaluacion.tipo_juego_simbolico && !evaluacion.tipo_juego_otro && (
-                <span className="text-sm text-gray-500 italic">No especificado</span>
-              )}
-            </div>
-          </div>
-
-          <ItemConChip label="Lugar Preferido para Jugar" valor={evaluacion.lugar_preferido_jugar} esBooleano={false} />
-
-          {evaluacion.observacion_juego && (
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Observación</h5>
-              <p className="text-gray-900 leading-relaxed">{evaluacion.observacion_juego}</p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <DataRow label="Juguetes Preferidos" value={evaluacion.juguetes_preferidos} />
+          <DataRow
+            label="Tipo de Juego"
+            value={[
+              evaluacion.tipo_juego_sensoriomotor && 'Sensoriomotor',
+              evaluacion.tipo_juego_simbolico && 'Simbólico',
+              evaluacion.tipo_juego_otro && 'Otro'
+            ].filter(Boolean).join(', ') || 'No especificado'}
+          />
+          <DataRow label="Lugar Preferido para Jugar" value={evaluacion.lugar_preferido_jugar} />
+          <DataRow label="Observación" value={evaluacion.observacion_juego} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 10. COMUNICACIÓN */}
       <SeccionResumen titulo="10. COMUNICACIÓN">
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h5 className="text-sm font-semibold text-[#7B1FA2] mb-2">Lenguaje</h5>
-          <p className="text-gray-900 leading-relaxed">{mostrarValor(evaluacion.lenguaje)}</p>
+        <div className="grid grid-cols-1 gap-x-6">
+          <DataRow label="Lenguaje" value={evaluacion.lenguaje} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 11. CONCLUSIONES */}
       <SeccionResumen titulo="11. CONCLUSIONES">
-        <div className="p-6 bg-gray-50 rounded-lg">
-          <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-            {mostrarValor(evaluacion.conclusiones)}
-          </p>
+        <div className="grid grid-cols-1 gap-x-6">
+          <DataRow label="Conclusiones" value={evaluacion.conclusiones} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 12. SUGERENCIAS */}
       <SeccionResumen titulo="12. SUGERENCIAS">
-        <div className="p-6 bg-gray-50 rounded-lg">
-          <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-            {mostrarValor(evaluacion.sugerencias)}
-          </p>
+        <div className="grid grid-cols-1 gap-x-6">
+          <DataRow label="Sugerencias" value={evaluacion.sugerencias} fullWidth />
         </div>
       </SeccionResumen>
 
       {/* 13. OBJETIVOS INICIALES */}
       <SeccionResumen titulo="13. OBJETIVOS INICIALES">
-        <div className="p-6 bg-gray-50 rounded-lg">
-          <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-            {mostrarValor(evaluacion.objetivos_iniciales)}
-          </p>
+        <div className="grid grid-cols-1 gap-x-6">
+          <DataRow label="Objetivos Iniciales" value={evaluacion.objetivos_iniciales} fullWidth />
         </div>
       </SeccionResumen>
     </div>

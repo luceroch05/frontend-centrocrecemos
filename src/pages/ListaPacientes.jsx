@@ -297,16 +297,14 @@ export const ListaPacientes = () => {
   if (loading) {
     return (
       <div className="tailwind-scope">
-      <Box sx={{ 
-        flexGrow: 1, 
-        p: 3, 
-        backgroundColor: '#f8f9fa', 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        ml: { xs: 0, sm: '72px' },
-        transition: 'margin 0.3s ease'
+      <Box sx={{
+        flexGrow: 1,
+        p: 3,
+        backgroundColor: '#f8f9fa',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <CircularProgress sx={{ color: '#7B1FA2' }} />
       </Box>
@@ -316,17 +314,15 @@ export const ListaPacientes = () => {
 
   if (error && !pacientes.length) {
     return (
-      
-      <Box sx={{ 
-        flexGrow: 1, 
-        p: 3, 
-        backgroundColor: '#f8f9fa', 
+
+      <Box sx={{
+        flexGrow: 1,
+        p: 3,
+        backgroundColor: '#f8f9fa',
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        ml: { xs: 0, sm: '72px' },
-        transition: 'margin 0.3s ease'
+        justifyContent: 'center'
       }}>
         <Typography color="error" variant="h6">{error}</Typography>
       </Box>
@@ -336,18 +332,16 @@ export const ListaPacientes = () => {
   const filtrosActivos = searchParams.distritoId || searchParams.estadoId || searchParams.servicioId || searchParams.numeroDocumento || searchParams.nombreCompleto;
 
   return (
-    <div className="tailwind-scope"> 
-    
-    <Box 
-      component="main" 
-      sx={{ 
-        flexGrow: 1, 
-        p: { xs: 2, md: 4 }, 
-        backgroundColor: '#f8f9fa', 
+    <div className="tailwind-scope">
+
+    <Box
+      component="main"
+      sx={{
+        flexGrow: 1,
+        p: { xs: 2, md: 4 },
+        backgroundColor: '#f8f9fa',
         minHeight: '100vh',
-        ml: { xs: 0, sm: '72px' },
-        pt: { xs: 10, md: 4 },
-        transition: 'margin 0.3s ease'
+        pt: { xs: 10, md: 4 }
       }}
     >
       {/* Header */}

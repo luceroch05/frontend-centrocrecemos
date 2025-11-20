@@ -19,11 +19,9 @@ import { useSidebar } from '../components/Sidebar';
 
 // Skeleton de carga
 const EditarPacienteSkeleton = () => {
-  const { isCollapsed } = useSidebar();
-
   return (
-  <div className={`min-h-screen bg-gray-50/50 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 lg:pl-8">
+  <div className="min-h-screen bg-gray-50/50">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
       <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 lg:p-8 mb-6">
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="w-20 h-20 rounded-2xl bg-gray-100 animate-pulse"></div>
@@ -78,7 +76,6 @@ const EditarPacientePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = useCurrentUser();
-  const { isCollapsed } = useSidebar();
   const user_id = user?.id;
   
   const [paciente, setPaciente] = useState(null);
@@ -295,7 +292,7 @@ const EditarPacientePage = () => {
   const estadoColors = getEstadoColor(paciente.estado?.nombre);
 
   return (
-    <div className={`min-h-screen bg-gray-50/50 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+    <div className="min-h-screen bg-gray-50/50">
       {/* Notification */}
       {snackbar.open && (
         <div className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-xl shadow-lg border transform transition-all duration-300 ${

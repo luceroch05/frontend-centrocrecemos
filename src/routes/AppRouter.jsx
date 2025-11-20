@@ -28,7 +28,7 @@ import { ReportesEvaluaciones } from '../pages/ReportesEvaluaciones';
 import RegistroPacientePage from '../pages/RegistroPacientePage';
 import EditarPacientePage from '../pages/EditarPacientePage';
 import  AdultoEvalPsicolUniverPage  from '../pages/service-adulto/AdultoEvalPsicolUniverPage';
-import Sidebar, { SidebarProvider } from '../components/Sidebar';
+import Sidebar, { SidebarProvider, SidebarContentWrapper } from '../components/Sidebar';
 import Login from '../components/Login';
 import PrivateRoute from '../components/PrivateRoute';
 import Usuarios from '../pages/Usuarios';
@@ -52,37 +52,72 @@ export const AppRouter = () => {
         <Route path="/intranet" element={<Login />} />
         <Route path="/intranet/lista-pacientes" element={
           <PrivateRoute>
-            <><Sidebar /><ListaPacientes /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <ListaPacientes />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
         <Route path="/intranet/reportes-evaluaciones" element={
           <PrivateRoute>
-            <><Sidebar /><ReportesEvaluaciones /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <ReportesEvaluaciones />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
         <Route path="/intranet/usuarios" element={
           <PrivateRoute>
-            <><Sidebar /><Usuarios /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <Usuarios />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
         <Route path="/intranet/mi-perfil" element={
           <PrivateRoute>
-            <><Sidebar /><MiPerfil /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <MiPerfil />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
         <Route path="/intranet/agenda" element={
           <PrivateRoute>
-            <><Sidebar /><Agenda /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <Agenda />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
         <Route path="/intranet/postulaciones" element={
           <PrivateRoute>
-            <><Sidebar /><PostulacionesDashboard /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <PostulacionesDashboard />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
          <Route path="/intranet/archivos-oficiales" element={
           <PrivateRoute>
-            <><Sidebar /><ArchivosOficiales /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <ArchivosOficiales />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
 
@@ -90,7 +125,12 @@ export const AppRouter = () => {
 
         <Route path="/intranet/popup-promocional" element={
           <PrivateRoute>
-            <><Sidebar /><GestionPopup /></>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <GestionPopup />
+              </SidebarContentWrapper>
+            </SidebarProvider>
           </PrivateRoute>
         } />
 
@@ -98,7 +138,9 @@ export const AppRouter = () => {
           <PrivateRoute>
             <SidebarProvider>
               <Sidebar />
-              <EditarPacientePage />
+              <SidebarContentWrapper>
+                <EditarPacientePage />
+              </SidebarContentWrapper>
             </SidebarProvider>
           </PrivateRoute>
         } />
