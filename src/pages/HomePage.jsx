@@ -488,7 +488,9 @@ export default function HomePage() {
           { img: '/assets/img/index/logo-upn-nuevo.png', name: 'Universidad Privada del Norte' },
           { img: '/assets/img/index/logo_PEDIATRIKIS.png', name: 'Pediatriks' },
           { img: '/assets/img/index/fisioestudio360.png', name: 'Fisioestudio 360' },
-          { img: '/assets/img/index/UCH.png', name: 'Universidad de Ciencias y Humanidades' }
+          { img: '/assets/img/index/UCH.png', name: 'Universidad de Ciencias y Humanidades' },
+          { img: '/assets/img/index/sos.png', name: 'Aldeas Infantiles Sos' }
+
         ].map((ally, index) => (
           <div key={index} className="swiper-slide text-center" style={{ padding: '20px 10px' }}>
             <div style={{ 
