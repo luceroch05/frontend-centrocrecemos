@@ -1,310 +1,907 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Stack, Snackbar, Alert } from '@mui/material';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { 
+  UserPlus, Edit2, Power, Check, X, Search, Filter,
+  Mail, Phone, MapPin, User, Users, Briefcase, AlertCircle,
+  ChevronRight, Shield, Calendar, Building, Trash2
+} from 'lucide-react';
 import { getTrabajadores, crearTrabajador, getRoles, getEspecialidades, activarTrabajador, desactivarTrabajador, updateTrabajador } from '../services/trabajadorService';
-import TablaUsuarios from './components/TablaUsuarios';
-import ModalEditarUsuario from './components/ModalEditarUsuario';
-import ModalNuevoUsuario from './components/ModalNuevoUsuario';
 
 const Usuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
-  const [openModal, setOpenModal] = useState(false);
+  const [roles, setRoles] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroRol, setFiltroRol] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
+  
+  // Modales
+  const [modalNuevo, setModalNuevo] = useState(false);
+  const [modalEditar, setModalEditar] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState(null);
-  const [openNuevoModal, setOpenNuevoModal] = useState(false);
-  const [nuevoUsuario, setNuevoUsuario] = useState({
+  
+  // Notificación
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
+      const [trabajadoresData, rolesData, especialidadesData] = await Promise.all([
+        getTrabajadores(),
+        getRoles(),
+        getEspecialidades()
+      ]);
+      setUsuarios(trabajadoresData);
+      setRoles(rolesData);
+      setEspecialidades(especialidadesData);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      showNotification('Error al cargar los datos', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: 'success' });
+    }, 3000);
+  };
+
+  const handleToggleActivo = async (usuario) => {
+    try {
+      if (usuario.estado === 1 || usuario.estado === true) {
+        await desactivarTrabajador(usuario.id);
+        showNotification('Usuario desactivado correctamente', 'success');
+      } else {
+        await activarTrabajador(usuario.id);
+        showNotification('Usuario activado correctamente', 'success');
+      }
+      cargarDatos();
+    } catch (error) {
+      showNotification('Error al cambiar el estado del usuario', 'error');
+    }
+  };
+
+  const handleEditar = (usuario) => {
+    setUsuarioEditando(usuario);
+    setModalEditar(true);
+  };
+
+  // Filtrar usuarios
+  const usuariosFiltrados = usuarios.filter(usuario => {
+    const matchBusqueda = !busqueda || 
+      usuario.nombres?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      usuario.apellidos?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      usuario.dni?.includes(busqueda) ||
+      usuario.email?.toLowerCase().includes(busqueda.toLowerCase());
+    
+    const matchRol = !filtroRol || usuario.rol?.nombre === filtroRol;
+    const matchEstado = !filtroEstado || 
+      (filtroEstado === 'activo' && (usuario.estado === 1 || usuario.estado === true)) ||
+      (filtroEstado === 'inactivo' && (usuario.estado === 0 || usuario.estado === false));
+    
+    return matchBusqueda && matchRol && matchEstado;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-center">
+          <div className="relative w-12 h-12 mx-auto">
+            <div className="absolute inset-0 border-2 border-gray-100 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-[#7B1FA2] rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400 mt-3 text-xs font-medium tracking-wide">Cargando usuarios...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Notification */}
+      {notification.show && (
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg border transform transition-all duration-300 ${
+          notification.type === 'success'
+            ? 'bg-white border-gray-200'
+            : 'bg-white border-red-200'
+        } flex items-center gap-2.5`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${notification.type === 'success' ? 'bg-[#A3C644]' : 'bg-red-500'}`}></div>
+          <span className="text-xs font-medium text-gray-700">{notification.message}</span>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-1.5">Gestión de Usuarios</h1>
+              <p className="text-sm text-gray-500">Administra los usuarios del sistema</p>
+            </div>
+            
+            <button
+              onClick={() => setModalNuevo(true)}
+              className="flex items-center gap-2 bg-[#7B1FA2] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
+            >
+              <UserPlus className="w-4 h-4" />
+              Nuevo Usuario
+            </button>
+          </div>
+
+          {/* Filtros */}
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[300px] relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, DNI o email..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7B1FA2] transition-all"
+              />
+            </div>
+            
+            <select
+              value={filtroRol}
+              onChange={(e) => setFiltroRol(e.target.value)}
+              className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7B1FA2] transition-all bg-white"
+            >
+              <option value="">Todos los roles</option>
+              {roles.map(rol => (
+                <option key={rol.id} value={rol.nombre}>{rol.nombre}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7B1FA2] transition-all bg-white"
+            >
+              <option value="">Todos los estados</option>
+              <option value="activo">Activos</option>
+              <option value="inactivo">Inactivos</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Lista de usuarios */}
+        {usuariosFiltrados.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-gray-200">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#9C27B0] to-[#BA68C8] opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-gray-600" />
+            </div>
+            <p className="text-gray-600 font-medium text-base mb-1">No se encontraron usuarios</p>
+            <p className="text-gray-400 text-sm">Ajusta los filtros de búsqueda</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {usuariosFiltrados.map((usuario) => (
+              <TarjetaUsuario
+                key={usuario.id}
+                usuario={usuario}
+                onEditar={handleEditar}
+                onToggleActivo={handleToggleActivo}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Nuevo Usuario */}
+      {modalNuevo && (
+        <ModalNuevoUsuario
+          onClose={() => setModalNuevo(false)}
+          roles={roles}
+          especialidades={especialidades}
+          onSuccess={() => {
+            cargarDatos();
+            showNotification('Usuario creado correctamente', 'success');
+          }}
+          onError={(msg) => showNotification(msg, 'error')}
+        />
+      )}
+
+      {/* Modal Editar Usuario */}
+      {modalEditar && usuarioEditando && (
+        <ModalEditarUsuario
+          usuario={usuarioEditando}
+          onClose={() => {
+            setModalEditar(false);
+            setUsuarioEditando(null);
+          }}
+          roles={roles}
+          especialidades={especialidades}
+          onSuccess={() => {
+            cargarDatos();
+            showNotification('Usuario actualizado correctamente', 'success');
+          }}
+          onError={(msg) => showNotification(msg, 'error')}
+        />
+      )}
+    </div>
+  );
+};
+
+// Componente Tarjeta Usuario
+const TarjetaUsuario = ({ usuario, onEditar, onToggleActivo }) => {
+  const esActivo = usuario.estado === 1 || usuario.estado === true;
+  
+  return (
+    <div className="group relative bg-white rounded-xl p-4 border border-gray-200 hover:border-[#7B1FA2]/50 hover:shadow-sm transition-all">
+      <div className="flex items-start gap-3 mb-3">
+        {/* Avatar */}
+        <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm transition-all ${
+          esActivo 
+            ? 'bg-gradient-to-br from-[#7B1FA2] to-[#6A1B9A]' 
+            : 'bg-gradient-to-br from-gray-400 to-gray-500'
+        }`}>
+          {usuario.nombres?.[0]}{usuario.apellidos?.[0]}
+        </div>
+        
+        {/* Info principal */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1">
+            {usuario.nombres} {usuario.apellidos}
+          </h3>
+          <div className="flex items-center gap-2 text-xs text-gray-600 mb-1.5">
+            <User className="w-3 h-3 flex-shrink-0 text-blue-500" />
+            <span className="font-medium">@{usuario.username}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <Mail className="w-3 h-3 flex-shrink-0 text-green-500" />
+            <span className="truncate">{usuario.email}</span>
+          </div>
+        </div>
+
+        {/* Estado badge */}
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border flex-shrink-0 ${
+          esActivo 
+            ? 'bg-green-50 border-green-200' 
+            : 'bg-gray-50 border-gray-200'
+        }`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${esActivo ? 'bg-green-500' : 'bg-gray-500'}`} />
+          <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+            esActivo ? 'text-green-700' : 'text-gray-700'
+          }`}>
+            {esActivo ? 'Activo' : 'Inactivo'}
+          </span>
+        </div>
+      </div>
+
+      {/* Info adicional */}
+      <div className="space-y-1.5 mb-3">
+        <div className="flex items-center gap-2 text-xs">
+          <Shield className="w-3 h-3 flex-shrink-0 text-[#7B1FA2]" />
+          <span className="font-medium text-gray-700">{usuario.rol?.nombre}</span>
+        </div>
+        
+        {usuario.especialidad && (
+          <div className="flex items-center gap-2 text-xs">
+            <Briefcase className="w-3 h-3 flex-shrink-0 text-orange-500" />
+            <span className="text-gray-600">{usuario.especialidad.nombre}</span>
+          </div>
+        )}
+
+        {usuario.telefono && (
+          <div className="flex items-center gap-2 text-xs">
+            <Phone className="w-3 h-3 flex-shrink-0 text-blue-500" />
+            <span className="text-gray-600">{usuario.telefono}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Acciones */}
+      <div className="flex gap-2 pt-3 border-t border-gray-100">
+        <button
+          onClick={() => onEditar(usuario)}
+          className="flex-1 flex items-center justify-center gap-2 bg-[#A3C644] text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#8FB82D] transition-all"
+        >
+          <Edit2 className="w-3.5 h-3.5" />
+          Editar
+        </button>
+        
+        <button
+          onClick={() => onToggleActivo(usuario)}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+            esActivo
+              ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+              : 'bg-green-50 text-green-600 border border-green-200 hover:bg-green-100'
+          }`}
+        >
+          <Power className="w-3.5 h-3.5" />
+          {esActivo ? 'Desactivar' : 'Activar'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Modal Nuevo Usuario
+const ModalNuevoUsuario = ({ onClose, roles, especialidades, onSuccess, onError }) => {
+  const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
     dni: '',
     usuario: '',
     contrasena: '',
+    email: '',
     rol: '',
-    especialidad: '',
-    email: ''
+    especialidad: ''
   });
-  const [nuevoUsuarioErrors, setNuevoUsuarioErrors] = useState({});
-  const [nuevoUsuarioLoading, setNuevoUsuarioLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [roles, setRoles] = useState([]);
-  const [especialidades, setEspecialidades] = useState([]);
-  const [usuarioEditandoErrors, setUsuarioEditandoErrors] = useState({});
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const cargarTrabajadores = async () => {
-      try {
-        const data = await getTrabajadores();
-        setUsuarios(data);
-      } catch (error) {
-        setUsuarios([]);
-      }
-    };
-    const cargarRoles = async () => {
-      try {
-        const data = await getRoles();
-        setRoles(data); // Mantener los objetos completos de roles
-      } catch (error) {
-        setRoles([]);
-      }
-    };
-    const cargarEspecialidades = async () => {
-      try {
-        const data = await getEspecialidades();
-        setEspecialidades(data);
-      } catch (error) {
-        setEspecialidades([]);
-      }
-    };
-    cargarTrabajadores();
-    cargarRoles();
-    cargarEspecialidades();
-  }, []);
-
-  const handleToggleActivo = async (id) => {
-    const usuario = usuarios.find(u => u.id === id);
-    try {
-      if (usuario.estado === 1 || usuario.estado === true) {
-        await desactivarTrabajador(id);
-        setSnackbar({ open: true, message: 'Usuario desactivado', severity: 'success' });
-        setUsuarios(usuarios.map(u =>
-          u.id === id ? { ...u, estado: 0 } : u
-        ));
-      } else {
-        await activarTrabajador(id);
-        setSnackbar({ open: true, message: 'Usuario activado', severity: 'success' });
-        setUsuarios(usuarios.map(u =>
-          u.id === id ? { ...u, estado: 1 } : u
-        ));
-      }
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: null });
     }
   };
 
-  // Editar usuario
-  const handleEditar = (usuario) => {
-    // Asegurar que la especialidad se preserve correctamente
-    const usuarioConEspecialidad = {
-      ...usuario,
-      especialidad: usuario.especialidad || null
-    };
-    setUsuarioEditando(usuarioConEspecialidad);
-    setOpenModal(true);
-  };
-  const handleChangeEdit = (e) => {
-    const { name, value } = e.target;
+  const validarFormulario = () => {
+    const erroresNuevos = {};
+    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'contrasena', 'email', 'rol'];
     
-    // Preservar la especialidad actual si existe y no se está modificando
-    const especialidadActual = usuarioEditando?.especialidad;
-    
-    setUsuarioEditando(prev => ({
-      ...prev,
-      [name]: value,
-      // Si no se está modificando la especialidad y existe una especialidad actual, mantenerla
-      ...(name !== 'especialidad' && especialidadActual && { especialidad: especialidadActual })
-    }));
+    // Agregar especialidad si es terapeuta
+    const rolObj = roles.find(r => r.nombre === formData.rol);
+    if (rolObj?.nombre === 'Terapeuta') {
+      camposObligatorios.push('especialidad');
+    }
+
+    camposObligatorios.forEach(campo => {
+      if (!formData[campo]?.trim()) {
+        erroresNuevos[campo] = 'Este campo es obligatorio';
+      }
+    });
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      erroresNuevos.email = 'Email inválido';
+    }
+
+    if (formData.dni && !/^\d{8}$/.test(formData.dni)) {
+      erroresNuevos.dni = 'Debe tener 8 dígitos';
+    }
+
+    setErrors(erroresNuevos);
+    return Object.keys(erroresNuevos).length === 0;
   };
+
   const handleGuardar = async () => {
-    // Validación de campos obligatorios
-    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'rol', 'email'];
-    
-    // Agregar especialidad solo si el rol es Terapeuta
-const rolNombre = typeof usuarioEditando.rol === 'object' && usuarioEditando.rol !== null 
-  ? usuarioEditando.rol.nombre 
-  : usuarioEditando.rol;
-      if (rolNombre === 'Terapeuta') {
-      camposObligatorios.push('especialidad');
-    }
-    
-    const errors = {};
-    for (const campo of camposObligatorios) {
-      let valor = usuarioEditando[campo];
-      if (campo === 'usuario' && !valor) {
-        valor = usuarioEditando.username;
-      }
-      if (
-        valor === undefined ||
-        valor === null ||
-        (typeof valor === 'string' && valor.trim() === '') ||
-        (typeof valor === 'object' && Object.keys(valor).length === 0)
-      ) {
-        errors[campo] = 'Este campo es obligatorio';
-      }
-    }
-    setUsuarioEditandoErrors(errors);
-    if (Object.keys(errors).length > 0) {
-      setSnackbar({ open: true, message: 'Todos los campos son obligatorios', severity: 'error' });
+    if (!validarFormulario()) {
+      onError('Por favor corrige los errores');
       return;
     }
+
+    setLoading(true);
     try {
-      console.log('usuarioEditando:', usuarioEditando);
-      console.log('roles:', roles);
-      console.log('usuarioEditando.rol:', usuarioEditando.rol);
-      console.log('tipo de usuarioEditando.rol:', typeof usuarioEditando.rol);
+      const rolObj = roles.find(r => r.nombre === formData.rol);
+      const especialidadObj = especialidades.find(e => e.nombre === formData.especialidad);
       
-      // Buscar el objeto rol y especialidad por nombre
-      // El rol puede venir como objeto {id, nombre, descripcion} o como string
-      let rolId = null;
-      if (typeof usuarioEditando.rol === 'object' && usuarioEditando.rol.id) {
-        // Si es un objeto con id, usar ese id
-        rolId = usuarioEditando.rol.id;
-        console.log('Rol es objeto, usando id:', rolId);
-      } else if (typeof usuarioEditando.rol === 'string') {
-        // Si es un string, buscar el rol por nombre y obtener su id
-        const rolObj = roles.find(r => r.nombre === usuarioEditando.rol);
-        rolId = rolObj ? rolObj.id : null;
-        console.log('Rol es string, buscando por nombre:', usuarioEditando.rol, 'encontrado:', rolObj, 'id:', rolId);
-      }
-      
-      // Buscar la especialidad - puede venir como objeto {id, nombre} o como string
-      let especialidadId = null;
-      if (typeof usuarioEditando.especialidad === 'object' && usuarioEditando.especialidad?.id) {
-        // Si es un objeto con id, usar ese id
-        especialidadId = usuarioEditando.especialidad.id;
-        console.log('Especialidad es objeto, usando id:', especialidadId);
-      } else if (typeof usuarioEditando.especialidad === 'string' && usuarioEditando.especialidad) {
-        // Si es un string, buscar la especialidad por nombre y obtener su id
-        const especialidadObj = especialidades.find(e => e.nombre === usuarioEditando.especialidad);
-        especialidadId = especialidadObj ? especialidadObj.id : null;
-        console.log('Especialidad es string, buscando por nombre:', usuarioEditando.especialidad, 'encontrado:', especialidadObj, 'id:', especialidadId);
-      }
-       const data = {
-         nombres: usuarioEditando.nombres,
-         apellidos: usuarioEditando.apellidos,
-         dni: usuarioEditando.dni,
-         username: usuarioEditando.usuario || usuarioEditando.username,
-         email: usuarioEditando.email,
-         rol_id: rolId,
-         especialidad_id: especialidadId,
-         telefono: usuarioEditando.telefono || null,
-         telefono_emergencia: usuarioEditando.telefono_emergencia || null,
-         contacto_emergencia: usuarioEditando.contacto_emergencia || null,
-         direccion: usuarioEditando.direccion || null,
-         distrito: usuarioEditando.distrito || null,
-         provincia: usuarioEditando.provincia || null,
-         departamento: usuarioEditando.departamento || null,
-         talla_polo: usuarioEditando.talla_polo || null,
-         talla_pantalon: usuarioEditando.talla_pantalon || null,
-         talla_zapatos: usuarioEditando.talla_zapatos || null
-       };
+      const data = {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        dni: formData.dni,
+        username: formData.usuario,
+        password: formData.contrasena,
+        email: formData.email,
+        rol_id: rolObj?.id,
+        especialidad_id: especialidadObj?.id || null
+      };
 
-       // Solo agregar password si se está cambiando
-       if (usuarioEditando.contrasena && usuarioEditando.contrasena.trim() !== '') {
-         data.password = usuarioEditando.contrasena;
-       }
-       console.log('Data que se envía al backend:', data);
-      const actualizado = await updateTrabajador(usuarioEditando.id, data);
-      setUsuarios(usuarios.map(u =>
-        u.id === usuarioEditando.id ? actualizado : u
-      ));
-      setOpenModal(false);
-      setUsuarioEditando(null);
-      setUsuarioEditandoErrors({});
-      setSnackbar({ open: true, message: 'Usuario actualizado correctamente', severity: 'success' });
+      await crearTrabajador(data);
+      onSuccess();
+      onClose();
     } catch (error) {
-      setSnackbar({ open: true, message: 'Error al actualizar el usuario', severity: 'error' });
-    }
-  };
-  const handleCancelar = () => {
-    setOpenModal(false);
-    setUsuarioEditando(null);
-  };
-
-  // Nuevo usuario
-  const handleChangeNuevo = (e) => {
-    const { name, value } = e.target;
-    setNuevoUsuario({ ...nuevoUsuario, [name]: value });
-  };
-  const handleGuardarNuevoUsuario = async () => {
-    // Validación de campos obligatorios
-    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'contrasena', 'rol', 'email'];
-    
-    // Agregar especialidad solo si el rol es Terapeuta
-    if (nuevoUsuario.rol === 'Terapeuta') {
-      camposObligatorios.push('especialidad');
-    }
-    
-    const errors = {};
-    for (const campo of camposObligatorios) {
-      if (!nuevoUsuario[campo] || nuevoUsuario[campo].trim() === '') {
-        errors[campo] = 'Este campo es obligatorio';
-      }
-    }
-    setNuevoUsuarioErrors(errors);
-    if (Object.keys(errors).length > 0) {
-      setSnackbar({ open: true, message: 'Todos los campos son obligatorios', severity: 'error' });
-      return;
-    }
-    setNuevoUsuarioLoading(true);
-         try {
-       // Buscar el objeto rol y especialidad por nombre
-       const rolObj = roles.find(r => r.nombre === nuevoUsuario.rol);
-       const especialidadObj = especialidades.find(e => e.nombre === nuevoUsuario.especialidad);
-       const data = {
-         nombres: nuevoUsuario.nombres,
-         apellidos: nuevoUsuario.apellidos,
-         dni: nuevoUsuario.dni,
-         username: nuevoUsuario.usuario,
-         password: nuevoUsuario.contrasena,
-         rol_id: rolObj ? rolObj.id : null,
-         especialidad_id: especialidadObj ? especialidadObj.id : null,
-         email: nuevoUsuario.email
-       };
-      const nuevo = await crearTrabajador(data);
-      setUsuarios([...usuarios, nuevo]);
-      setOpenNuevoModal(false);
-      setNuevoUsuario({ nombres: '', apellidos: '', dni: '', usuario: '', contrasena: '', rol: '', especialidad: '', email: '' });
-      setNuevoUsuarioErrors({});
-      setSnackbar({ open: true, message: 'Usuario creado correctamente', severity: 'success' });
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Error al crear el usuario', severity: 'error' });
+      onError('Error al crear el usuario');
     } finally {
-      setNuevoUsuarioLoading(false);
+      setLoading(false);
     }
   };
+
+  const rolSeleccionado = roles.find(r => r.nombre === formData.rol);
+  const esTerapeuta = rolSeleccionado?.nombre === 'Terapeuta';
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3, mt: 10 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#7B1FA2' }}>
-          Gestión de Usuarios
-        </Typography>
-        <Button variant="contained" startIcon={<PersonAddIcon />} sx={{ background: '#7B1FA2' }} onClick={() => setOpenNuevoModal(true)}>
-          Nuevo usuario
-        </Button>
-      </Stack>
-      <TablaUsuarios usuarios={usuarios} onEditar={handleEditar} onToggleActivo={handleToggleActivo} roles={roles} />
-      <ModalEditarUsuario
-        open={openModal}
-        usuario={usuarioEditando}
-        onChange={handleChangeEdit}
-        onClose={handleCancelar}
-        onSave={handleGuardar}
-        roles={roles}
-        especialidades={especialidades}
-        errors={usuarioEditandoErrors}
-      />
-      <ModalNuevoUsuario
-        open={openNuevoModal}
-        usuario={nuevoUsuario}
-        onChange={handleChangeNuevo}
-        onClose={() => setOpenNuevoModal(false)}
-        onSave={handleGuardarNuevoUsuario}
-        roles={roles}
-        loading={nuevoUsuarioLoading}
-        errors={nuevoUsuarioErrors}
-        especialidades={especialidades}
-      />
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+      
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-2xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1.5">Nuevo Usuario</h2>
+              <p className="text-sm text-white/90">Completa los datos del nuevo usuario</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField
+                label="Nombres"
+                name="nombres"
+                value={formData.nombres}
+                onChange={handleChange}
+                error={errors.nombres}
+                required
+              />
+              <InputField
+                label="Apellidos"
+                name="apellidos"
+                value={formData.apellidos}
+                onChange={handleChange}
+                error={errors.apellidos}
+                required
+              />
+              <InputField
+                label="DNI"
+                name="dni"
+                value={formData.dni}
+                onChange={handleChange}
+                error={errors.dni}
+                maxLength={8}
+                required
+              />
+              <InputField
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={errors.email}
+                required
+              />
+              <InputField
+                label="Usuario"
+                name="usuario"
+                value={formData.usuario}
+                onChange={handleChange}
+                error={errors.usuario}
+                required
+              />
+              <InputField
+                label="Contraseña"
+                name="contrasena"
+                type="password"
+                value={formData.contrasena}
+                onChange={handleChange}
+                error={errors.contrasena}
+                required
+              />
+            </div>
+
+            <SelectField
+              label="Rol"
+              name="rol"
+              value={formData.rol}
+              onChange={handleChange}
+              error={errors.rol}
+              options={roles.map(r => r.nombre)}
+              required
+            />
+
+            {esTerapeuta && (
+              <SelectField
+                label="Especialidad"
+                name="especialidad"
+                value={formData.especialidad}
+                onChange={handleChange}
+                error={errors.especialidad}
+                options={especialidades.map(e => e.nombre)}
+                required
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleGuardar}
+            disabled={loading}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Guardar
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </>
   );
 };
 
-export default Usuarios; 
+// Modal Editar Usuario
+const ModalEditarUsuario = ({ usuario, onClose, roles, especialidades, onSuccess, onError }) => {
+  const [formData, setFormData] = useState({
+    nombres: usuario.nombres || '',
+    apellidos: usuario.apellidos || '',
+    dni: usuario.dni || '',
+    usuario: usuario.username || '',
+    email: usuario.email || '',
+    rol: usuario.rol?.nombre || '',
+    especialidad: usuario.especialidad?.nombre || '',
+    contrasena: '',
+    telefono: usuario.telefono || '',
+    direccion: usuario.direccion || '',
+    distrito: usuario.distrito || '',
+    provincia: usuario.provincia || '',
+    departamento: usuario.departamento || ''
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: null });
+    }
+  };
+
+  const validarFormulario = () => {
+    const erroresNuevos = {};
+    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'email', 'rol'];
+    
+    const rolObj = roles.find(r => r.nombre === formData.rol);
+    if (rolObj?.nombre === 'Terapeuta') {
+      camposObligatorios.push('especialidad');
+    }
+
+    camposObligatorios.forEach(campo => {
+      if (!formData[campo]?.trim()) {
+        erroresNuevos[campo] = 'Este campo es obligatorio';
+      }
+    });
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      erroresNuevos.email = 'Email inválido';
+    }
+
+    if (formData.dni && !/^\d{8}$/.test(formData.dni)) {
+      erroresNuevos.dni = 'Debe tener 8 dígitos';
+    }
+
+    setErrors(erroresNuevos);
+    return Object.keys(erroresNuevos).length === 0;
+  };
+
+  const handleGuardar = async () => {
+    if (!validarFormulario()) {
+      onError('Por favor corrige los errores');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const rolObj = roles.find(r => r.nombre === formData.rol);
+      const especialidadObj = especialidades.find(e => e.nombre === formData.especialidad);
+      
+      const data = {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        dni: formData.dni,
+        username: formData.usuario,
+        email: formData.email,
+        rol_id: rolObj?.id,
+        especialidad_id: especialidadObj?.id || null,
+        telefono: formData.telefono || null,
+        direccion: formData.direccion || null,
+        distrito: formData.distrito || null,
+        provincia: formData.provincia || null,
+        departamento: formData.departamento || null
+      };
+
+      if (formData.contrasena?.trim()) {
+        data.password = formData.contrasena;
+      }
+
+      await updateTrabajador(usuario.id, data);
+      onSuccess();
+      onClose();
+    } catch (error) {
+      onError('Error al actualizar el usuario');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rolSeleccionado = roles.find(r => r.nombre === formData.rol);
+  const esTerapeuta = rolSeleccionado?.nombre === 'Terapeuta';
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+      
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-2xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1.5">Editar Usuario</h2>
+              <p className="text-sm text-white/90">{usuario.nombres} {usuario.apellidos}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-8">
+            {/* Datos básicos */}
+            <Section title="Datos Básicos" icon={User} color="text-blue-600" bgColor="bg-blue-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField
+                  label="Nombres"
+                  name="nombres"
+                  value={formData.nombres}
+                  onChange={handleChange}
+                  error={errors.nombres}
+                  required
+                />
+                <InputField
+                  label="Apellidos"
+                  name="apellidos"
+                  value={formData.apellidos}
+                  onChange={handleChange}
+                  error={errors.apellidos}
+                  required
+                />
+                <InputField
+                  label="DNI"
+                  name="dni"
+                  value={formData.dni}
+                  onChange={handleChange}
+                  error={errors.dni}
+                  maxLength={8}
+                  required
+                />
+                <InputField
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={errors.email}
+                  required
+                />
+              </div>
+            </Section>
+
+            {/* Acceso */}
+            <Section title="Acceso al Sistema" icon={Shield} color="text-purple-600" bgColor="bg-purple-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField
+                  label="Usuario"
+                  name="usuario"
+                  value={formData.usuario}
+                  onChange={handleChange}
+                  error={errors.usuario}
+                  required
+                />
+                <InputField
+                  label="Nueva Contraseña"
+                  name="contrasena"
+                  type="password"
+                  value={formData.contrasena}
+                  onChange={handleChange}
+                  placeholder="Dejar en blanco para mantener"
+                />
+                <SelectField
+                  label="Rol"
+                  name="rol"
+                  value={formData.rol}
+                  onChange={handleChange}
+                  error={errors.rol}
+                  options={roles.map(r => r.nombre)}
+                  required
+                />
+                {esTerapeuta && (
+                  <SelectField
+                    label="Especialidad"
+                    name="especialidad"
+                    value={formData.especialidad}
+                    onChange={handleChange}
+                    error={errors.especialidad}
+                    options={especialidades.map(e => e.nombre)}
+                    required
+                  />
+                )}
+              </div>
+            </Section>
+
+            {/* Contacto */}
+            <Section title="Información de Contacto" icon={Phone} color="text-green-600" bgColor="bg-green-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField
+                  label="Teléfono"
+                  name="telefono"
+                  value={formData.telefono}
+                  onChange={handleChange}
+                  maxLength={9}
+                />
+                <InputField
+                  label="Distrito"
+                  name="distrito"
+                  value={formData.distrito}
+                  onChange={handleChange}
+                />
+                <InputField
+                  label="Provincia"
+                  name="provincia"
+                  value={formData.provincia}
+                  onChange={handleChange}
+                />
+                <InputField
+                  label="Departamento"
+                  name="departamento"
+                  value={formData.departamento}
+                  onChange={handleChange}
+                />
+                <div className="md:col-span-2">
+                  <InputField
+                    label="Dirección"
+                    name="direccion"
+                    value={formData.direccion}
+                    onChange={handleChange}
+                    multiline
+                  />
+                </div>
+              </div>
+            </Section>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleGuardar}
+            disabled={loading}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Guardar
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Componente Section
+const Section = ({ title, icon: Icon, color, bgColor, children }) => (
+  <div>
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`w-8 h-8 rounded-lg ${bgColor} flex items-center justify-center`}>
+        <Icon className={`w-4 h-4 ${color}`} />
+      </div>
+      <h3 className="text-base font-bold text-gray-900">{title}</h3>
+    </div>
+    <div className="pl-11">
+      {children}
+    </div>
+  </div>
+);
+
+// Componente InputField
+const InputField = ({ label, name, value, onChange, error, type = 'text', required, maxLength, placeholder, multiline }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {multiline ? (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        rows={2}
+        className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all resize-none bg-white text-gray-900 font-medium ${
+          error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+        }`}
+      />
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all bg-white text-gray-900 font-medium ${
+          error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+        }`}
+      />
+    )}
+    {error && (
+      <p className="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+        <span className="w-1 h-1 rounded-full bg-red-500"></span>
+        {error}
+      </p>
+    )}
+  </div>
+);
+
+// Componente SelectField
+const SelectField = ({ label, name, value, onChange, error, options, required }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <select
+      name={name}
+      value={value}
+      onChange={onChange}
+      className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all bg-white text-gray-900 font-medium ${
+        error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+      }`}
+    >
+      <option value="">Seleccionar {label.toLowerCase()}</option>
+      {options.map(option => (
+        <option key={option} value={option}>{option}</option>
+      ))}
+    </select>
+    {error && (
+      <p className="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+        <span className="w-1 h-1 rounded-full bg-red-500"></span>
+        {error}
+      </p>
+    )}
+  </div>
+);
+
+export default Usuarios;
