@@ -11,41 +11,49 @@ const archivosOficialesService = {
    * @param {File} file - Archivo a subir
    * @param {Object} data - Datos del archivo
    */
-  subirArchivo: async (file, data) => {
-    try {
-      const formData = new FormData();
-      formData.append('archivo', file);
+ subirArchivo: async (file, data) => {
+  try {
+    const formData = new FormData();
+    formData.append('archivo', file);
+    
+    // ✅ SOLO AGREGAR SI TIENE VALOR (no undefined, no "", no null)
+    if (data.pacienteId) {
       formData.append('pacienteId', data.pacienteId);
-      formData.append('terapeutaId', data.terapeutaId);
-      formData.append('tipoArchivoId', data.tipoArchivoId);
-      
-      // ✅ CRÍTICO: Enviar fechas en formato YYYY-MM-DD sin conversión
-      // El input type="date" ya devuelve este formato
-      formData.append('fechaEmision', data.fechaEmision);
-      
-      if (data.fechaVigencia) {
-        formData.append('fechaVigencia', data.fechaVigencia);
-      }
-      
-      if (data.descripcion) {
-        formData.append('descripcion', data.descripcion);
-      }
-      
-      if (data.codigoManual) {
-        formData.append('codigoManual', data.codigoManual);
-      }
-
-      const response = await api.post(`${API_PATH}/subir`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
     }
-  },
+    
+    if (data.trabajadorId) {
+      formData.append('trabajadorId', data.trabajadorId);
+    }
+    
+    // Campos obligatorios
+    formData.append('terapeutaId', data.terapeutaId);
+    formData.append('tipoArchivoId', data.tipoArchivoId);
+    formData.append('fechaEmision', data.fechaEmision);
+    
+    // Campos opcionales
+    if (data.fechaVigencia) {
+      formData.append('fechaVigencia', data.fechaVigencia);
+    }
+    
+    if (data.descripcion) {
+      formData.append('descripcion', data.descripcion);
+    }
+    
+    if (data.codigoManual) {
+      formData.append('codigoManual', data.codigoManual);
+    }
+
+    const response = await api.post(`${API_PATH}/subir`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+},
 
   /**
    * Listar archivos oficiales

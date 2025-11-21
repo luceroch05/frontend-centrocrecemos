@@ -40,6 +40,7 @@ import LibroReclamaciones from '../pages/LibroReclamaciones';
 import VerificarDocumentos from '../pages/VerificarDocumento';
 import ArchivosOficiales from '../pages/ArchivosOficiales';
 
+import GestionPopup from '../pages/GestionPopup';
 import PostulacionesDashboard from '../pages/PostulacionesDashboard';
 import VerificarBeneficios from '../pages/VerificarBeneficios';
 
@@ -88,6 +89,12 @@ export const AppRouter = () => {
         } />
       
       
+
+        <Route path="/intranet/popup-promocional" element={
+          <PrivateRoute>
+            <GestionPopup />
+          </PrivateRoute>
+        } />
         
         <Route path="/editar-paciente/:id" element={<><TopMenu /><EditarPacientePage /></>} />
         <Route path="/preguntas" element={<Preguntas />} />

@@ -32,7 +32,7 @@ const FormularioTrabaja = () => {
         const cargos = response.data || response;
         setCargosDisponibles(Array.isArray(cargos) ? cargos : []);
         
-        console.log('✅ Cargos cargados:', cargos);
+   
       } catch (error) {
         console.error('❌ Error al cargar cargos:', error);
         setCargosDisponibles([]);
@@ -68,6 +68,9 @@ const FormularioTrabaja = () => {
 
     cargarDistritos();
   }, []);
+
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -181,8 +184,7 @@ const FormularioTrabaja = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('=== INICIANDO ENVÍO DE FORMULARIO ===');
-    console.log('Datos del formulario:', formData);
+  
     
     if (!validarFormulario()) {
       setMensaje({
@@ -204,14 +206,10 @@ const FormularioTrabaja = () => {
       formDataToSend.append('email', formData.email.trim().toLowerCase());
       formDataToSend.append('telefono', formData.telefono.trim());
       formDataToSend.append('distrito', formData.distrito);
-      formDataToSend.append('cargoPostuladoId', parseInt(formData.cargoPostuladoId));
+      formDataToSend.append('cargo_postulado', formData.cargoPostuladoId);
       formDataToSend.append('cv', cvFile);
 
-      console.log('📤 Enviando FormData con cargoPostuladoId:', formData.cargoPostuladoId);
-
       const response = await postulacionesService.crearPostulacion(formDataToSend);
-      
-      console.log('✅ Respuesta del servidor:', response);
       
       setMostrarModalExito(true);
       
@@ -229,10 +227,9 @@ const FormularioTrabaja = () => {
       const fileInput = document.getElementById('cv-file');
       if (fileInput) fileInput.value = '';
       
-      console.log('🎉 FORMULARIO ENVIADO CON ÉXITO');
+
       
     } catch (error) {
-      console.error('❌ Error:', error);
       console.error('Mensaje:', error.message);
       
       setMensaje({
@@ -367,6 +364,7 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Distrito con datos dinámicos */}
                       <div className="col-12 mb-3">
                         <label htmlFor="distrito" className="form-label-trabaja">
                           Distrito <span className="text-danger">*</span>
@@ -377,18 +375,14 @@ const FormularioTrabaja = () => {
                           name="distrito"
                           value={formData.distrito}
                           onChange={handleInputChange}
-                          disabled={loading || loadingDistritos}
+                          disabled={loading || distritosDisponibles.length === 0}
                         >
                           <option value="">Seleccione su distrito</option>
-                          {loadingDistritos ? (
-                            <option disabled>Cargando distritos...</option>
-                          ) : (
-                            distritosDisponibles.map((distrito) => (
-                              <option key={distrito.id} value={distrito.nombre}>
-                                {distrito.nombre}
-                              </option>
-                            ))
-                          )}
+                          {distritosDisponibles.map((distrito) => (
+                            <option key={distrito.id} value={distrito.nombre}>
+                              {distrito.nombre}
+                            </option>
+                          ))}
                         </select>
                         {errores.distrito && (
                           <div className="invalid-feedback d-block">
@@ -397,6 +391,7 @@ const FormularioTrabaja = () => {
                         )}
                       </div>
 
+                      {/* ✅ Select de Cargo con datos dinámicos */}
                       <div className="col-12 mb-3">
                         <label htmlFor="cargoPostuladoId" className="form-label-trabaja">
                           Cargo al que postula <span className="text-danger">*</span>
@@ -407,18 +402,14 @@ const FormularioTrabaja = () => {
                           name="cargoPostuladoId"
                           value={formData.cargoPostuladoId}
                           onChange={handleInputChange}
-                          disabled={loading || loadingCargos}
+                          disabled={loading || cargosDisponibles.length === 0}
                         >
                           <option value="">Seleccione un cargo</option>
-                          {loadingCargos ? (
-                            <option disabled>Cargando cargos...</option>
-                          ) : (
-                            cargosDisponibles.map((cargo) => (
-                              <option key={cargo.id} value={cargo.id}>
-                                {cargo.descripcion}
-                              </option>
-                            ))
-                          )}
+                          {cargosDisponibles.map((cargo) => (
+                            <option key={cargo.id} value={cargo.descripcion}>
+                              {cargo.descripcion}
+                            </option>
+                          ))}
                         </select>
                         {errores.cargoPostuladoId && (
                           <div className="invalid-feedback d-block">

@@ -12,17 +12,30 @@ import {
   Facebook,
   Instagram,
   YouTube,
-  
-
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 export default function Footer() {
   const navigate = useNavigate();
-   // Función para navegar y hacer scroll al inicio
+  
+  // Función mejorada con smooth scroll compatible con iOS/Mac
   const handleNavigate = (path) => {
     navigate(path);
-    window.scrollTo(0, 0);
+    
+    // Esperar a que React Router termine de renderizar
+    setTimeout(() => {
+      // Usar smooth behavior pero con fallback para iOS
+      try {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'smooth'
+        });
+      } catch (error) {
+        // Fallback para navegadores que no soporten behavior smooth
+        window.scrollTo(0, 0);
+      }
+    }, 50);
   };
  
   return (
@@ -78,6 +91,7 @@ export default function Footer() {
                 <li><a href="/staff">Especialistas</a></li>
                 <li><a href="/contactanos">Contacto</a></li>
                 <li><a href="/verificar-beneficios">Consultar Beneficios</a></li>
+                <li><a href="/verificar-documento">Verificar Documentos</a></li>
               </ul>
             </div>
 
@@ -113,7 +127,6 @@ export default function Footer() {
                         width: '100px',
                         height: 'auto',
                         borderRadius: '6px',
-                        
                         transition: 'transform 0.3s ease',
                         marginLeft: '0'
                       }}

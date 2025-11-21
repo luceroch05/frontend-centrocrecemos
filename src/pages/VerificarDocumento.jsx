@@ -9,6 +9,26 @@ const VerificarDocumentos = () => {
   const [estado, setEstado] = useState('idle');
   const [estadoTexto, setEstadoTexto] = useState('Esperando código…');
 
+  // El DNI ya viene cifrado desde el backend, solo mostrarlo
+  const mostrarDNI = (dni) => {
+    return dni || '********';
+  };
+
+    // Determinar si el destinatario está activo según el objeto estado
+  const esDestinatarioActivo = (estado) => {
+    if (!estado) return false;
+    const id = estado.id || estado;
+    const idNum = parseInt(id);
+    return idNum >= 1 && idNum <= 4; // Activo si es 1, 2, 3 o 4
+  };
+
+  // Obtener texto del estado
+  const obtenerTextoEstado = (estado) => {
+    const activo = esDestinatarioActivo(estado);
+    return activo ? 'Activo' : 'Inactivo';
+  };
+
+
   // Validar documento
   const validarDocumentoHandler = async (codigoValidar) => {
     setLoading(true);
@@ -20,15 +40,12 @@ const VerificarDocumentos = () => {
     try {
       const response = await archivosOficialesService.validarDocumento(codigoValidar);
       const data = response.data;
-   
 
-      // ✅ Validación corregida usando el campo activo
+      // ✅ Validar que los datos existen antes de acceder
       if (!data.valido) {
         setEstado('error');
         setEstadoTexto('Documento inválido');
-      } else if (data.paciente.activo === false) {
-        setEstado('warning');
-        setEstadoTexto('Paciente inactivo');
+      
       } else if (!data.vigente) {
         setEstado('error');
         setEstadoTexto('Documento expirado');
@@ -68,23 +85,17 @@ const VerificarDocumentos = () => {
     }
   };
 
-  // ✅ SOLUCIÓN DEFINITIVA: Formatear fecha sin conversión de zona horaria
+  // Formatear fecha
   const formatDate = (dateStr) => {
     if (!dateStr) return 'No especificado';
     
     try {
-      // Parsear la fecha manualmente (viene como YYYY-MM-DD desde el backend)
       const [year, month, day] = dateStr.split('-').map(Number);
-      
-      // Array de nombres de meses en español
       const meses = [
         'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
         'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
       ];
-      
-      // Formatear manualmente sin ninguna conversión de zona horaria
       return `${day} de ${meses[month - 1]} de ${year}`;
-      
     } catch (error) {
       console.error('Error formateando fecha:', error);
       return dateStr;
@@ -121,8 +132,7 @@ const VerificarDocumentos = () => {
     validarDocumentoHandler(codigoNormalizado);
   };
 
- 
-const handleImprimirComprobante = () => {
+  const handleImprimirComprobante = () => {
     const printWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
     
     const printContent = `
@@ -379,10 +389,12 @@ const handleImprimirComprobante = () => {
                 <span class="field-label">Tipo de Documento</span>
                 <div class="field-value">${documento.tipoDocumento}</div>
               </div>
+              ${documento.terapeuta ? `
               <div class="field">
                 <span class="field-label">Terapeuta Responsable</span>
                 <div class="field-value">${documento.terapeuta.nombres} ${documento.terapeuta.apellidos}</div>
               </div>
+              ` : ''}
               <div class="field">
                 <span class="field-label">Fecha de Emisión</span>
                 <div class="field-value">${formatDate(documento.fechaEmision)}</div>
@@ -401,21 +413,27 @@ const handleImprimirComprobante = () => {
             </div>
             
             <div class="document-section">
-              <div class="section-title">INFORMACIÓN DEL PACIENTE</div>
+              <div class="section-title">${documento.tipoDestinatario === 'paciente' ? 'INFORMACIÓN DEL PACIENTE' : 'INFORMACIÓN DEL TRABAJADOR'}</div>
               <div class="field">
                 <span class="field-label">Nombre Completo</span>
                 <div class="field-value">
-                  <strong>${documento.paciente.nombres} ${documento.paciente.apellidos}</strong>
+                  <strong>${documento.destinatario?.nombres || 'N/A'} ${documento.destinatario?.apellidos || ''}</strong>
                 </div>
               </div>
               <div class="field">
                 <span class="field-label">Documento de Identidad</span>
-                <div class="field-value">DNI ${documento.paciente.dni}</div>
+                <div class="field-value">DNI ${documento.destinatario?.dni || '****'}</div>
               </div>
+              ${documento.tipoDestinatario === 'trabajador' && documento.destinatario?.especialidad ? `
               <div class="field">
-                <span class="field-label">Estado del Paciente</span>
+                <span class="field-label">Especialidad</span>
+                <div class="field-value">${documento.destinatario.especialidad.nombre}</div>
+              </div>
+              ` : ''}
+              <div class="field">
+                <span class="field-label">Estado</span>
                 <div class="field-value">
-                  ${documento.paciente.activo ? 'ACTIVO' : 'INACTIVO'}
+                  ${documento.destinatario?.activo ? 'ACTIVO' : 'INACTIVO'}
                 </div>
               </div>
             </div>
@@ -458,7 +476,6 @@ const handleImprimirComprobante = () => {
         </div>
         
         <script>
-          // Enfocar la ventana para impresión
           window.focus();
         </script>
       </body>
@@ -468,7 +485,6 @@ const handleImprimirComprobante = () => {
     printWindow.document.write(printContent);
     printWindow.document.close();
   };
-
 
   const handleCompartir = async () => {
     if (!documento) return;
@@ -490,30 +506,25 @@ const handleImprimirComprobante = () => {
       alert('Enlace copiado al portapapeles');
     }
   };
+  
 
   return (
     <div className="verificar-documentos-wrapper">
-    
-      {/* Header */}
       <header className="verificar-header">
         <div className="verificar-header-inner">
           <div className="verificar-brand">
-            <div className="verificar-logo">CTC</div>
+           
             <div className="verificar-brand-text">
               <h1>Validador de Documentos</h1>
               <p>Verifica emisión, vigencia y estado del paciente</p>
             </div>
           </div>
-          <a className="verificar-link-web" href="https://www.crecemos.com.pe" target="_blank" rel="noreferrer">
-            www.crecemos.com.pe
-          </a>
+         
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="verificar-main-content">
         <div className="verificar-grid-layout">
-          {/* Panel de búsqueda */}
           <div className="verificar-panel">
             <div className="verificar-panel-title">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -528,13 +539,13 @@ const handleImprimirComprobante = () => {
               <input
                 id="code"
                 className={`verificar-input ${error && estado === 'error' ? 'verificar-input-invalid' : ''}`}
-                placeholder="Ej: CTC-E7BI959S"
+                placeholder="Ej: CTC- ABC123DE"
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value.toUpperCase())}
                 autoComplete="off"
               />
               <div className="verificar-helper-text">
-                También puedes abrir esta página con <strong>?code=CTC-E7BI959S</strong> y validará automáticamente.
+                Introduce el código que aparece en el certificado o documento emitido por CTC.
               </div>
 
               <button type="submit" className="verificar-btn-validar" disabled={loading}>
@@ -553,7 +564,6 @@ const handleImprimirComprobante = () => {
             </div>
           </div>
 
-          {/* Panel de resultado */}
           <div className="verificar-panel">
             <div className="verificar-result-header">
               <div className={`verificar-status-badge ${
@@ -587,45 +597,62 @@ const handleImprimirComprobante = () => {
               {documento && (
                 <>
                   <div className="verificar-info-cards">
-                    {/* Card 1: Información del documento */}
                     <div className="verificar-info-card">
                       <div className="verificar-card-label">Código</div>
                       <div className="verificar-card-value verificar-code-value">{documento.codigo}</div>
                       <div className="verificar-card-divider"></div>
                       <div className="verificar-card-label">Tipo de documento</div>
                       <div className="verificar-card-value">{documento.tipoDocumento}</div>
-                      <div className="verificar-card-label">Terapeuta</div>
-                      <div className="verificar-card-value">
-                        {`${documento.terapeuta.nombres} ${documento.terapeuta.apellidos}`}
-                      </div>
+                      {documento.terapeuta && (
+                        <>
+                          <div className="verificar-card-divider"></div>
+                          <div className="verificar-card-label">Terapeuta</div>
+                          <div className="verificar-card-value">
+                            {`${documento.terapeuta.nombres} ${documento.terapeuta.apellidos}`}
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    {/* Card 2: Información del paciente */}
-                    <div className="verificar-info-card">
-                      <div className="verificar-card-label">Paciente</div>
-                      <div className="verificar-card-value">
-                        <strong>
-                          {`${documento.paciente.nombres} ${documento.paciente.apellidos}`}
-                        </strong>
-                        <br />
-                        <span className="verificar-dni-text">
-                          DNI {documento.paciente.dni}
-                        </span>
-                      </div>
-                      <div className="verificar-card-label">Estado del paciente</div>
-                      <div className="verificar-card-value">
-                        <span className={documento.paciente.activo ? 'verificar-estado-activo' : 'verificar-estado-inactivo'}>
-                          ● {documento.paciente.activo ? 'Activo' : 'Inactivo'}
-                        </span>
-                        {documento.paciente.estado && (
-                          <span style={{ marginLeft: '8px', fontSize: '0.9em', color: '#666' }}>
-                            ({documento.paciente.estado})
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                  {documento.destinatario && (
+  <div className="verificar-info-card">
+    <div className="verificar-card-label">
+      {documento.tipoDestinatario === 'paciente' ? 'Paciente' : 'Trabajador'}
+    </div>
+    <div className="verificar-card-value">
+      <strong>
+        {`${documento.destinatario.nombres} ${documento.destinatario.apellidos}`}
+      </strong>
+      <br />
+      <span className="verificar-dni-text">
+        DNI {mostrarDNI(documento.destinatario.dni)}
+      </span>
+    </div>
+    
+    <div className="verificar-card-divider"></div>
+    
+    {/* Si es TRABAJADOR, muestra especialidad */}
+    {documento.tipoDestinatario === 'trabajador' ? (
+      <>
+        <div className="verificar-card-label">Especialidad</div>
+        <div className="verificar-card-value">
+          {documento.destinatario.especialidad?.nombre || documento.destinatario.especialidad || 'No especificada'}
+        </div>
+      </>
+    ) : (
+      /* Si es PACIENTE, muestra estado activo/inactivo */
+      <>
+        <div className="verificar-card-label">Estado</div>
+        <div className="verificar-card-value">
+          <span className={esDestinatarioActivo(documento.destinatario.estado) ? 'verificar-estado-activo' : 'verificar-estado-inactivo'}>
+            ● {obtenerTextoEstado(documento.destinatario.estado)}
+          </span>
+        </div>
+      </>
+    )}
+  </div>
+)}
 
-                    {/* Card 3: Vigencia */}
                     <div className="verificar-info-card">
                       <div className="verificar-card-label">Fecha de emisión</div>
                       <div className="verificar-card-value">{formatDate(documento.fechaEmision)}</div>
@@ -640,7 +667,6 @@ const handleImprimirComprobante = () => {
                       </div>
                     </div>
 
-                    {/* Card 4: Verificación */}
                     <div className="verificar-info-card">
                       <div className="verificar-card-label">Verificación</div>
                       <div className="verificar-card-value verificar-verification-url">
@@ -652,12 +678,7 @@ const handleImprimirComprobante = () => {
                     </div>
                   </div>
 
-                  {documento.paciente.activo === false && (
-                    <div className="verificar-alert verificar-alert-warning">
-                      El paciente figura como <strong>inactivo</strong>. La institución receptora puede 
-                      requerir confirmación adicional.
-                    </div>
-                  )}
+                 
 
                   {!documento.vigente && (
                     <div className="verificar-alert verificar-alert-error">

@@ -35,6 +35,7 @@ import { getVisibleTabs, getTabIndex } from './HistoriaClinicaView/tabConfig';
 import EntrevistaPadresView from './HistoriaClinicaView/components/EntrevistaPadresView';
 import ReporteEvolucion from './HistoriaClinicaView/components/ReporteEvolucion';
 import { calcularEdad } from '../../utils/date';
+import EvaluacionTerapiaOcupacional from './HistoriaClinicaView/components/EvaluacionTOcupacionalView';
 
 // Componente para el contenido de las pestañas
 function TabPanel({ children, value, index, ...other }) {
@@ -55,16 +56,10 @@ function TabPanel({ children, value, index, ...other }) {
   );
 }
 
-// Usar la configuración de tabs desde el archivo separado
-
-// Componente ReporteEvolucion ahora está en un archivo separado
-
 const HistoriaClinicaView = ({ paciente, user }) => {
   console.log('user11', user);
   const [tabValue, setTabValue] = useState(0);
-  
-  // Filtrar tabs visibles según la configuración
-  const visibleTabs = getVisibleTabs(paciente);
+  const [serviciosPaciente, setServiciosPaciente] = useState([]);
   
   const [reporteEvolucion, setReporteEvolucion] = useState({
     servicio: null,
@@ -89,7 +84,9 @@ const HistoriaClinicaView = ({ paciente, user }) => {
   const [reporteSeleccionado, setReporteSeleccionado] = useState(null);
   const [reporteId, setReporteId] = useState(null);
   const [vistaResumida, setVistaResumida] = useState(true);
-  const [serviciosPaciente, setServiciosPaciente] = useState([]);
+
+  // Filtrar tabs visibles según la configuración y servicios del paciente
+  const visibleTabs = getVisibleTabs(paciente, serviciosPaciente);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -132,11 +129,11 @@ const HistoriaClinicaView = ({ paciente, user }) => {
     // Limpiar el formulario para un nuevo reporte
     setReporteEvolucion({
       servicio: null,
-      edad: '', // Ya no se usa, se calcula automáticamente
+      edad: '',
       fechaEvaluacion: new Date().toISOString().split('T')[0],
       periodoIntervencion: '',
       frecuenciaAtencion: '',
-      especialista: '', // Ya no se usa, se toma del usuario actual
+      especialista: '',
       metodologia: '',
       objetivos: '',
       logros: '',
@@ -155,11 +152,11 @@ const HistoriaClinicaView = ({ paciente, user }) => {
       setReporteId(null);
       setReporteEvolucion({
         servicio: null,
-        edad: '', // Ya no se usa, se calcula automáticamente
+        edad: '',
         fechaEvaluacion: new Date().toISOString().split('T')[0],
         periodoIntervencion: '',
         frecuenciaAtencion: '',
-        especialista: '', // Ya no se usa, se toma del usuario actual
+        especialista: '',
         metodologia: '',
         objetivos: '',
         logros: '',
@@ -282,27 +279,41 @@ const HistoriaClinicaView = ({ paciente, user }) => {
       try {
         setLoading(true);
         
-        // Cargar reportes de evolución
-        const reportesData = await obtenerReporteEvolucion(paciente.id);
-        if (reportesData && reportesData.length > 0) {
-          setReportesExistentes(reportesData);
+        // Cargar servicios del paciente PRIMERO (crítico para mostrar tabs correctos)
+        try {
+          const serviciosData = await getServiciosPorPaciente(paciente.id);
+          console.log('📋 Servicios cargados del paciente:', serviciosData);
+          
+          // Filtrar solo servicios activos
+          const serviciosActivos = serviciosData?.filter(s => s.estado === 'ACTIVO' && s.activo === true) || [];
+          console.log('✅ Servicios activos:', serviciosActivos);
+          
+          setServiciosPaciente(serviciosActivos);
+        } catch (error) {
+          console.error('❌ Error al cargar servicios:', error);
+          setServiciosPaciente([]);
         }
         
-        // Cargar servicios del paciente
-        const serviciosData = await getServiciosPorPaciente(paciente.id);
-        setServiciosPaciente(serviciosData);
+        // Cargar reportes de evolución
+        try {
+          const reportesData = await obtenerReporteEvolucion(paciente.id);
+          if (reportesData && reportesData.length > 0) {
+            setReportesExistentes(reportesData);
+          }
+        } catch (error) {
+          console.error('❌ Error al cargar reportes:', error);
+          setReportesExistentes([]);
+        }
         
       } catch (error) {
-        console.error('Error al cargar datos:', error);
-        setReportesExistentes([]);
-        setServiciosPaciente([]);
+        console.error('❌ Error general al cargar datos:', error);
       } finally {
         setLoading(false);
       }
     };
 
     cargarDatos();
-  }, [paciente?.id, user]);
+  }, [paciente?.id]);
 
   // Renderizar el componente correspondiente según el tab activo
   const renderTabContent = (tabId) => {
@@ -327,10 +338,21 @@ const HistoriaClinicaView = ({ paciente, user }) => {
         );
       case 'entrevista-padres':
         return <EntrevistaPadresView paciente={paciente} user={user} />;
+      case 'evaluacion-terapia-ocupacional':
+        return <EvaluacionTerapiaOcupacional pacienteId={paciente?.id} usuarioId={user?.id} />;
       default:
         return <div>Contenido no encontrado</div>;
     }
   };
+
+  // Mostrar loading mientras se cargan los servicios (crítico para tabs correctos)
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -340,6 +362,9 @@ const HistoriaClinicaView = ({ paciente, user }) => {
           <Tabs 
             value={tabValue} 
             onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             sx={{
               '& .MuiTab-root': {
                 textTransform: 'none',
@@ -347,14 +372,27 @@ const HistoriaClinicaView = ({ paciente, user }) => {
                 fontSize: '0.9rem',
                 minHeight: 48,
                 color: '#6c757d',
+                transition: 'all 0.3s ease',
+                borderRadius: '8px 8px 0 0',
+                margin: '0 2px',
                 '&.Mui-selected': {
                   color: '#9575CD',
-                  backgroundColor: 'white'
+                  backgroundColor: '#43217eff',
+                  boxShadow: '0 -2px 4px rgba(0,0,0,0.05)'
+                },
+                '&:hover': {
+                  backgroundColor: 'rgba(149, 117, 205, 0.08)'
                 }
               },
               '& .MuiTabs-indicator': {
                 backgroundColor: '#9575CD',
                 height: 3
+              },
+              '& .MuiTabs-scrollButtons': {
+                color: '#9575CD',
+                '&.Mui-disabled': {
+                  opacity: 0.3
+                }
               }
             }}
           >
@@ -401,4 +439,4 @@ const HistoriaClinicaView = ({ paciente, user }) => {
   );
 };
 
-export default HistoriaClinicaView; 
+export default HistoriaClinicaView;

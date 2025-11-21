@@ -27,6 +27,14 @@ export const useCitas = () => {
     return nueva;
   };
 
+  const crearMultiplesCitas = async (citasData) => {
+    const result = await citaService.crearMultiplesCitas(citasData);
+    // El backend devuelve { message, total, citas: [] }
+    const nuevas = Array.isArray(result) ? result : (result?.citas || []);
+    setCitas(prev => [...prev, ...nuevas]);
+    return nuevas;
+  };
+
   const actualizarCita = async (id, citaData) => {
     const actualizada = await citaService.actualizarCita(id, citaData);
     setCitas(prev => prev.map(c => c.id === id ? actualizada : c));
@@ -39,5 +47,5 @@ export const useCitas = () => {
     return resultado;
   };
 
-  return { citas, loading, error, listarCitas, crearCita, actualizarCita, eliminarCita };
+  return { citas, loading, error, listarCitas, crearCita, crearMultiplesCitas, actualizarCita, eliminarCita };
 };

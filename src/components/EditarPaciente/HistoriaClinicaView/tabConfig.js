@@ -8,7 +8,6 @@ import {
   School,
   Healing
 } from '@mui/icons-material';
-import { SERVICIOS } from '../../../constants/areas';
 
 // Configuración de tabs dinámica
 export const TAB_CONFIG = [
@@ -18,7 +17,7 @@ export const TAB_CONFIG = [
     icon: Assessment,
     component: 'ReporteEvolucion',
     visible: () => true, // Siempre visible
-    required: true, // Tab principal
+    required: true,
     description: 'Reporte detallado del progreso del paciente'
   },
   {
@@ -30,12 +29,28 @@ export const TAB_CONFIG = [
     required: false,
     description: 'Información de la entrevista con los padres'
   },
-  
+  {
+    id: 'evaluacion-terapia-ocupacional',
+    label: 'Evaluación Terapia Ocupacional',
+    icon: Healing,
+    component: 'EvaluacionTerapiaOcupacional',
+    visible: (paciente, serviciosPaciente = []) => {
+      // SOLUCIÓN SIMPLE: Buscar el servicio con ID 2
+      const tiene = serviciosPaciente.some(s => s?.servicio?.id === 2);
+      console.log('🔥 TERAPIA OCUPACIONAL:', tiene ? 'SÍ' : 'NO', serviciosPaciente);
+      return tiene;
+    },
+    required: false,
+    description: 'Evaluación completa de terapia ocupacional'
+  },
 ];
 
-// Función para obtener tabs visibles según el paciente
-export const getVisibleTabs = (paciente) => {
-  return TAB_CONFIG.filter(tab => tab.visible(paciente));
+// Función SIMPLE para obtener tabs visibles
+export const getVisibleTabs = (paciente, serviciosPaciente = []) => {
+  console.log('🎯 Calculando tabs con servicios:', serviciosPaciente);
+  const tabs = TAB_CONFIG.filter(tab => tab.visible(paciente, serviciosPaciente));
+  console.log('✅ Tabs resultantes:', tabs.map(t => t.label));
+  return tabs;
 };
 
 // Función para obtener un tab específico por ID
@@ -50,13 +65,13 @@ export const isTabRequired = (tabId) => {
 };
 
 // Función para obtener el primer tab visible
-export const getFirstVisibleTab = (paciente) => {
-  const visibleTabs = getVisibleTabs(paciente);
+export const getFirstVisibleTab = (paciente, serviciosPaciente = []) => {
+  const visibleTabs = getVisibleTabs(paciente, serviciosPaciente);
   return visibleTabs.length > 0 ? visibleTabs[0] : null;
 };
 
 // Función para obtener el índice de un tab
-export const getTabIndex = (tabId, paciente) => {
-  const visibleTabs = getVisibleTabs(paciente);
+export const getTabIndex = (tabId, paciente, serviciosPaciente = []) => {
+  const visibleTabs = getVisibleTabs(paciente, serviciosPaciente);
   return visibleTabs.findIndex(tab => tab.id === tabId);
 };

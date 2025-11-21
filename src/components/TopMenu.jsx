@@ -2,15 +2,16 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Box, Avatar, IconButton, Menu, MenuItem, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { useCurrentUser } from '../hooks/useCurrentUser';
 import { ROLES_NAMES, ROLES } from '../constants/roles';
 
 const menuItems = [
   { text: 'Agenda', path: '/intranet/agenda' },
   { text: 'Pacientes', path: '/intranet/lista-pacientes' },
   { text: 'Reportes', path: '/intranet/reportes-evaluaciones' },
-  { text: 'Usuarios', path: '/intranet/usuarios' },  
+  { text: 'Usuarios', path: '/intranet/usuarios' },
+  { text: 'Popup Inicio', path: '/intranet/popup-promocional' },
   { text: 'Postulaciones', path: '/intranet/postulaciones', adminOnly: true },
+  { text: 'Certificaciones', path: '/intranet/archivos-oficiales', adminOnly: true }
 ];
 
 const TopMenu = () => {
@@ -30,7 +31,7 @@ const TopMenu = () => {
     
     // Admisión puede ver "Agenda" y "Pacientes"
     if (userRole === ROLES.ADMISION) {
-      return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes');
+      return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes',item => item.text === 'Certificaciones');
     }
     
     // Otros roles pueden ver todos los elementos
