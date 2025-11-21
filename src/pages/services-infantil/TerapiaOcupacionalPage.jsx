@@ -203,7 +203,7 @@ const TerapiaOcupacionalPage = () => {
       </section>
 
       {/* Profesionales */}
-      <section
+      {/*<section
         id="team"
         className="team-area section-padding"
         data-aos="fade-up"
@@ -215,10 +215,10 @@ const TerapiaOcupacionalPage = () => {
               Conoce a las especialistas encargadas de brindar las terapias de
               lenguaje.
             </p>
-          </div>
+          </div>*/}
 
-          <div className="row justify-content-center">
-            {/* Lic. Daniela Calle */}
+          {/* <div className="row justify-content-center">
+             Lic. Daniela Calle 
             <div className="col-lg-4 col-md-6 col-sm-12">
               <div className="our-team">
                 <img
@@ -235,7 +235,7 @@ const TerapiaOcupacionalPage = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
     </main>
   );
 };
