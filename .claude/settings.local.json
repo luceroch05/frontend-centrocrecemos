@@ -16,7 +16,9 @@
       "Bash(dir:*)",
       "Bash(ping:*)",
       "Bash(Stop-Process -Id 6996 -Force)",
-      "Bash(timeout /t 5)"
+      "Bash(timeout /t 5)",
+      "Bash(pkill:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

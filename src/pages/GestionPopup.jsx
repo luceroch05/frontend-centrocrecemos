@@ -95,30 +95,33 @@ const GestionPopup = () => {
     }
   };
 
-  const handleSubirImagen = async () => {
-    if (archivoImagen) {
-      setGuardando(true);
-      try {
-        // Subir imagen al servidor
-        const response = await popupService.subirImagenPopup(archivoImagen);
+ const handleSubirImagen = async () => {
+  if (archivoImagen) {
+    setGuardando(true);
+    try {
+      // Subir imagen al servidor
+      const response = await popupService.subirImagenPopup(archivoImagen);
 
-        const nuevaConfig = {
-          ...popupConfig,
-          imagenUrl: response.imagenUrl
-        };
-        setPopupConfig(nuevaConfig);
+      const nuevaConfig = {
+        ...popupConfig,
+        imagenUrl: response.imagenUrl
+      };
+      setPopupConfig(nuevaConfig);
 
-        setDialogoSubir(false);
-        setImagenTemporal(null);
-        setArchivoImagen(null);
-        showNotification('Imagen actualizada correctamente', 'success');
-      } catch (error) {
-        showNotification('Error al subir la imagen', 'error');
-      } finally {
-        setGuardando(false);
-      }
+      setDialogoSubir(false);
+      setImagenTemporal(null);
+      setArchivoImagen(null);
+      showNotification('Imagen actualizada correctamente', 'success');
+      
+      // Forzar recarga de la configuración desde el servidor
+      await cargarConfiguracion();
+    } catch (error) {
+      showNotification('Error al subir la imagen', 'error');
+    } finally {
+      setGuardando(false);
     }
-  };
+  }
+};
 
   const handleEliminarImagen = async () => {
     try {
@@ -260,7 +263,7 @@ const GestionPopup = () => {
                 <div className="space-y-4">
                   <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
                     <img
-                      src={popupConfig.imagenUrl}
+                      src={`http://localhost:3001/uploads/popup/${popupConfig.imagenUrl}`}
                       alt="Imagen promocional"
                       className="w-full h-auto max-h-96 object-contain"
                     />

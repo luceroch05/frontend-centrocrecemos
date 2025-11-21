@@ -97,34 +97,44 @@ useEffect(() => {
   cargarPopup();
 }, []);
   return (
-    <main className="main">
-       {/* Popup Promocional */}
-      {showPopup && popupConfig.activo && popupConfig.imagenUrl && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
-          style={{ backdropFilter: 'blur(4px)' }}
+<main className="main">
+  {/* Popup Promocional */}
+  {showPopup && popupConfig.activo && popupConfig.imagenUrl && (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      style={{ 
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(6px)' 
+      }}
+      onClick={() => setShowPopup(false)}
+    >
+      <div 
+        className="relative mx-4 max-w-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className="rounded-2xl overflow-hidden shadow-2xl relative" 
+          style={{ maxHeight: '90vh' }}
         >
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
-            <button
-              className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg z-10"
-              onClick={() => setShowPopup(false)}
-              aria-label="Cerrar promoción"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          <button
+            className="absolute top-3 right-3 w-10 h-10 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg z-10"
+            onClick={() => setShowPopup(false)}
+            aria-label="Cerrar promoción"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
 
-            <div className="rounded-2xl overflow-hidden">
-              <img
-                src={popupConfig.imagenUrl}
-                alt="Promoción especial - Centro Crecemos"
-                className="w-full h-auto block"
-              />
-            </div>
-          </div>
+          <img
+            src={`http://localhost:3001/uploads/popup/${popupConfig.imagenUrl}`}
+            alt="Promoción especial - Centro Crecemos"
+            className="w-full h-full object-contain block"
+          />
         </div>
-      )}
+      </div>
+    </div>
+  )}
   <section id="hero" className="hero section" style={{ paddingTop: '150px' }}>
       <div className="container" data-aos="fade-up" data-aos-delay="100">
         <div className="row align-items-center">

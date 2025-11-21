@@ -29,9 +29,13 @@ const TopMenu = () => {
       return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes');
     }
     
-    // Admisión puede ver "Agenda" y "Pacientes"
+    // Admisión puede ver "Agenda", "Pacientes" y "Certificaciones"
     if (userRole === ROLES.ADMISION) {
-      return menuItems.filter(item => item.text === 'Agenda' || item.text === 'Pacientes',item => item.text === 'Certificaciones');
+      return menuItems.filter(item =>
+        item.text === 'Agenda' ||
+        item.text === 'Pacientes' ||
+        item.text === 'Certificaciones'
+      );
     }
     
     // Otros roles pueden ver todos los elementos
