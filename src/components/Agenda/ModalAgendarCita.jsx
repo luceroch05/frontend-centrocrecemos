@@ -281,21 +281,46 @@ const ModalAgendarCita = ({
                     <option value="">Seleccionar servicio...</option>
                     {(() => {
                       const lista = (serviciosApi && serviciosApi.length ? serviciosApi : (servicios || []));
-                      const agrupados = lista.reduce((acc, srv) => {
-                        const area = srv.area?.nombre || srv.area || 'Sin Área';
-                        if (!acc[area]) acc[area] = [];
-                        acc[area].push(srv);
-                        return acc;
-                      }, {});
-                      return Object.entries(agrupados).map(([areaNombre, serviciosArea]) => (
-                        <optgroup key={areaNombre} label={areaNombre}>
-                          {serviciosArea.map(srv => (
-                            <option key={srv.id} value={srv.id}>
-                              {srv.nombre}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ));
+
+                      console.log('Servicios disponibles:', lista);
+                      console.log('serviciosApi:', serviciosApi);
+                      console.log('servicios prop:', servicios);
+
+                      if (!Array.isArray(lista) || lista.length === 0) {
+                        return <option disabled>No hay servicios disponibles</option>;
+                      }
+
+                      // Mapeo de IDs de áreas a nombres
+                      const areasMap = {
+                        1: 'Infantil y Adolescentes',
+                        2: 'Adultos'
+                      };
+
+                      // Agrupar servicios por área usando area_id
+                      const agrupados = {};
+                      lista.forEach(srv => {
+                        const areaId = srv.area_id || srv.area?.id;
+                        const areaNombre = areasMap[areaId] || 'Otros';
+
+                        if (!agrupados[areaNombre]) {
+                          agrupados[areaNombre] = [];
+                        }
+                        agrupados[areaNombre].push(srv);
+                      });
+
+                      // Renderizar los grupos en orden
+                      const ordenAreas = ['Infantil y Adolescentes', 'Adultos', 'Otros'];
+                      return ordenAreas
+                        .filter(area => agrupados[area] && agrupados[area].length > 0)
+                        .map(areaNombre => (
+                          <optgroup key={areaNombre} label={areaNombre}>
+                            {agrupados[areaNombre].map(srv => (
+                              <option key={srv.id} value={srv.id}>
+                                {srv.nombre || 'Sin nombre'}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ));
                     })()}
                   </select>
                 </div>

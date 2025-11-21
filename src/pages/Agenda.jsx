@@ -293,7 +293,10 @@ const Agenda = () => {
     if (currentUser?.rol?.id === ROLES.TERAPEUTA) {
       return currentUser;
     } else if (terapeutaFiltro) {
-      return trabajadores.find(t => t.id === terapeutaFiltro);
+      // Convertir terapeutaFiltro a número si es string, porque los IDs vienen como números
+      const filtroId = typeof terapeutaFiltro === 'string' ? parseInt(terapeutaFiltro) : terapeutaFiltro;
+      const terapeuta = trabajadores.find(t => t.id === filtroId);
+      return terapeuta;
     }
     return null;
   };

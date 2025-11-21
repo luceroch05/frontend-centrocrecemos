@@ -1,53 +1,52 @@
 import React, { useEffect } from 'react';
 import  {initializePageScripts}  from '../utils/initScripts';
 import { useState } from 'react';
+import * as popupService from '../services/popupService';
 
 
 export default function HomePage() {
 
  const [currentImage, setCurrentImage] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
-  
+  const [popupConfig, setPopupConfig] = useState({ activo: false, imagenUrl: '' });
+
   const heroImages = [
     '/assets/img/index/Carrusel servicios.png',
     '/assets/img/index/carrusel psicologia infantil.png',
-    
+
   ];
 
-  
+
 
  useEffect(() => {
   initializePageScripts();
-   // Mostrar el popup después de un pequeño delay cuando la página cargue
-    const popupTimer = setTimeout(() => {
-      setShowPopup(true);
-    }, 1000); 
+
   const tabs = document.querySelectorAll('.quick-tab');
   const contents = document.querySelectorAll('.area-content');
-  
+
   // Configurar event listeners para tabs
   const handleTabClick = (tab) => {
     const area = tab.getAttribute('data-area');
-    
+
     // Remover active de todos
     tabs.forEach(t => t.classList.remove('active'));
     contents.forEach(c => c.classList.remove('active'));
-    
+
     // Activar tab seleccionado
     tab.classList.add('active');
-    
+
     // Activar contenido con delay para la animación
     const targetContent = document.getElementById(`${area}-content`);
-    
+
     // Remover el atributo data-aos temporalmente
     const cards = targetContent.querySelectorAll('[data-aos]');
     cards.forEach(card => {
       card.classList.remove('aos-animate');
     });
-    
+
     // Activar el contenido
     targetContent.classList.add('active');
-    
+
     // Forzar reflow y re-animar
     setTimeout(() => {
       cards.forEach(card => {
@@ -55,17 +54,17 @@ export default function HomePage() {
       });
     }, 50);
   };
-  
+
   // Agregar listeners a cada tab
   tabs.forEach(tab => {
     tab.addEventListener('click', () => handleTabClick(tab));
   });
-  
+
   // Carrusel de imágenes
   const interval = setInterval(() => {
     setCurrentImage((prev) => (prev + 1) % heroImages.length);
   }, 5000);
-  
+
   // Cleanup function
   return () => {
     clearInterval(interval);
@@ -74,40 +73,58 @@ export default function HomePage() {
     });
   };
 }, [heroImages.length]);
- const closePopup = () => {
-    setShowPopup(false);
+
+// Cargar configuración del popup desde el backend
+useEffect(() => {
+  const cargarPopup = async () => {
+    try {
+      const config = await popupService.obtenerConfiguracionPopup();
+      setPopupConfig(config);
+
+      // Mostrar el popup solo si está activo y tiene imagen
+      if (config.activo && config.imagenUrl) {
+        const popupTimer = setTimeout(() => {
+          setShowPopup(true);
+        }, 1000);
+
+        return () => clearTimeout(popupTimer);
+      }
+    } catch (error) {
+      console.error('Error al cargar configuración del popup:', error);
+    }
   };
 
-
-
+  cargarPopup();
+}, []);
   return (
     <main className="main">
-       {/* Popup/Promo Modal */}
-    {/*  {showPopup && (
-        <div className="promo-popup-overlay">
-          <div className="promo-popup-container" data-aos="zoom-in">
-            <div className="promo-popup-content">
-              <button 
-                className="promo-popup-close" 
-                onClick={closePopup}
-                aria-label="Cerrar promoción"
-              >
-                <i className="bi bi-x-lg"></i>
-              </button>
-              
-              <div className="promo-image-container">
-                <img 
-                  src="/assets/img/index/Cyber-wow-2025-Noviembre.png" // Cambia por la ruta de tu imagen promocional
-                  alt="Promoción especial - Centro Crecemos"
-                  className="promo-image"
-                />
-              </div>
-              
-        
+       {/* Popup Promocional */}
+      {showPopup && popupConfig.activo && popupConfig.imagenUrl && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
+          style={{ backdropFilter: 'blur(4px)' }}
+        >
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+            <button
+              className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg z-10"
+              onClick={() => setShowPopup(false)}
+              aria-label="Cerrar promoción"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="rounded-2xl overflow-hidden">
+              <img
+                src={popupConfig.imagenUrl}
+                alt="Promoción especial - Centro Crecemos"
+                className="w-full h-auto block"
+              />
             </div>
           </div>
         </div>
-      )} */ }
+      )}
   <section id="hero" className="hero section" style={{ paddingTop: '150px' }}>
       <div className="container" data-aos="fade-up" data-aos-delay="100">
         <div className="row align-items-center">
