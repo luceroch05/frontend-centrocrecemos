@@ -489,7 +489,7 @@ export default function HomePage() {
           { img: '/assets/img/index/logo_PEDIATRIKIS.png', name: 'Pediatriks' },
           { img: '/assets/img/index/fisioestudio360.png', name: 'Fisioestudio 360' },
           { img: '/assets/img/index/UCH.png', name: 'Universidad de Ciencias y Humanidades' },
-          { img: '/assets/img/index/sos.png', name: 'Aldeas Infantiles Sos' }
+          { img: '/assets/img/index/Aldeas Infantiles SOS Perú.png', name: 'Aldeas Infantiles SOS Perú' }
         ].map((ally, index) => (
           <div 
             key={index} 
@@ -502,16 +502,15 @@ export default function HomePage() {
               justifyContent: 'center'
             }}
           >
-            <div style={{ 
-              height: '180px', 
+            <div style={{
+              height: '180px',
               width: '250px',
-              display: 'flex', 
-              alignItems: 'center', 
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               marginBottom: '15px',
               overflow: 'hidden',
-              borderRadius: '20px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              borderRadius: '20px'
             }}>
               <img 
                 src={ally.img} 
