@@ -1,44 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Autocomplete,
-  MenuItem,
-  FormControl,
-  Select,
-  Stack,
-  Box,
-  Typography,
-  Button,
-  IconButton,
-  Grid,
-  CircularProgress,
-  Alert,
-  ListSubheader,
-  Tabs,
-  Tab,
-  Chip,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  DialogContentText
-} from '@mui/material';
-import {
-  CalendarToday as CalendarIcon,
-  AccessTime as AccessTime,
-  Close as CloseIcon,
-  Search as SearchIcon,
-  History as HistoryIcon,
-  Edit as EditIcon,
-  Add as AddIcon,
-  Update as UpdateIcon,
-  Delete as DeleteIcon
-} from '@mui/icons-material';
+  Calendar,
+  Clock,
+  X,
+  Search,
+  User,
+  Briefcase,
+  FileText,
+  Save,
+  Trash2,
+  Plus,
+  AlertCircle,
+  CheckCircle2,
+  AlertTriangle,
+  ChevronDown,
+  History
+} from 'lucide-react';
 import { useBusquedaPacientes } from '../../hooks/useBusquedaPacientes';
 import { useServicios } from '../../hooks/useServicios';
 import { useMotivosCita } from '../../hooks/useMotivosCita';
@@ -68,7 +45,6 @@ const ModalAgendarCita = ({
   const serviciosApi = useServicios();
   const { motivos, loading: loadingMotivos, error: errorMotivos } = useMotivosCita();
 
-  // Hook para el historial (solo para roles ADMINISTRADOR y ADMISION)
   const puedeVerHistorial = currentUser?.rol?.id === ROLES.ADMINISTRADOR || currentUser?.rol?.id === ROLES.ADMISION;
   const puedeEliminar = currentUser?.rol?.id === ROLES.ADMINISTRADOR || currentUser?.rol?.id === ROLES.ADMISION;
   const puedeEditar = currentUser?.rol?.id === ROLES.ADMINISTRADOR || currentUser?.rol?.id === ROLES.ADMISION;
@@ -77,16 +53,14 @@ const ModalAgendarCita = ({
     modoEdicion && citaEditando?.id ? citaEditando.id : null
   );
 
-  // Resetear búsqueda y pestañas cuando se abre el modal
   useEffect(() => {
     if (open) {
       setQueryPaciente('');
-      setTabValue(0); // Siempre empezar en la primera pestaña
-      setDialogoEliminarAbierto(false); // Cerrar diálogo de eliminación
+      setTabValue(0);
+      setDialogoEliminarAbierto(false);
     }
   }, [open]);
 
-  // Manejadores para el diálogo de eliminar
   const abrirDialogoEliminar = () => {
     setDialogoEliminarAbierto(true);
   };
@@ -102,7 +76,6 @@ const ModalAgendarCita = ({
     }
   };
 
-  // Función para formatear fecha y hora del historial
   const formatearFechaHistorial = (fecha) => {
     return new Date(fecha).toLocaleString('es-ES', {
       year: 'numeric',
@@ -113,898 +86,573 @@ const ModalAgendarCita = ({
     });
   };
 
-  // Función para obtener el ícono según el tipo de operación
   const getIconoOperacion = (tipo) => {
     switch (tipo) {
       case 'CREATE':
-        return <AddIcon />;
+        return <Plus className="w-4 h-4" />;
       case 'UPDATE':
-        return <UpdateIcon />;
+        return <Save className="w-4 h-4" />;
       case 'DELETE':
-        return <EditIcon />;
+        return <Trash2 className="w-4 h-4" />;
       default:
-        return <HistoryIcon />;
+        return <History className="w-4 h-4" />;
     }
   };
 
-  // Función para obtener el color del chip según el tipo
   const getColorOperacion = (tipo) => {
     switch (tipo) {
       case 'CREATE':
-        return 'success';
+        return 'bg-green-50 text-green-700 border-green-200';
       case 'UPDATE':
-        return 'info';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'DELETE':
-        return 'error';
+        return 'bg-red-50 text-red-700 border-red-200';
       default:
-        return 'default';
+        return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
+
+  if (!open) return null;
+
   return (
-    <Dialog 
-      open={open} 
-      onClose={guardando ? undefined : onClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: { 
-          borderRadius: 3,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-          overflow: 'hidden',
-          height: modoEdicion && puedeVerHistorial ? '80vh' : '75vh'
-        }
-      }}
-    >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #A3C644 0%, #8fb23a 100%)',
-        color: 'white',
-        fontWeight: 'bold',
-        py: 2,
-        px: 3
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CalendarIcon />
-          <Typography variant="h6" component="div">
-            {esTerapeuta ? 'Ver Cita' : (modoEdicion ? 'Editar Cita' : 'Agendar Nueva Cita')}
-          </Typography>
-        </Box>
-        <IconButton 
-          onClick={onClose} 
-          disabled={guardando}
-          sx={{ 
-            color: 'white',
-            '&:hover': { 
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              transform: 'scale(1.1)'
-            },
-            '&.Mui-disabled': {
-              color: 'rgba(255,255,255,0.5)'
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      
-      <DialogContent sx={{ p: 0, maxHeight: '75vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {/* Información del slot seleccionado */}
-          {slotSeleccionado && (
-            <Box sx={{ 
-              background: 'linear-gradient(135deg, #f0f8f0 0%, #e8f5e8 100%)', 
-              p: 2, 
-            mx: 3,
-            mt: 2,
-              borderRadius: 2,
-              border: '2px solid #A3C644',
-              boxShadow: '0 2px 8px rgba(163,198,68,0.15)'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AccessTime sx={{ color: '#A3C644', fontSize: 20 }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#A3C644' }}>
-                  {slotSeleccionado.dia} a las {slotSeleccionado.hora}
-                </Typography>
-              </Box>
-            </Box>
-          )}
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] p-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  {esTerapeuta ? 'Ver Cita' : (modoEdicion ? 'Editar Cita' : 'Agendar Nueva Cita')}
+                </h2>
+                {slotSeleccionado && (
+                  <p className="text-white/80 text-sm">
+                    {slotSeleccionado.dia} - {slotSeleccionado.hora}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button 
+              onClick={onClose} 
+              disabled={guardando}
+              className="text-white hover:bg-white/20 p-2 rounded-lg transition-all disabled:opacity-50"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-        {/* Pestañas */}
-        {modoEdicion && puedeVerHistorial && (
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}>
-            <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-              <Tab label="📝 Detalles" />
-              <Tab label="📋 Historial" />
-            </Tabs>
-          </Box>
-        )}
-
-        {/* Contenido de las pestañas */}
-        <Box sx={{ p: 3, flex: 1, overflow: 'auto', minHeight: 0 }}>
-          {(!modoEdicion || !puedeVerHistorial || tabValue === 0) && (
-            <Stack spacing={2.5} sx={{ mt: 0.5 }}>
-
-          {/* Buscador de Paciente */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#424242' }}>
-              👤 Paciente
-            </Typography>
-            <Autocomplete
-              options={pacientes}
-              getOptionLabel={(option) => option.nombre_completo || option.nombre || ''}
-              value={formularioCita.paciente}
-              onChange={(event, newValue) => onFormularioChange('paciente', newValue)}
-              onInputChange={(event, newInputValue) => {
-                setQueryPaciente(newInputValue);
-              }}
-              disabled={esTerapeuta}
-              loading={loadingPacientes}
-              loadingText="Buscando pacientes..."
-              noOptionsText={queryPaciente.length < 2 ? "Escriba al menos 2 caracteres..." : "No se encontraron pacientes"}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  placeholder="Buscar por nombre completo..."
-                  variant="outlined"
-                  fullWidth
-                  size="small"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {loadingPacientes ? <CircularProgress color="inherit" size={20} /> : <SearchIcon />}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#A3C644',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#A3C644',
-                      },
-                    }
-                  }}
-                />
-              )}
-              renderOption={(props, option) => (
-                <Box component="li" {...props} sx={{ py: 1.5 }}>
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                      {option.nombre_completo || option.nombre}
-                    </Typography>
-                    {option.documento && (
-                      <Typography variant="body2" color="text.secondary">
-                        Documento: {option.documento}
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              )}
-            />
-            {errorPacientes && (
-              <Alert severity="error" sx={{ mt: 1 }}>
-                {errorPacientes}
-              </Alert>
-            )}
-          </Box>
-
-          {/* Doctor/Trabajador */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#424242' }}>
-              👨‍⚕️ Terapeuta
-            </Typography>
-            <TextField
-              fullWidth
-              size="small"
-              value={
-                terapeutaSeleccionado 
-                  ? `${terapeutaSeleccionado.nombres || ''} ${terapeutaSeleccionado.apellidos || ''}`.trim()
-                  : 'No seleccionado'
-              }
-              disabled
-                sx={{
-                  borderRadius: 2,
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#f5f5f5',
-                },
-                '& .MuiInputBase-input.Mui-disabled': {
-                  WebkitTextFillColor: '#424242',
-                  fontWeight: 'bold',
-                },
-              }}
-            />
-          </Box>
-
-            {/* Servicio */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#424242' }}>
-              🏥 Servicio
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                value={formularioCita.servicio_id || ''}
-                onChange={(e) => onFormularioChange('servicio_id', e.target.value)}
-                displayEmpty
-                disabled={esTerapeuta}
-                sx={{
-                  borderRadius: 2,
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                }}
-              >
-                <MenuItem value="" disabled>
-                  <em>Seleccionar servicio...</em>
-                </MenuItem>
-                {(() => {
-                  const lista = (serviciosApi && serviciosApi.length ? serviciosApi : (servicios || []));
-                  const agrupados = lista.reduce((acc, srv) => {
-                    const area = srv.area?.nombre || srv.area || 'Sin Área';
-                    if (!acc[area]) acc[area] = [];
-                    acc[area].push(srv);
-                    return acc;
-                  }, {});
-                  return Object.entries(agrupados).map(([areaNombre, serviciosArea]) => [
-                    <ListSubheader
-                      key={areaNombre}
-                      sx={{
-                        background: '#fff',
-                        color: '#174ea6',
-                        fontWeight: 'bold',
-                        fontSize: '1rem',
-                        letterSpacing: 0.5,
-                        py: 1,
-                        borderBottom: '1px solid #e0e0e0'
-                      }}
-                    >
-                      {areaNombre}
-                    </ListSubheader>,
-                    serviciosArea.map(srv => {
-                      const key = srv.id ?? srv.value ?? srv.nombre ?? String(srv);
-                      const label = srv.nombre ?? srv.label ?? String(srv);
-                      return (
-                        <MenuItem key={key} value={srv.id}>
-                          {label}
-                        </MenuItem>
-                      );
-                    })
-                  ]);
-                })()}
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Motivo */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#424242' }}>
-              📝 Motivo
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                value={formularioCita.motivo_id || ''}
-                onChange={(e) => onFormularioChange('motivo_id', e.target.value)}
-                displayEmpty
-                disabled={loadingMotivos || esTerapeuta}
-                sx={{
-                  borderRadius: 2,
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                }}
-              >
-                <MenuItem value="" disabled>
-                  <em>
-                    {loadingMotivos ? 'Cargando motivos...' : 'Seleccionar motivo...'}
-                  </em>
-                </MenuItem>
-                {motivos.map((motivo) => (
-                  <MenuItem key={motivo.id} value={motivo.id}>
-                    <Box>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                        {String(motivo.nombre || '')}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {String(motivo.descripcion || '')}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {errorMotivos && (
-              <Alert severity="error" sx={{ mt: 1 }}>
-                {errorMotivos}
-              </Alert>
-            )}
-          </Box>
-
-          {/* Duración */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#424242' }}>
-              ⏱️ Duración
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                value={formularioCita.duracion}
-                onChange={(e) => onFormularioChange('duracion', e.target.value)}
-                displayEmpty
-                disabled={esTerapeuta}
-                sx={{
-                  borderRadius: 2,
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                }}
-              >
-                <MenuItem value="" disabled>
-                  <em>Seleccionar duración...</em>
-                </MenuItem>
-                {duraciones.map((duracion) => (
-                  <MenuItem key={duracion.valor} value={duracion.valor}>
-                    {duracion.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Fecha y Hora */}
-          <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#424242' }}>
-                📅 {modoEdicion ? 'Fecha y Hora' : 'Fechas y Horas'}
-              </Typography>
-              {/* En edición NO se permite agregar nuevas fechas */}
-              {!esTerapeuta && !modoEdicion && (
-                <Button
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => onFormularioChange('agregarFechaHora', null)}
-                  sx={{
-                    color: '#A3C644',
-                    borderColor: '#A3C644',
-                    '&:hover': {
-                      borderColor: '#8FA83A',
-                      backgroundColor: 'rgba(163, 198, 68, 0.04)',
-                    },
-                  }}
-                  variant="outlined"
+          {/* Tabs */}
+          {modoEdicion && puedeVerHistorial && (
+            <div className="border-b border-gray-200 bg-gray-50">
+              <div className="flex">
+                <button
+                  onClick={() => setTabValue(0)}
+                  className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-all relative ${
+                    tabValue === 0
+                      ? 'text-[#7B1FA2] bg-white'
+                      : 'text-gray-600 hover:text-[#7B1FA2] hover:bg-gray-100'
+                  }`}
                 >
-                  Agregar
-                </Button>
-              )}
-            </Box>
+                  <FileText className="w-4 h-4" />
+                  Detalles
+                  {tabValue === 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0]"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() => setTabValue(1)}
+                  className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-all relative ${
+                    tabValue === 1
+                      ? 'text-[#7B1FA2] bg-white'
+                      : 'text-gray-600 hover:text-[#7B1FA2] hover:bg-gray-100'
+                  }`}
+                >
+                  <History className="w-4 h-4" />
+                  Historial
+                  {tabValue === 1 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0]"></div>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
-            {/* Modo edición: solo un par de campos (sin agregar/eliminar) */}
-            {modoEdicion ? (
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="date"
-                    label="Fecha"
-                    value={formularioCita.fechasHoras?.[0]?.fecha || ''}
-                    onChange={(e) => onFormularioChange('actualizarFechaHora', { index: 0, campo: 'fecha', valor: e.target.value })}
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-250px)]">
+            {(!modoEdicion || !puedeVerHistorial || tabValue === 0) && (
+              <div className="space-y-6">
+                {/* Paciente */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Paciente *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar paciente por nombre..."
+                      value={queryPaciente}
+                      onChange={(e) => setQueryPaciente(e.target.value)}
+                      disabled={esTerapeuta}
+                      className="w-full px-4 py-2.5 pl-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all disabled:opacity-50"
+                    />
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  </div>
+                  
+                  {queryPaciente.length >= 2 && pacientes.length > 0 && (
+                    <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {pacientes.map((paciente) => (
+                        <button
+                          key={paciente.id}
+                          onClick={() => {
+                            onFormularioChange('paciente', paciente);
+                            setQueryPaciente('');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-all border-b border-gray-100 last:border-0"
+                        >
+                          <p className="text-sm font-semibold text-gray-900">
+                            {paciente.nombre_completo || paciente.nombre}
+                          </p>
+                          {paciente.documento && (
+                            <p className="text-xs text-gray-600">DNI: {paciente.documento}</p>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {formularioCita.paciente && (
+                    <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {formularioCita.paciente.nombre_completo}
+                          </p>
+                        </div>
+                      </div>
+                      {!esTerapeuta && (
+                        <button
+                          onClick={() => onFormularioChange('paciente', null)}
+                          className="text-blue-600 hover:bg-blue-100 p-1.5 rounded-lg transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Terapeuta */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Terapeuta
+                  </label>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <Briefcase className="w-4 h-4 text-white" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {terapeutaSeleccionado 
+                          ? `${terapeutaSeleccionado.nombres || ''} ${terapeutaSeleccionado.apellidos || ''}`.trim()
+                          : 'No seleccionado'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Servicio */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Servicio *
+                  </label>
+                  <select
+                    value={formularioCita.servicio_id || ''}
+                    onChange={(e) => onFormularioChange('servicio_id', e.target.value)}
                     disabled={esTerapeuta}
-                    InputLabelProps={{ shrink: true }}
-                    sx={{
-                      borderRadius: 2,
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#ffffff',
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#A3C644',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#A3C644',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="time"
-                    label="Hora"
-                    value={formularioCita.fechasHoras?.[0]?.horaInicio || ''}
-                    onChange={(e) => {
-                      const hora = e.target.value;
-                      if (hora >= '08:00' && hora <= '20:00') {
-                        onFormularioChange('actualizarFechaHora', { index: 0, campo: 'horaInicio', valor: hora });
-                      }
-                    }}
-                    disabled={esTerapeuta}
-                    inputProps={{ lang: 'es-ES', min: '08:00', max: '20:00', step: 300 }}
-                    InputLabelProps={{ shrink: true }}
-                    sx={{
-                      borderRadius: 2,
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: '#ffffff',
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#A3C644',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#A3C644',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-              </Grid>
-            ) : (
-              // Modo creación: lista de múltiples fechas/horas con agregar/eliminar
-              <>
-                {formularioCita.fechasHoras && formularioCita.fechasHoras.length > 0 ? (
-                  <Stack spacing={2}>
-                    {formularioCita.fechasHoras.map((fechaHora, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          p: 2,
-                          border: '1px solid #e0e0e0',
-                          borderRadius: 2,
-                          backgroundColor: '#fafafa',
-                          position: 'relative'
-                        }}
-                      >
-                        {!esTerapeuta && formularioCita.fechasHoras.length > 1 && (
-                          <IconButton
-                            size="small"
-                            onClick={() => onFormularioChange('eliminarFechaHora', index)}
-                            sx={{
-                              position: 'absolute',
-                              top: 4,
-                              right: 4,
-                              color: '#f44336',
-                              '&:hover': {
-                                backgroundColor: 'rgba(244, 67, 54, 0.04)',
-                              },
-                            }}
-                          >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                        
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <TextField
-                              fullWidth
-                              size="small"
-                              type="date"
-                              label="Fecha"
-                              value={fechaHora.fecha}
-                              onChange={(e) => onFormularioChange('actualizarFechaHora', { index, campo: 'fecha', valor: e.target.value })}
-                              disabled={esTerapeuta}
-                              InputLabelProps={{ shrink: true }}
-                              sx={{
-                                borderRadius: 2,
-                                '& .MuiOutlinedInput-root': {
-                                  backgroundColor: '#ffffff',
-                                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#A3C644',
-                                  },
-                                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#A3C644',
-                                  },
-                                },
-                              }}
-                            />
-                          </Grid>
-                          <Grid item xs={6}>
-                            <TextField
-                              fullWidth
-                              size="small"
-                              type="time"
-                              label="Hora"
-                              value={fechaHora.horaInicio}
-                              onChange={(e) => {
-                                const hora = e.target.value;
-                                if (hora >= '08:00' && hora <= '20:00') {
-                                  onFormularioChange('actualizarFechaHora', { index, campo: 'horaInicio', valor: hora });
-                                }
-                              }}
-                              disabled={esTerapeuta}
-                              inputProps={{ lang: 'es-ES', min: '08:00', max: '20:00', step: 300 }}
-                              InputLabelProps={{ shrink: true }}
-                              sx={{
-                                borderRadius: 2,
-                                '& .MuiOutlinedInput-root': {
-                                  backgroundColor: '#ffffff',
-                                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#A3C644',
-                                  },
-                                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#A3C644',
-                                  },
-                                },
-                              }}
-                            />
-                          </Grid>
-                        </Grid>
-                      </Box>
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="">Seleccionar servicio...</option>
+                    {(() => {
+                      const lista = (serviciosApi && serviciosApi.length ? serviciosApi : (servicios || []));
+                      const agrupados = lista.reduce((acc, srv) => {
+                        const area = srv.area?.nombre || srv.area || 'Sin Área';
+                        if (!acc[area]) acc[area] = [];
+                        acc[area].push(srv);
+                        return acc;
+                      }, {});
+                      return Object.entries(agrupados).map(([areaNombre, serviciosArea]) => (
+                        <optgroup key={areaNombre} label={areaNombre}>
+                          {serviciosArea.map(srv => (
+                            <option key={srv.id} value={srv.id}>
+                              {srv.nombre}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                    })()}
+                  </select>
+                </div>
+
+                {/* Motivo */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Motivo *
+                  </label>
+                  <select
+                    value={formularioCita.motivo_id || ''}
+                    onChange={(e) => onFormularioChange('motivo_id', e.target.value)}
+                    disabled={loadingMotivos || esTerapeuta}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="">
+                      {loadingMotivos ? 'Cargando motivos...' : 'Seleccionar motivo...'}
+                    </option>
+                    {motivos.map((motivo) => (
+                      <option key={motivo.id} value={motivo.id}>
+                        {motivo.nombre} - {motivo.descripcion}
+                      </option>
                     ))}
-                  </Stack>
-                ) : (
-                  <Box sx={{ p: 2, border: '2px dashed #e0e0e0', borderRadius: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No hay fechas y horas programadas
-                    </Typography>
-                    {!esTerapeuta && (
-                      <Button
-                        size="small"
-                        startIcon={<AddIcon />}
+                  </select>
+                </div>
+
+                {/* Duración */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Duración *
+                  </label>
+                  <select
+                    value={formularioCita.duracion}
+                    onChange={(e) => onFormularioChange('duracion', e.target.value)}
+                    disabled={esTerapeuta}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="">Seleccionar duración...</option>
+                    {duraciones.map((duracion) => (
+                      <option key={duracion.valor} value={duracion.valor}>
+                        {duracion.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Fechas y Horas */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      {modoEdicion ? 'Fecha y Hora' : 'Fechas y Horas'} *
+                    </label>
+                    {!esTerapeuta && !modoEdicion && (
+                      <button
                         onClick={() => onFormularioChange('agregarFechaHora', null)}
-                        sx={{ mt: 1, color: '#A3C644' }}
+                        className="flex items-center gap-1 text-sm font-medium text-[#7B1FA2] hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-all"
                       >
-                        Agregar primera fecha
-                      </Button>
+                        <Plus className="w-4 h-4" />
+                        Agregar
+                      </button>
                     )}
-                  </Box>
-                )}
-              </>
-            )}
-          </Box>
+                  </div>
 
-          {/* Nota de la cita */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#424242' }}>
-              📝 Nota de la cita
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              size="small"
-              value={formularioCita.nota || ''}
-              onChange={(e) => onFormularioChange('nota', e.target.value)}
-              disabled={esTerapeuta}
-              placeholder="Agregue cualquier observación o nota adicional..."
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#A3C644',
-                  },
-                }
-              }}
-            />
-          </Box>
-        </Stack>
-          )}
-
-          {/* Contenido de la pestaña Historial */}
-          {modoEdicion && puedeVerHistorial && tabValue === 1 && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#424242' }}>
-                📋 Historial de Cambios
-              </Typography>
-              
-              {loadingHistorial ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
-                </Box>
-              ) : errorHistorial ? (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  {errorHistorial}
-                </Alert>
-              ) : historial.length === 0 ? (
-                <Alert severity="info">
-                  No hay historial disponible para esta cita.
-                </Alert>
-              ) : (
-                <List sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
-                  {historial.map((item, index) => (
-                    <React.Fragment key={item.id}>
-                      <ListItem alignItems="flex-start" sx={{ py: 2 }}>
-                        <ListItemIcon sx={{ minWidth: 40 }}>
-                          <Box sx={{ 
-                            p: 1, 
-                            borderRadius: '50%', 
-                            bgcolor: getColorOperacion(item.tipo_operacion) === 'success' ? '#e8f5e8' :
-                                      getColorOperacion(item.tipo_operacion) === 'info' ? '#e3f2fd' :
-                                      getColorOperacion(item.tipo_operacion) === 'error' ? '#ffebee' : '#f5f5f5',
-                            color: getColorOperacion(item.tipo_operacion) === 'success' ? '#2e7d32' :
-                                   getColorOperacion(item.tipo_operacion) === 'info' ? '#1976d2' :
-                                   getColorOperacion(item.tipo_operacion) === 'error' ? '#d32f2f' : '#757575'
-                          }}>
-                            {getIconoOperacion(item.tipo_operacion)}
-                          </Box>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <Chip 
-                                label={item.tipo_operacion} 
-                                color={getColorOperacion(item.tipo_operacion)}
-                                size="small"
+                  {modoEdicion ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={formularioCita.fechasHoras?.[0]?.fecha || ''}
+                        onChange={(e) => onFormularioChange('actualizarFechaHora', { index: 0, campo: 'fecha', valor: e.target.value })}
+                        disabled={esTerapeuta}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all disabled:opacity-50"
+                      />
+                      <input
+                        type="time"
+                        value={formularioCita.fechasHoras?.[0]?.horaInicio || ''}
+                        onChange={(e) => {
+                          const hora = e.target.value;
+                          if (hora >= '08:00' && hora <= '20:00') {
+                            onFormularioChange('actualizarFechaHora', { index: 0, campo: 'horaInicio', valor: hora });
+                          }
+                        }}
+                        disabled={esTerapeuta}
+                        min="08:00"
+                        max="20:00"
+                        step="300"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all disabled:opacity-50"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {formularioCita.fechasHoras && formularioCita.fechasHoras.length > 0 ? (
+                        formularioCita.fechasHoras.map((fechaHora, index) => (
+                          <div key={index} className="bg-gray-50 border border-gray-200 rounded-xl p-4 relative">
+                            {!esTerapeuta && formularioCita.fechasHoras.length > 1 && (
+                              <button
+                                onClick={() => onFormularioChange('eliminarFechaHora', index)}
+                                className="absolute top-2 right-2 text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-all"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                            <div className="grid grid-cols-2 gap-3">
+                              <input
+                                type="date"
+                                value={fechaHora.fecha}
+                                onChange={(e) => onFormularioChange('actualizarFechaHora', { index, campo: 'fecha', valor: e.target.value })}
+                                disabled={esTerapeuta}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all disabled:opacity-50"
                               />
-                              <Typography variant="body2" color="text.secondary">
-                                {formatearFechaHistorial(item.fecha_registro)}
-                              </Typography>
-                            </Box>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                {item.descripcion_cambios}
-                              </Typography>
-                              
-                              {/* Detalles de la cita en este momento */}
-                              <Box sx={{ 
-                                bgcolor: '#f8f9fa', 
-                                p: 2, 
-                                borderRadius: 1,
-                                border: '1px solid #e0e0e0'
-                              }}>
-                                <Grid container spacing={1}>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption" color="text.secondary">
-                                      <strong>Paciente:</strong> {item.paciente_nombre}
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption" color="text.secondary">
-                                      <strong>Terapeuta:</strong> {item.doctor_nombre}
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption" color="text.secondary">
-                                      <strong>Servicio:</strong> {item.servicio_nombre}
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption" color="text.secondary">
-                                      <strong>Motivo:</strong> {item.motivo_nombre}
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption" color="text.secondary">
-                                      <strong>Fecha:</strong> {item.fecha}
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption" color="text.secondary">
-                                      <strong>Hora:</strong> {item.hora_inicio} - {item.hora_fin}
-                                    </Typography>
-                                  </Grid>
-                                  {item.nota && (
-                                    <Grid item xs={12}>
-                                      <Typography variant="caption" color="text.secondary">
-                                        <strong>Nota:</strong> {item.nota}
-                                      </Typography>
-                                    </Grid>
-                                  )}
-                                </Grid>
-                              </Box>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {index < historial.length - 1 && <Divider variant="inset" component="li" />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
-            </Box>
-          )}
-        </Box>
-      </DialogContent>
-      
-      <DialogActions sx={{ 
-        p: 3, 
-        gap: 2,
-        backgroundColor: '#f8f9fa',
-        borderTop: '1px solid #e0e0e0',
-        display: 'flex',
-        justifyContent: 'space-between'
-      }}>
-        {/* Botón Eliminar - Solo en modo edición y si el usuario tiene permiso */}
-        <Box>
-          {modoEdicion && puedeEliminar && (
-            <Button 
-              onClick={abrirDialogoEliminar}
-              variant="outlined"
-              size="large"
-              startIcon={<DeleteIcon />}
-              sx={{
-                borderColor: '#d32f2f',
-                color: '#d32f2f',
-                borderRadius: 2,
-                px: 3,
-                fontWeight: 'bold',
-                '&:hover': {
-                  borderColor: '#b71c1c',
-                  backgroundColor: 'rgba(211,47,47,0.08)',
-                  transform: 'translateY(-1px)'
-                },
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Eliminar
-            </Button>
-          )}
-        </Box>
+                              <input
+                                type="time"
+                                value={fechaHora.horaInicio}
+                                onChange={(e) => {
+                                  const hora = e.target.value;
+                                  if (hora >= '08:00' && hora <= '20:00') {
+                                    onFormularioChange('actualizarFechaHora', { index, campo: 'horaInicio', valor: hora });
+                                  }
+                                }}
+                                disabled={esTerapeuta}
+                                min="08:00"
+                                max="20:00"
+                                step="300"
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all disabled:opacity-50"
+                              />
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
+                          <p className="text-sm text-gray-600 mb-2">No hay fechas programadas</p>
+                          {!esTerapeuta && (
+                            <button
+                              onClick={() => onFormularioChange('agregarFechaHora', null)}
+                              className="text-sm font-medium text-[#7B1FA2] hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                              Agregar primera fecha
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-        {/* Botones Cancelar y Guardar */}
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {esTerapeuta ? (
-            // Solo botón Cerrar para terapeutas
-            <Button 
-              onClick={onClose}
-              variant="contained"
-              size="large"
-              sx={{
-                background: 'linear-gradient(135deg, #A3C644 0%, #8fb23a 100%)',
-                borderRadius: 2,
-                px: 4,
-                fontWeight: 'bold',
-                boxShadow: '0 4px 12px rgba(163,198,68,0.3)',
-                '&:hover': { 
-                  background: 'linear-gradient(135deg, #8fb23a 0%, #7a9a32 100%)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 6px 16px rgba(163,198,68,0.4)'
-                },
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Cerrar
-            </Button>
-          ) : (
-            // Botones Cancelar y Guardar para admin/admisión
-            <>
-        <Button 
-          onClick={onClose}
-          variant="outlined"
-          size="large"
-          disabled={guardando}
-          sx={{
-            borderColor: '#A3C644',
-            color: '#A3C644',
-            borderRadius: 2,
-            px: 3,
-            fontWeight: 'bold',
-            '&:hover': {
-              borderColor: '#8fb23a',
-              backgroundColor: 'rgba(163,198,68,0.08)',
-              transform: 'translateY(-1px)'
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          Cancelar
-        </Button>
-        <Button 
-          onClick={onGuardar}
-          variant="contained"
-          size="large"
-          disabled={guardando}
-          startIcon={guardando ? <CircularProgress size={20} color="inherit" /> : null}
-          sx={{
-            background: 'linear-gradient(135deg, #A3C644 0%, #8fb23a 100%)',
-            borderRadius: 2,
-            px: 4,
-            fontWeight: 'bold',
-            boxShadow: '0 4px 12px rgba(163,198,68,0.3)',
-            '&:hover': { 
-              background: 'linear-gradient(135deg, #8fb23a 0%, #7a9a32 100%)',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 6px 16px rgba(163,198,68,0.4)'
-            },
-            '&.Mui-disabled': {
-              background: 'linear-gradient(135deg, #c4c4c4 0%, #9e9e9e 100%)',
-              color: 'rgba(255, 255, 255, 0.8)'
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-                {guardando ? 'Guardando...' : (modoEdicion ? '✏️ Actualizar Cita' : '💾 Guardar Cita')}
-              </Button>
-            </>
-          )}
-        </Box>
-      </DialogActions>
-
-      {/* Diálogo de confirmación para eliminar */}
-      <Dialog
-        open={dialogoEliminarAbierto}
-        onClose={cerrarDialogoEliminar}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-          }
-        }}
-      >
-        <DialogTitle sx={{
-          background: 'linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%)',
-          color: 'white',
-          fontWeight: 'bold',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <DeleteIcon />
-          Confirmar Eliminación
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <DialogContentText>
-            ¿Está seguro que desea eliminar esta cita? Esta acción no se puede deshacer.
-            {citaEditando && (
-              <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Detalles de la cita:
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  <strong>Paciente:</strong> {formularioCita.paciente?.nombre_completo || 'N/A'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  <strong>Fechas y Horas:</strong>
-                </Typography>
-                {formularioCita.fechasHoras && formularioCita.fechasHoras.length > 0 ? (
-                  <Box sx={{ ml: 2 }}>
-                    {formularioCita.fechasHoras.map((fechaHora, index) => (
-                      <Typography key={index} variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                        • {fechaHora.fecha} a las {fechaHora.horaInicio}
-                      </Typography>
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                    No hay fechas programadas
-                  </Typography>
-                )}
-              </Box>
+                {/* Nota */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Nota
+                  </label>
+                  <textarea
+                    value={formularioCita.nota || ''}
+                    onChange={(e) => onFormularioChange('nota', e.target.value)}
+                    disabled={esTerapeuta}
+                    rows={3}
+                    placeholder="Agregue observaciones adicionales..."
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all resize-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
             )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button 
-            onClick={cerrarDialogoEliminar}
-            variant="outlined"
-            sx={{
-              borderColor: '#757575',
-              color: '#757575'
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={confirmarEliminar}
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-            sx={{
-              fontWeight: 'bold',
-              boxShadow: '0 4px 12px rgba(211,47,47,0.3)'
-            }}
-          >
-            Eliminar Cita
-        </Button>
-      </DialogActions>
-      </Dialog>
-    </Dialog>
+
+            {/* Tab Historial */}
+            {modoEdicion && puedeVerHistorial && tabValue === 1 && (
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Historial de Cambios</h3>
+                
+                {loadingHistorial ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-gray-200 border-t-[#7B1FA2] rounded-full animate-spin"></div>
+                  </div>
+                ) : errorHistorial ? (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <p className="text-sm text-red-700">{errorHistorial}</p>
+                  </div>
+                ) : historial.length === 0 ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+                    <p className="text-sm text-blue-700">No hay historial disponible para esta cita.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {historial.map((item) => (
+                      <div key={item.id} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${getColorOperacion(item.tipo_operacion)}`}>
+                            {getIconoOperacion(item.tipo_operacion)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-1 rounded-lg text-xs font-semibold border ${getColorOperacion(item.tipo_operacion)}`}>
+                                {item.tipo_operacion}
+                              </span>
+                              <span className="text-xs text-gray-600">{formatearFechaHistorial(item.fecha_registro)}</span>
+                            </div>
+                            <p className="text-sm font-semibold text-gray-900 mb-2">{item.descripcion_cambios}</p>
+                            
+                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="text-gray-600">Paciente:</span>
+                                  <span className="ml-1 font-medium text-gray-900">{item.paciente_nombre}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Terapeuta:</span>
+                                  <span className="ml-1 font-medium text-gray-900">{item.doctor_nombre}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Servicio:</span>
+                                  <span className="ml-1 font-medium text-gray-900">{item.servicio_nombre}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Motivo:</span>
+                                  <span className="ml-1 font-medium text-gray-900">{item.motivo_nombre}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Fecha:</span>
+                                  <span className="ml-1 font-medium text-gray-900">{item.fecha}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Hora:</span>
+                                  <span className="ml-1 font-medium text-gray-900">{item.hora_inicio} - {item.hora_fin}</span>
+                                </div>
+                                {item.nota && (
+                                  <div className="col-span-2">
+                                    <span className="text-gray-600">Nota:</span>
+                                    <span className="ml-1 font-medium text-gray-900">{item.nota}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-gray-200 p-4 bg-gray-50 flex items-center justify-between">
+            {modoEdicion && puedeEliminar ? (
+              <button
+                onClick={abrirDialogoEliminar}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-xl font-medium text-sm hover:bg-red-50 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar
+              </button>
+            ) : (
+              <div></div>
+            )}
+
+            <div className="flex gap-2">
+              {esTerapeuta ? (
+                <button
+                  onClick={onClose}
+                  className="px-6 py-2 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all"
+                >
+                  Cerrar
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={onClose}
+                    disabled={guardando}
+                    className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={onGuardar}
+                    disabled={guardando}
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50"
+                  >
+                    {guardando ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        {modoEdicion ? 'Actualizar' : 'Guardar'}
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Confirmar Eliminación */}
+      {dialogoEliminarAbierto && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+            <div className="bg-red-50 border-b-2 border-red-200 p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Confirmar Eliminación</h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                ¿Está seguro que desea eliminar esta cita? Esta acción no se puede deshacer.
+              </p>
+              
+              {citaEditando && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <p className="text-sm font-bold text-gray-900 mb-2">Detalles de la cita:</p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">Paciente:</span> {formularioCita.paciente?.nombre_completo || 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-semibold">Fechas y Horas:</span>
+                  </p>
+                  {formularioCita.fechasHoras && formularioCita.fechasHoras.length > 0 ? (
+                    <div className="ml-4 mt-1">
+                      {formularioCita.fechasHoras.map((fechaHora, index) => (
+                        <p key={index} className="text-sm text-gray-600">
+                          • {fechaHora.fecha} a las {fechaHora.horaInicio}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 ml-4">No hay fechas programadas</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-end gap-2">
+              <button
+                onClick={cerrarDialogoEliminar}
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEliminar}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl font-medium text-sm hover:bg-red-700 hover:shadow-lg transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar Cita
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
