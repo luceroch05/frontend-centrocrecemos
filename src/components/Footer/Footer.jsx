@@ -77,6 +77,7 @@ export default function Footer() {
                 <li><a href="/servicios">Servicios</a></li>
                 <li><a href="/staff">Especialistas</a></li>
                 <li><a href="/contactanos">Contacto</a></li>
+                <li><a href="/verificar-beneficios">Consultar Beneficios</a></li>
               </ul>
             </div>
 
