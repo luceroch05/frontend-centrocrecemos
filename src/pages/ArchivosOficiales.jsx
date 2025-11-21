@@ -524,9 +524,7 @@ const GestionArchivosOficiales = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-[#7B1FA2] to-[#9C27B0] rounded-2xl flex items-center justify-center shadow-lg">
-              <FileText className="w-7 h-7 text-white" />
-            </div>
+           
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Archivos Oficiales</h1>
               <p className="text-gray-600">Sistema de gestión documental para pacientes y trabajadores</p>

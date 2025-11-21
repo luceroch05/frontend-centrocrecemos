@@ -28,11 +28,29 @@ export const useCitas = () => {
   };
 
   const crearMultiplesCitas = async (citasData) => {
-    const result = await citaService.crearMultiplesCitas(citasData);
-    // El backend devuelve { message, total, citas: [] }
-    const nuevas = Array.isArray(result) ? result : (result?.citas || []);
-    setCitas(prev => [...prev, ...nuevas]);
-    return nuevas;
+    try {
+      const result = await citaService.crearMultiplesCitas(citasData);
+      // El backend devuelve { message, total, citas: [] }
+      const nuevas = Array.isArray(result) ? result : (result?.citas || []);
+      setCitas(prev => [...prev, ...nuevas]);
+      return { success: true, citas: nuevas };
+    } catch (err) {
+      // Capturar errores de conflicto (409) y otros errores
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Error al crear citas';
+      const conflictos = err.response?.data?.conflictos || [];
+
+      console.error('Error al crear citas:', {
+        status: err.response?.status,
+        message: errorMessage,
+        conflictos: conflictos
+      });
+
+      throw {
+        status: err.response?.status,
+        message: errorMessage,
+        conflictos: conflictos
+      };
+    }
   };
 
   const actualizarCita = async (id, citaData) => {

@@ -274,29 +274,49 @@ const Agenda = () => {
         }));
 
         const resultados = await crearMultiplesCitas(citasParaCrear);
-        
-        const cantidadCitas = resultados.length;
-        setSnackbar({ 
-          open: true, 
-          message: `${cantidadCitas} cita${cantidadCitas > 1 ? 's' : ''} agendada${cantidadCitas > 1 ? 's' : ''} correctamente`, 
-          severity: 'success' 
+
+        const cantidadCitas = resultados?.citas?.length || citasParaCrear.length;
+        setSnackbar({
+          open: true,
+          message: `${cantidadCitas} cita${cantidadCitas > 1 ? 's' : ''} agendada${cantidadCitas > 1 ? 's' : ''} correctamente`,
+          severity: 'success'
         });
       }
-      
+
       // Esperar 1 segundo para que el usuario vea el mensaje antes de cerrar
       await new Promise(resolve => setTimeout(resolve, 1000));
       cerrarModal();
     } catch (error) {
-      // Extraer el mensaje de error del servidor
-      let mensajeError = citaEditando ? 'Error al actualizar la cita' : 'Error al agendar la cita';
-      
-      if (error.response?.data?.message) {
-        mensajeError = error.response.data.message;
-      } else if (error.message) {
-        mensajeError = error.message;
+      console.error('Error capturado en guardarCita:', error);
+
+      // Manejar errores de conflicto (409)
+      if (error.status === 409) {
+        let mensajeConflicto = error.message || 'Ya existe una cita en ese horario';
+
+        // Si hay información detallada de conflictos
+        if (error.conflictos && error.conflictos.length > 0) {
+          const detallesConflictos = error.conflictos.map(c => {
+            const fecha = new Date(c.fecha).toLocaleDateString('es-ES');
+            return `• ${fecha} a las ${c.hora_inicio}`;
+          }).join('\n');
+
+          mensajeConflicto = `Conflicto de horarios detectado:\n${detallesConflictos}`;
+        }
+
+        setSnackbar({ open: true, message: mensajeConflicto, severity: 'error' });
       }
-      
-      setSnackbar({ open: true, message: mensajeError, severity: 'error' });
+      // Otros errores
+      else {
+        let mensajeError = citaEditando ? 'Error al actualizar la cita' : 'Error al agendar la cita';
+
+        if (error.message) {
+          mensajeError = error.message;
+        } else if (error.response?.data?.message) {
+          mensajeError = error.response.data.message;
+        }
+
+        setSnackbar({ open: true, message: mensajeError, severity: 'error' });
+      }
     } finally {
       setGuardando(false); // Siempre desactivar estado de guardando
     }
