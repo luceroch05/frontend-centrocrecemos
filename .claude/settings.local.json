@@ -13,7 +13,10 @@
       "Bash(timeout /t 3)",
       "Bash(/tmp/entrevista_original.jsx)",
       "Bash(dir /s /b *entrevista* 2)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(ping:*)",
+      "Bash(Stop-Process -Id 6996 -Force)",
+      "Bash(timeout /t 5)"
     ],
     "deny": [],
     "ask": []

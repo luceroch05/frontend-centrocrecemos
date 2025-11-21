@@ -1,66 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react'; // ✅ Agregado useRef
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  TextField,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  InputAdornment,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  CircularProgress,
-  Alert,
-  Tooltip,
-  Avatar,
-  TablePagination
-} from '@mui/material';
-import {
-  Search,
-  Visibility,
-  Delete,
-  Description,
-  Close,
-  Send,
-  FilterList,
-  Refresh,
-  People,
-  Schedule,
-  CheckCircle,
-  Cancel,
-  Warning,
-  NoteAdd,
-  PersonOutline,
-  WorkOutline,
-  LocationOn,
-  Email,
-  Phone
-} from '@mui/icons-material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, X, Filter, RefreshCw, Eye, Trash2, FileText, Send, ChevronLeft, ChevronRight, Users, Sparkles, CheckCircle2, XCircle, Phone, MessageCircle, Clock } from 'lucide-react';
 import { CONFIGURACION_ESTADOS_POSTULACION } from '../constants/estadosPostulacion';
 import TopMenu from '../components/TopMenu';
-import {getDistritos} from '../services/catalogoService';
+import { getDistritos } from '../services/catalogoService';
 import postulacionesService from '../services/postulacionesService';
-
 
 const PostulacionesDashboard = () => {
   const [postulaciones, setPostulaciones] = useState([]);
@@ -77,63 +20,50 @@ const PostulacionesDashboard = () => {
   const [comentarios, setComentarios] = useState([]);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [estadisticas, setEstadisticas] = useState({
-    total: 0,
-    estados: []
-  });
+  const [estadisticas, setEstadisticas] = useState({ total: 0, estados: [] });
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(12);
   const [estadosDisponibles, setEstadosDisponibles] = useState([]);
   const [cargosDisponibles, setCargosDisponibles] = useState([]);
   const [distritosDisponibles, setDistritosDisponibles] = useState([]);
   const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
-  
-  // ✅ NUEVO: Control de inicialización
+  const [showFilters, setShowFilters] = useState(false);
+  const [loadingCV, setLoadingCV] = useState(false);
   const inicializadoRef = useRef(false);
 
   const coloresEstado = {
-    'Nuevo': 'warning',
-    'En revisión': 'info',
-    'Contactado': 'primary',
-    'Por entrevistar': 'secondary',
-    'Rechazado': 'error',
-    'Contratado': 'success'
+    'Nuevo': { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', border: 'border-emerald-200' },
+    'En revisión': { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', border: 'border-blue-200' },
+    'Contactado': { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500', border: 'border-purple-200' },
+    'Por entrevistar': { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', border: 'border-amber-200' },
+    'Rechazado': { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500', border: 'border-red-200' },
+    'Contratado': { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', border: 'border-green-200' }
   };
 
-  // ✅ SOLUCIÓN: useEffect con control de duplicados
   useEffect(() => {
-    // Evita ejecución duplicada en React Strict Mode
     if (inicializadoRef.current) return;
     inicializadoRef.current = true;
 
     const inicializar = async () => {
       await cargarCatalogos();
-      await Promise.all([
-        cargarPostulaciones(),
-        cargarEstadisticas()
-      ]);
+      await Promise.all([cargarPostulaciones(), cargarEstadisticas()]);
     };
-    
     inicializar();
   }, []);
 
   const cargarCatalogos = async () => {
     try {
       setCargandoCatalogos(true);
-      
       const [estadosData, cargosData, distritosData] = await Promise.all([
         postulacionesService.obtenerEstados(),
         postulacionesService.obtenerCargos(),
         getDistritos(),
       ]);
-
       setEstadosDisponibles(estadosData);
       setCargosDisponibles(cargosData);
       setDistritosDisponibles(distritosData);
-
     } catch (error) {
-      console.error('❌ Error al cargar catálogos:', error);
+      console.error('Error al cargar catálogos:', error);
     } finally {
       setCargandoCatalogos(false);
     }
@@ -145,8 +75,7 @@ const PostulacionesDashboard = () => {
       const data = await postulacionesService.obtenerPostulaciones(filtros);
       setPostulaciones(data);
     } catch (error) {
-      console.error('❌ Error al cargar postulaciones:', error);
-      alert('Error al cargar postulaciones: ' + error.message);
+      console.error('Error al cargar postulaciones:', error);
     } finally {
       setLoading(false);
     }
@@ -157,7 +86,7 @@ const PostulacionesDashboard = () => {
       const data = await postulacionesService.obtenerEstadisticasPorEstados();
       setEstadisticas(data);
     } catch (error) {
-      console.error('❌ Error al cargar estadísticas:', error);
+      console.error('Error al cargar estadísticas:', error);
     }
   };
 
@@ -173,15 +102,23 @@ const PostulacionesDashboard = () => {
 
   const handleVerCV = async (postulacion) => {
     try {
-      setLoading(true);
+      setLoadingCV(true);
+      setCvUrl(null);
       setModalCV(postulacion);
+      console.log('Obteniendo CV para:', postulacion.id_postulacion);
+      
       const url = await postulacionesService.obtenerCV(postulacion.id_postulacion);
-      setCvUrl(url);
+      console.log('URL obtenida:', url);
+      
+      if (url) {
+        setCvUrl(url);
+      } else {
+        console.error('URL vacía');
+      }
     } catch (error) {
       console.error('Error al cargar CV:', error);
-      setModalCV(null);
     } finally {
-      setLoading(false);
+      setLoadingCV(false);
     }
   };
 
@@ -213,7 +150,6 @@ const PostulacionesDashboard = () => {
 
   const handleAgregarComentario = async () => {
     if (!nuevoComentario.trim()) return;
-    
     try {
       const idTrabajador = 1;
       const comentario = await postulacionesService.agregarComentario(
@@ -236,22 +172,8 @@ const PostulacionesDashboard = () => {
     setModalCV(null);
   };
 
-  // Configuración de las tarjetas de estadísticas
-  const configuracionEstados = CONFIGURACION_ESTADOS_POSTULACION;
-
   const getInitials = (nombre, apellido) => {
     return `${nombre?.charAt(0) || ''}${apellido?.charAt(0) || ''}`.toUpperCase();
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const paginatedPostulaciones = postulaciones.slice(
@@ -259,732 +181,601 @@ const PostulacionesDashboard = () => {
     page * rowsPerPage + rowsPerPage
   );
 
+  const totalPages = Math.ceil(postulaciones.length / rowsPerPage);
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', p: 3 }}>
-      <TopMenu/>
-      <Box sx={{ maxWidth: 1400, mx: 'auto', paddingTop: 10 }}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 pt-24 lg:pt-12">
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b', mb: 1 }}>
-            Gestión de Postulaciones
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#64748b' }}>
-            Administra y revisa las postulaciones de candidatos
-          </Typography>
-        </Box>
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Gestión de Postulaciones</h1>
+          <p className="text-gray-600">Administra y revisa las postulaciones de candidatos</p>
+        </div>
 
         {/* Estadísticas */}
-        <Grid container spacing={2} sx={{ mb: 4 }}>
-          {/* Tarjeta Total */}
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card sx={{ 
-              borderTop: 4, 
-              borderColor: '#3b82f6',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              transition: 'all 0.3s',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-            }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <People sx={{ fontSize: 32, color: '#3b82f6', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                  {estadisticas.total}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                  Total
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
+          {/* Total */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.total}</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">Total</div>
+            </div>
+          </div>
 
-          {/* Tarjetas dinámicas por estado */}
-          {configuracionEstados.map((estado, index) => {
-            const IconoComponente = estado.icono;
-            const cantidad = estadisticas.estados?.find(e => e.nombre === estado.nombre)?.cantidad || 0;
-            
-            return (
-              <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-                <Card sx={{ 
-                  borderTop: 4, 
-                  borderColor: estado.color,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                  transition: 'all 0.3s',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-                }}>
-                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                    <IconoComponente sx={{ fontSize: 32, color: estado.color, mb: 1 }} />
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                      {cantidad}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                      {estado.label}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
+          {/* Nuevo */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <Sparkles className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.estados?.find(e => e.nombre === 'Nuevo')?.cantidad || 0}</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">Nuevo</div>
+            </div>
+          </div>
+
+          {/* En revisión */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <Eye className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.estados?.find(e => e.nombre === 'En revisión')?.cantidad || 0}</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">Revisión</div>
+            </div>
+          </div>
+
+          {/* Contactado */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <Phone className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.estados?.find(e => e.nombre === 'Contactado')?.cantidad || 0}</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">Contactado</div>
+            </div>
+          </div>
+
+          {/* Por entrevistar */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <MessageCircle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.estados?.find(e => e.nombre === 'Por entrevistar')?.cantidad || 0}</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">Entrevista</div>
+            </div>
+          </div>
+
+          {/* Rechazado */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.estados?.find(e => e.nombre === 'Rechazado')?.cantidad || 0}</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">Rechazado</div>
+            </div>
+          </div>
+
+          {/* Contratado */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.estados?.find(e => e.nombre === 'Contratado')?.cantidad || 0}</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">Contratado</div>
+            </div>
+          </div>
+        </div>
 
         {/* Filtros */}
-        <Card sx={{ mb: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FilterList sx={{ color: '#64748b' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                  Filtros
-                </Typography>
-              </Box>
-              <Button
-                size="small"
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-[#7B1FA2]" />
+                <h2 className="text-lg font-bold text-gray-900">Filtros</h2>
+              </div>
+              <button
                 onClick={() => setShowFilters(!showFilters)}
-                sx={{ textTransform: 'none', color: '#64748b' }}
+                className="text-sm font-medium text-[#7B1FA2] hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-all"
               >
                 {showFilters ? 'Ocultar' : 'Mostrar'}
-              </Button>
-            </Box>
+              </button>
+            </div>
 
             {showFilters && (
               <>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      placeholder="Buscar por nombre, apellido o email..."
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  {/* Búsqueda */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre, email..."
                       value={filtros.search}
                       onChange={(e) => setFiltros({ ...filtros, search: e.target.value })}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Search sx={{ color: '#64748b' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      size="small"
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all"
                     />
-                  </Grid>
+                  </div>
 
-                  {/* ✅ Select de Estado dinámico */}
-                  <Grid item xs={12} md={2}>
-                    <FormControl fullWidth size="small" disabled={cargandoCatalogos}>
-                      <InputLabel>Estado</InputLabel>
-                      <Select
-                        value={filtros.estado_postulacion}
-                        label="Estado"
-                        onChange={(e) => setFiltros({ ...filtros, estado_postulacion: e.target.value })}
-                      >
-                        <MenuItem value="">Todos</MenuItem>
-                        {estadosDisponibles.map(estado => (
-                          <MenuItem key={estado.id} value={estado.descripcion}>{estado.descripcion}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
+                  {/* Estado */}
+                  <select
+                    value={filtros.estado_postulacion}
+                    onChange={(e) => setFiltros({ ...filtros, estado_postulacion: e.target.value })}
+                    disabled={cargandoCatalogos}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Todos los estados</option>
+                    {estadosDisponibles.map(estado => (
+                      <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>
+                    ))}
+                  </select>
 
-                  {/* ✅ Select de Distrito dinámico */}
-                  <Grid item xs={12} md={2}>
-                    <FormControl fullWidth size="small" disabled={cargandoCatalogos}>
-                      <InputLabel>Distrito</InputLabel>
-                      <Select
-                        value={filtros.distrito}
-                        label="Distrito"
-                        onChange={(e) => setFiltros({ ...filtros, distrito: e.target.value })}
-                      >
-                        <MenuItem value="">Todos</MenuItem>
-                        {distritosDisponibles.map(distrito => (
-                          <MenuItem key={distrito.id} value={distrito.nombre}>{distrito.nombre}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
+                  {/* Distrito */}
+                  <select
+                    value={filtros.distrito}
+                    onChange={(e) => setFiltros({ ...filtros, distrito: e.target.value })}
+                    disabled={cargandoCatalogos}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Todos los distritos</option>
+                    {distritosDisponibles.map(distrito => (
+                      <option key={distrito.id} value={distrito.nombre}>{distrito.nombre}</option>
+                    ))}
+                  </select>
 
-                  {/* ✅ Select de Cargo dinámico */}
-                  <Grid item xs={12} md={2}>
-                    <FormControl fullWidth size="small" disabled={cargandoCatalogos}>
-                      <InputLabel>Cargo</InputLabel>
-                      <Select
-                        value={filtros.cargo_postulado}
-                        label="Cargo"
-                        onChange={(e) => setFiltros({ ...filtros, cargo_postulado: e.target.value })}
-                      >
-                        <MenuItem value="">Todos</MenuItem>
-                        {cargosDisponibles.map(cargo => (
-                          <MenuItem key={cargo.id} value={cargo.descripcion}>{cargo.descripcion}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
+                  {/* Cargo */}
+                  <select
+                    value={filtros.cargo_postulado}
+                    onChange={(e) => setFiltros({ ...filtros, cargo_postulado: e.target.value })}
+                    disabled={cargandoCatalogos}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Todos los cargos</option>
+                    {cargosDisponibles.map(cargo => (
+                      <option key={cargo.id} value={cargo.descripcion}>{cargo.descripcion}</option>
+                    ))}
+                  </select>
+                </div>
 
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<Search />}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
                     onClick={cargarPostulaciones}
                     disabled={loading}
-                    sx={{ textTransform: 'none', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
+                    <Search className="w-4 h-4" />
                     Buscar
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Close />}
+                  </button>
+                  <button
                     onClick={() => {
                       setFiltros({ search: '', estado_postulacion: '', distrito: '', cargo_postulado: '' });
                       setTimeout(cargarPostulaciones, 100);
                     }}
-                    sx={{ textTransform: 'none', color: '#64748b', borderColor: '#e2e8f0' }}
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
                   >
+                    <X className="w-4 h-4" />
                     Limpiar
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Refresh />}
+                  </button>
+                  <button
                     onClick={() => { cargarPostulaciones(); cargarEstadisticas(); }}
-                    sx={{ textTransform: 'none', color: '#10b981', borderColor: '#10b981' }}
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-green-200 text-green-700 rounded-xl font-medium text-sm hover:bg-green-50 transition-all"
                   >
+                    <RefreshCw className="w-4 h-4" />
                     Actualizar
-                  </Button>
-                </Box>
+                  </button>
+                </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Tabla */}
-        <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                  <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Candidato</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Cargo</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Distrito</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Estado</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Fecha</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 600, color: '#475569' }}>Acciones</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <CircularProgress />
-                      <Typography sx={{ mt: 2, color: '#64748b' }}>Cargando postulaciones...</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : postulaciones.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <Typography sx={{ color: '#64748b' }}>No se encontraron postulaciones</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedPostulaciones.map((postulacion) => (
-                    <TableRow 
-                      key={postulacion.id_postulacion}
-                      sx={{ '&:hover': { bgcolor: '#f8fafc' }, transition: '0.2s' }}
-                    >
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar sx={{ bgcolor: '#3b82f6', width: 40, height: 40 }}>
-                            {getInitials(postulacion.nombre, postulacion.apellido)}
-                          </Avatar>
-                          <Box>
-                            <Typography sx={{ fontWeight: 600, color: '#1e293b' }}>
-                              {postulacion.nombre} {postulacion.apellido}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.875rem' }}>
-                              {postulacion.email}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ color: '#475569' }}>{postulacion.cargo_postulado}</TableCell>
-                      <TableCell sx={{ color: '#475569' }}>{postulacion.distrito}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={postulacion.estado_postulacion}
-                          color={coloresEstado[postulacion.estado_postulacion]}
-                          size="small"
-                          sx={{ fontWeight: 500 }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ color: '#475569' }}>
-                        {new Date(postulacion.fecha_postulacion).toLocaleDateString('es-ES')}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                          <Tooltip title="Ver perfil y notas">
-                            <IconButton
-                              onClick={() => handleVerPerfil(postulacion)}
-                              size="small"
-                              sx={{ color: '#3b82f6', '&:hover': { bgcolor: '#dbeafe' } }}
-                            >
-                              <Description />
-                              
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Ver CV">
-                            <IconButton
-                              onClick={() => handleVerCV(postulacion)}
-                              size="small"
-                              sx={{ color: '#8b5cf6', '&:hover': { bgcolor: '#ede9fe' } }}
-                            >
-                              <Visibility />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Eliminar">
-                            <IconButton
-                              onClick={() => setModalEliminar(postulacion)}
-                              size="small"
-                              sx={{ color: '#ef4444', '&:hover': { bgcolor: '#fee2e2' } }}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          {/* Paginación - Siempre visible cuando hay datos */}
-          {!loading && postulaciones.length > 0 && (
-            <Box sx={{ borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
-              <TablePagination
-                component="div"
-                count={postulaciones.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 25, 50, 100]}
-                labelRowsPerPage="Registros por página:"
-                labelDisplayedRows={({ from, to, count }) => 
-                  `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-                }
-                sx={{
-                  '.MuiTablePagination-toolbar': {
-                    paddingLeft: 2,
-                    paddingRight: 2,
-                  },
-                  '.MuiTablePagination-selectLabel': {
-                    color: '#64748b',
-                    fontWeight: 500,
-                    margin: 0
-                  },
-                  '.MuiTablePagination-displayedRows': {
-                    color: '#64748b',
-                    fontWeight: 500,
-                    margin: 0
-                  },
-                  '.MuiTablePagination-select': {
-                    color: '#1e293b',
-                    fontWeight: 600
-                  },
-                  '.MuiTablePagination-actions': {
-                    color: '#3b82f6'
-                  }
-                }}
-              />
-            </Box>
-          )}
-        </Card>
-
-      {/* Modal Perfil y Notas */}
-        <Dialog
-          open={!!modalPerfil}
-          onClose={() => setModalPerfil(null)}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: 2 }
-          }}
-        >
-          {modalPerfil && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-gray-200 border-t-[#7B1FA2] rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando postulaciones...</p>
+              </div>
+            </div>
+          ) : postulaciones.length === 0 ? (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-gray-600">No se encontraron postulaciones</p>
+            </div>
+          ) : (
             <>
-              <DialogTitle sx={{ 
-                bgcolor: '#3b82f6', 
-                color: 'white', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                py: 2
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: 'white', color: '#3b82f6', width: 48, height: 48 }}>
-                    {getInitials(modalPerfil.nombre, modalPerfil.apellido)}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {modalPerfil.nombre} {modalPerfil.apellido}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Perfil del Candidato
-                    </Typography>
-                  </Box>
-                </Box>
-                <IconButton onClick={() => setModalPerfil(null)} sx={{ color: 'white' }}>
-                  <Close />
-                </IconButton>
-              </DialogTitle>
-              <DialogContent sx={{ mt: 3 }}>
-                <Grid container spacing={3} sx={{ mb: 3 }}>
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <PersonOutline sx={{ color: '#64748b', fontSize: 20 }} />
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Nombre Completo
-                      </Typography>
-                    </Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                      {modalPerfil.nombre} {modalPerfil.apellido}
-                    </Typography>
-                  </Grid>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Candidato</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Cargo</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Distrito</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Fecha</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedPostulaciones.map((postulacion) => {
+                      const estadoColors = coloresEstado[postulacion.estado_postulacion] || coloresEstado['Nuevo'];
+                      return (
+                        <tr key={postulacion.id_postulacion} className="border-b border-gray-100 hover:bg-gray-50 transition-all">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7B1FA2] to-[#9C27B0] flex items-center justify-center text-white font-semibold text-sm">
+                                {getInitials(postulacion.nombre, postulacion.apellido)}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">{postulacion.nombre} {postulacion.apellido}</p>
+                                <p className="text-xs text-gray-600">{postulacion.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{postulacion.cargo_postulado}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{postulacion.distrito}</td>
+                          <td className="px-6 py-4">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${estadoColors.bg} ${estadoColors.border}`}>
+                              <div className={`w-2 h-2 rounded-full ${estadoColors.dot}`}></div>
+                              <span className={`text-xs font-semibold ${estadoColors.text}`}>{postulacion.estado_postulacion}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700">
+                            {new Date(postulacion.fecha_postulacion).toLocaleDateString('es-ES')}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleVerPerfil(postulacion)}
+                                className="p-2 text-[#7B1FA2] hover:bg-purple-50 rounded-lg transition-all"
+                                title="Ver perfil"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleVerCV(postulacion)}
+                                disabled={loadingCV}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50"
+                                title="Ver CV"
+                              >
+                                {loadingCV ? (
+                                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <Eye className="w-4 h-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => setModalEliminar(postulacion)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <WorkOutline sx={{ color: '#64748b', fontSize: 20 }} />
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Cargo Postulado
-                      </Typography>
-                    </Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                      {modalPerfil.cargo_postulado}
-                    </Typography>
-                  </Grid>
+              {/* Paginación */}
+              {postulaciones.length > 0 && (
+                <div className="border-t border-gray-200 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50">
+                  <div className="text-sm text-gray-600">
+                    Mostrando <span className="font-semibold">{page * rowsPerPage + 1}</span> a{' '}
+                    <span className="font-semibold">{Math.min((page + 1) * rowsPerPage, postulaciones.length)}</span> de{' '}
+                    <span className="font-semibold">{postulaciones.length}</span>
+                  </div>
 
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <LocationOn sx={{ color: '#64748b', fontSize: 20 }} />
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Distrito
-                      </Typography>
-                    </Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                      {modalPerfil.distrito}
-                    </Typography>
-                  </Grid>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage(Math.max(0, page - 1))}
+                      disabled={page === 0}
+                      className="p-2 text-gray-600 hover:bg-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
 
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 1, display: 'block' }}>
-                      Estado
-                    </Typography>
-                    <FormControl fullWidth size="small">
-                      <Select
-                        value={modalPerfil.estado_postulacion}
-                        onChange={(e) => handleCambiarEstado(modalPerfil.id_postulacion, e.target.value)}
+                    {Array.from({ length: totalPages }, (_, i) => i).map(i => (
+                      <button
+                        key={i}
+                        onClick={() => setPage(i)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                          page === i
+                            ? 'bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white'
+                            : 'hover:bg-white text-gray-600'
+                        }`}
                       >
-                        {/* ✅ CORREGIDO: Ahora usa estado.id como key y estado.descripcion como valor */}
-                        {estadosDisponibles.map(estado => (
-                          <MenuItem key={estado.id} value={estado.descripcion}>
-                            <Chip
-                              label={estado.descripcion}
-                              color={coloresEstado[estado.descripcion]}
-                              size="small"
-                              sx={{ fontWeight: 500 }}
-                            />
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
+                        {i + 1}
+                      </button>
+                    ))}
 
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <Email sx={{ color: '#64748b', fontSize: 20 }} />
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Email
-                      </Typography>
-                    </Box>
-                    <Typography variant="body1" sx={{ color: '#1e293b' }}>
-                      {modalPerfil.email}
-                    </Typography>
-                  </Grid>
+                    <button
+                      onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                      disabled={page >= totalPages - 1}
+                      className="p-2 text-gray-600 hover:bg-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <Phone sx={{ color: '#64748b', fontSize: 20 }} />
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Teléfono
-                      </Typography>
-                    </Box>
-                    <Typography variant="body1" sx={{ color: '#1e293b' }}>
-                      {modalPerfil.telefono}
-                    </Typography>
-                  </Grid>
-                </Grid>
-
-                <Divider sx={{ my: 3 }} />
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <NoteAdd sx={{ color: '#3b82f6', fontSize: 24 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                    Notas y Comentarios
-                  </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-                  <TextField
-                    fullWidth
-                    placeholder="Agregar una nota sobre este candidato..."
-                    value={nuevoComentario}
-                    onChange={(e) => setNuevoComentario(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleAgregarComentario()}
-                    multiline
-                    rows={2}
-                    size="small"
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleAgregarComentario}
-                    disabled={!nuevoComentario.trim()}
-                    sx={{ 
-                      minWidth: 100,
-                      bgcolor: '#3b82f6', 
-                      '&:hover': { bgcolor: '#2563eb' },
-                      textTransform: 'none'
-                    }}
+                  <select
+                    value={rowsPerPage}
+                    onChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setPage(0); }}
+                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#A3C644]"
                   >
-                    <Send sx={{ fontSize: 20 }} />
-                  </Button>
-                </Box>
-
-                <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-                  {comentarios.length === 0 ? (
-                    <Alert severity="info" sx={{ borderRadius: 2 }}>
-                      No hay notas registradas para este candidato
-                    </Alert>
-                  ) : (
-                    <List sx={{ p: 0 }}>
-                      {/* ✅ ESTE YA ESTABA BIEN - Tiene key único con id_comentario */}
-                      {comentarios.map((comentario) => (
-                        <ListItem
-                          key={comentario.id_comentario}
-                          sx={{
-                            bgcolor: '#f8fafc',
-                            borderRadius: 2,
-                            mb: 1.5,
-                            border: '1px solid #e2e8f0',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            p: 2
-                          }}
-                        >
-                          <Typography 
-                            variant="body1" 
-                            sx={{ color: '#1e293b', mb: 1, lineHeight: 1.6 }}
-                          >
-                            {comentario.comentario}
-                          </Typography>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ color: '#64748b', fontWeight: 500 }}
-                          >
-                            {new Date(comentario.fecha_comentario).toLocaleString('es-ES', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </Typography>
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                </Box>
-              </DialogContent>
-              <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc' }}>
-                <Button 
-                  onClick={() => setModalPerfil(null)}
-                  sx={{ textTransform: 'none', color: '#64748b' }}
-                >
-                  Cerrar
-                </Button>
-              </DialogActions>
+                    <option value={6}>6 por página</option>
+                    <option value={12}>12 por página</option>
+                    <option value={24}>24 por página</option>
+                    <option value={48}>48 por página</option>
+                  </select>
+                </div>
+              )}
             </>
           )}
-        </Dialog>
+        </div>
+      </div>
 
-        {/* Modal CV */}
-        <Dialog
-          open={!!modalCV}
-          onClose={cerrarModalCV}
-          maxWidth="lg"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: 2, height: '90vh' }
-          }}
-        >
-          {modalCV && (
-            <>
-              <DialogTitle sx={{ 
-                bgcolor: '#8b5cf6', 
-                color: 'white', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                py: 2
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Description sx={{ fontSize: 32 }} />
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Currículum Vitae
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      {modalCV.nombre} {modalCV.apellido}
-                    </Typography>
-                  </Box>
-                </Box>
-                <IconButton onClick={cerrarModalCV} sx={{ color: 'white' }}>
-                  <Close />
-                </IconButton>
-              </DialogTitle>
-              <DialogContent sx={{ p: 0, height: 'calc(90vh - 100px)', bgcolor: '#f8fafc' }}>
-                {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <CircularProgress size={48} />
-                      <Typography sx={{ mt: 2, color: '#64748b' }}>
-                        Cargando documento...
-                      </Typography>
-                    </Box>
-                  </Box>
-                ) : cvUrl ? (
+      {/* Modal Perfil */}
+      {modalPerfil && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] p-6 flex items-center justify-between sticky top-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#7B1FA2] font-bold">
+                  {getInitials(modalPerfil.nombre, modalPerfil.apellido)}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{modalPerfil.nombre} {modalPerfil.apellido}</h2>
+                  <p className="text-white/80 text-sm">Perfil del Candidato</p>
+                </div>
+              </div>
+              <button onClick={() => setModalPerfil(null)} className="text-white hover:bg-white/20 p-2 rounded-lg transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Info Personal */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Nombre Completo</label>
+                  <p className="text-gray-900 font-semibold mt-1">{modalPerfil.nombre} {modalPerfil.apellido}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Cargo</label>
+                  <p className="text-gray-900 font-semibold mt-1">{modalPerfil.cargo_postulado}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Distrito</label>
+                  <p className="text-gray-900 font-semibold mt-1">{modalPerfil.distrito}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Email</label>
+                  <p className="text-gray-900 font-semibold mt-1">{modalPerfil.email}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Teléfono</label>
+                  <p className="text-gray-900 font-semibold mt-1">{modalPerfil.telefono}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Estado</label>
+                  <select
+                    value={modalPerfil.estado_postulacion}
+                    onChange={(e) => handleCambiarEstado(modalPerfil.id_postulacion, e.target.value)}
+                    className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644]"
+                  >
+                    {estadosDisponibles.map(estado => (
+                      <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Notas y Comentarios</h3>
+                
+                <div className="flex gap-2 mb-4">
+                  <input
+                    type="text"
+                    placeholder="Agregar una nota..."
+                    value={nuevoComentario}
+                    onChange={(e) => setNuevoComentario(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAgregarComentario()}
+                    className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644]"
+                  />
+                  <button
+                    onClick={handleAgregarComentario}
+                    disabled={!nuevoComentario.trim()}
+                    className="px-4 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-lg font-medium text-sm disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {comentarios.length === 0 ? (
+                    <p className="text-gray-600 text-sm text-center py-4">No hay notas registradas</p>
+                  ) : (
+                    comentarios.map((comentario) => (
+                      <div key={comentario.id_comentario} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <p className="text-gray-900 text-sm mb-2">{comentario.comentario}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(comentario.fecha_comentario).toLocaleString('es-ES')}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 p-6 flex justify-end gap-3">
+              <button
+                onClick={() => setModalPerfil(null)}
+                className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal CV - Rediseñado */}
+      {modalCV && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Header - Minimalista */}
+            <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] p-4 flex items-center justify-between sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">CV - {modalCV.nombre} {modalCV.apellido}</h2>
+                  <p className="text-white/80 text-xs">{modalCV.cargo_postulado}</p>
+                </div>
+              </div>
+              <button 
+                onClick={cerrarModalCV} 
+                className="text-white hover:bg-white/20 p-2 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden relative">
+              {loadingCV ? (
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-gray-200 border-t-[#7B1FA2] rounded-full animate-spin mx-auto mb-6"></div>
+                  <p className="text-gray-700 font-medium">Cargando CV...</p>
+                  <p className="text-gray-500 text-sm mt-2">Por favor espera un momento</p>
+                </div>
+              ) : cvUrl && modalCV ? (
+                <>
                   <iframe
+                    key={modalCV.id_postulacion}
                     src={cvUrl}
                     style={{ width: '100%', height: '100%', border: 'none' }}
                     title="CV PDF"
+                    className="rounded-none"
+                    onError={() => {
+                      console.error('Error al cargar iframe');
+                      setCvUrl(null);
+                    }}
                   />
-                ) : (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                    <Alert severity="error" sx={{ borderRadius: 2 }}>
-                      No se pudo cargar el CV. Verifica que el archivo exista.
-                    </Alert>
-                  </Box>
-                )}
-              </DialogContent>
-            </>
-          )}
-        </Dialog>
+                  {/* Watermark sutil */}
+                  <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
+                    <p className="text-xs text-gray-600 font-medium">📄 Documento PDF</p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-8 h-8 text-red-500" />
+                  </div>
+                  <p className="text-gray-900 font-semibold mb-1">No se pudo cargar el CV</p>
+                  <p className="text-gray-500 text-sm">Verifica que el archivo exista o intenta nuevamente</p>
+                  <button
+                    onClick={() => modalCV && handleVerCV(modalCV)}
+                    className="mt-4 px-4 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-lg font-medium text-sm hover:shadow-lg transition-all"
+                  >
+                    Intentar de nuevo
+                  </button>
+                </div>
+              )}
+            </div>
 
-        {/* Modal Eliminar */}
-        <Dialog
-          open={!!modalEliminar}
-          onClose={() => setModalEliminar(null)}
-          maxWidth="sm"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: 2 }
-          }}
-        >
-          <DialogTitle sx={{ 
-            bgcolor: '#fee2e2', 
-            color: '#991b1b',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            py: 2
-          }}>
-            <Cancel sx={{ fontSize: 32, color: '#ef4444' }} />
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Confirmar Eliminación
-            </Typography>
-          </DialogTitle>
-          <DialogContent sx={{ mt: 3 }}>
-            <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
-              Esta acción no se puede deshacer
-            </Alert>
-            
-            {modalEliminar && (
-              <Box>
-                <Typography variant="body1" sx={{ color: '#1e293b', mb: 2 }}>
-                  ¿Estás seguro de que deseas eliminar la postulación de:
-                </Typography>
+            {/* Footer - Minimalista */}
+            <div className="bg-white border-t border-gray-200 p-3 flex items-center justify-between">
+              <div className="text-xs text-gray-600">
+                <span className="font-medium">{modalCV.email}</span>
+              </div>
+              <button
+                onClick={cerrarModalCV}
+                className="px-4 py-1.5 text-gray-700 text-sm hover:bg-gray-100 rounded-lg transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar */}
+      {modalEliminar && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden">
+            <div className="bg-red-50 p-6 border-b border-red-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <h2 className="text-lg font-bold text-red-900">Confirmar Eliminación</h2>
+              </div>
+              <p className="text-sm text-red-800 mt-2">Esta acción no se puede deshacer</p>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-900 font-medium mb-4">¿Estás seguro de que deseas eliminar la postulación de:</p>
+              
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#7B1FA2] to-[#9C27B0] flex items-center justify-center text-white font-semibold text-sm">
+                    {getInitials(modalEliminar.nombre, modalEliminar.apellido)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{modalEliminar.nombre} {modalEliminar.apellido}</p>
+                    <p className="text-xs text-gray-600">{modalEliminar.email}</p>
+                  </div>
+                </div>
                 
-                <Box sx={{ 
-                  bgcolor: '#f8fafc', 
-                  p: 2, 
-                  borderRadius: 2,
-                  border: '1px solid #e2e8f0'
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Avatar sx={{ bgcolor: '#ef4444', width: 48, height: 48 }}>
-                      {getInitials(modalEliminar.nombre, modalEliminar.apellido)}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                        {modalEliminar.nombre} {modalEliminar.apellido}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748b' }}>
-                        {modalEliminar.email}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  
-                  <Divider sx={{ my: 1.5 }} />
-                  
-                  <Grid container spacing={1}>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Cargo:
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#1e293b' }}>
-                        {modalEliminar.cargo_postulado}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Distrito:
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#1e293b' }}>
-                        {modalEliminar.distrito}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </Box>
-                
-                <Typography variant="body2" sx={{ color: '#64748b', mt: 2 }}>
-                  Se eliminará toda la información del candidato, incluyendo su CV y comentarios asociados.
-                </Typography>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8fafc', gap: 1 }}>
-            <Button 
-              onClick={() => setModalEliminar(null)}
-              variant="outlined"
-              sx={{ 
-                textTransform: 'none',
-                color: '#64748b',
-                borderColor: '#e2e8f0',
-                '&:hover': { borderColor: '#cbd5e1', bgcolor: 'white' }
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleEliminar}
-              variant="contained"
-              sx={{ 
-                textTransform: 'none',
-                bgcolor: '#ef4444',
-                '&:hover': { bgcolor: '#dc2626' }
-              }}
-              startIcon={<Delete />}
-            >
-              Eliminar Postulación
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </Box>
+                <div className="space-y-2 pt-3 border-t border-gray-200">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Cargo:</span>
+                    <span className="font-medium text-gray-900">{modalEliminar.cargo_postulado}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Distrito:</span>
+                    <span className="font-medium text-gray-900">{modalEliminar.distrito}</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-600 mb-6">Se eliminará toda la información del candidato, incluyendo su CV y comentarios.</p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setModalEliminar(null)}
+                  className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleEliminar}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-medium text-sm hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -1,96 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  TextField,
-  Typography,
-  MenuItem,
-  Grid,
-  Alert,
-  CircularProgress,
-  Paper,
-  IconButton,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Autocomplete,
-  Tabs,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Chip,
-  InputAdornment,
-  Menu,
-  ListItemIcon,
-  ListItemText,
-  Tooltip,
-  Stack,
-  Badge,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  FormControl,
-  FormLabel,
-} from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CloudUpload,
-  Description,
-  Close,
-  CheckCircle,
-  ContentCopy,
-  PersonSearch,
-  CalendarToday,
-  AttachFile,
-  FilePresent,
+  FileText,
+  X,
   Search,
-  FilterList,
+  Filter,
+  RefreshCw,
   Download,
-  Delete,
-  Visibility,
-  MoreVert,
+  Eye,
+  Trash2,
+  MoreVertical,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Calendar,
+  User,
+  Briefcase,
   FolderOpen,
-  Article,
-  CheckCircleOutline,
-  ErrorOutline,
-  TrendingUp,
-  InsertDriveFile,
-  Person,
-  Work,
-} from '@mui/icons-material';
-import TopMenu from '../components/TopMenu';
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  FileCheck,
+  AlertTriangle
+} from 'lucide-react';
 import { getPacientesAll } from '../services/pacienteService';
 import { getTrabajadores } from '../services/trabajadorService';
 import archivosOficialesService from '../services/archivosOficialesService';
 import { getTiposDocumento } from '../services/tiposArchivoService';
-import { useMemo } from 'react';
 
 const GestionArchivosOficiales = () => {
   const [tabValue, setTabValue] = useState(0);
-  
-  // Estados para Dashboard
   const [documentos, setDocumentos] = useState([]);
   const [documentosFiltrados, setDocumentosFiltrados] = useState([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [rowsPerPage, setRowsPerPage] = useState(12);
+  const [modalVer, setModalVer] = useState(null);
+  const [modalEliminar, setModalEliminar] = useState(null);
+  const [menuAnchor, setMenuAnchor] = useState(null);
   const [documentoSeleccionado, setDocumentoSeleccionado] = useState(null);
-  const [dialogVer, setDialogVer] = useState(false);
-  const [dialogEliminar, setDialogEliminar] = useState(false);
-  
-  // Estados para Formulario de Subida
-  const [tipoDestinatario, setTipoDestinatario] = useState('paciente'); // 'paciente' o 'trabajador'
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Estados formulario
+  const [tipoDestinatario, setTipoDestinatario] = useState('paciente');
   const [formData, setFormData] = useState({
     pacienteId: '',
     trabajadorId: '',
@@ -110,29 +65,26 @@ const GestionArchivosOficiales = () => {
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState(null);
   const [terapeutaSeleccionado, setTerapeutaSeleccionado] = useState(null);
+  const [codigoGeneradoPreview, setCodigoGeneradoPreview] = useState('');
+  const [loadingCodigoPreview, setLoadingCodigoPreview] = useState(false);
   const [dialogExito, setDialogExito] = useState(false);
   const [codigoGenerado, setCodigoGenerado] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [tiposArchivo, setTiposArchivo] = useState([]);
-  const [loadingTipos, setLoadingTipos] = useState(false);
-  const [codigoGeneradoPreview, setCodigoGeneradoPreview] = useState('');
-  const [loadingCodigoPreview, setLoadingCodigoPreview] = useState(false);
-  const [errorFechaVigencia, setErrorFechaVigencia] = useState('');
-
   const [tiposArchivoCompletos, setTiposArchivoCompletos] = useState([]);
   const [tipoSeleccionado, setTipoSeleccionado] = useState(null);
-
+  const [loadingTipos, setLoadingTipos] = useState(false);
+  const [errorFechaVigencia, setErrorFechaVigencia] = useState('');
   const [datosInicializados, setDatosInicializados] = useState(false);
 
-
   useEffect(() => {
-    if (datosInicializados) return; // ✅ Evitar segunda ejecución
+    if (datosInicializados) return;
     
     const inicializar = async () => {
       await cargarDatosIniciales();
       await cargarTiposArchivo();
-      setDatosInicializados(true); 
+      setDatosInicializados(true);
     };
     inicializar();
   }, [datosInicializados]);
@@ -141,7 +93,7 @@ const GestionArchivosOficiales = () => {
     if (tabValue === 0 && documentos.length === 0 && datosInicializados) {
       cargarDocumentos();
     }
-  }, [tabValue, datosInicializados]);  // ✅ Solo depende del tab
+  }, [tabValue, datosInicializados]);
 
   useEffect(() => {
     let filtered = [...documentos];
@@ -170,40 +122,38 @@ const GestionArchivosOficiales = () => {
 
     setDocumentosFiltrados(filtered);
   }, [searchTerm, filtroTipo, documentos]);
-    const cargarDatosIniciales = async () => {
-      try {
-        setLoadingData(true);
-        
-        const resPacientes = await getPacientesAll();
-        const pacientesData = resPacientes.data || resPacientes;
-        setPacientes(pacientesData);
 
-        const resTrabajadores = await getTrabajadores();
-        const trabajadoresData = resTrabajadores.data || resTrabajadores;
-        
-        // Filtrar trabajadores (todos excepto los terapeutas que se usan como responsables)
-        const trabajadoresFiltrados = Array.isArray(trabajadoresData)
-          ? trabajadoresData.filter(t => t && typeof t === 'object' && t.nombres)
-          : [];
-        
-        setTrabajadores(trabajadoresFiltrados);
+  const cargarDatosIniciales = async () => {
+    try {
+      setLoadingData(true);
+      
+      const resPacientes = await getPacientesAll();
+      const pacientesData = resPacientes.data || resPacientes;
+      setPacientes(pacientesData);
 
-        // Filtrar solo terapeutas para el campo de responsable
-        const terapeutasFiltrados = Array.isArray(trabajadoresData)
-          ? trabajadoresData.filter(
-              (t) => t && typeof t === 'object' && t.nombres && t.rol && t.rol.id === 4
-            )
-          : [];
-         
+      const resTrabajadores = await getTrabajadores();
+      const trabajadoresData = resTrabajadores.data || resTrabajadores;
+      
+      const trabajadoresFiltrados = Array.isArray(trabajadoresData)
+        ? trabajadoresData.filter(t => t && typeof t === 'object' && t.nombres)
+        : [];
+      
+      setTrabajadores(trabajadoresFiltrados);
 
-        setTerapeutas(terapeutasFiltrados);
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-        setError('Error al cargar los datos iniciales');
-      } finally {
-        setLoadingData(false);
-      }
-    };
+      const terapeutasFiltrados = Array.isArray(trabajadoresData)
+        ? trabajadoresData.filter(
+            (t) => t && typeof t === 'object' && t.nombres && t.rol && t.rol.id === 4
+          )
+        : [];
+       
+      setTerapeutas(terapeutasFiltrados);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      setError('Error al cargar los datos iniciales');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const tiposArchivoFiltrados = useMemo(() => {
     return tiposArchivoCompletos.filter(tipo => 
@@ -211,16 +161,15 @@ const GestionArchivosOficiales = () => {
     );
   }, [tiposArchivoCompletos, tipoDestinatario]);
 
+  const calcularFechaVigencia = (fechaEmision, vigenciaMeses) => {
+    if (!vigenciaMeses || !fechaEmision) return '';
+    
+    const fecha = new Date(fechaEmision + 'T00:00:00');
+    fecha.setMonth(fecha.getMonth() + vigenciaMeses);
+    
+    return fecha.toISOString().split('T')[0];
+  };
 
-// ✅ 3. Función para calcular vigencia
-const calcularFechaVigencia = (fechaEmision, vigenciaMeses) => {
-  if (!vigenciaMeses || !fechaEmision) return '';
-  
-  const fecha = new Date(fechaEmision + 'T00:00:00');
-  fecha.setMonth(fecha.getMonth() + vigenciaMeses);
-  
-  return fecha.toISOString().split('T')[0];
-};
   const cargarDocumentos = async () => {
     try {
       setLoadingDocs(true);
@@ -235,60 +184,54 @@ const calcularFechaVigencia = (fechaEmision, vigenciaMeses) => {
     }
   };
 
-  // ✅ 4. Modificar handleTipoArchivoChange
-const handleTipoArchivoChange = (e) => {
-  const tipoId = e.target.value;
-  const tipo = tiposArchivoFiltrados.find(t => t.id == tipoId);
-  
-  setTipoSeleccionado(tipo);
-  
-  // Calcular vigencia automáticamente
-  const fechaVigenciaCalculada = tipo?.vigencia_meses 
-    ? calcularFechaVigencia(formData.fechaEmision, tipo.vigencia_meses)
-    : '';
-  
-  setFormData(prev => ({
-    ...prev,
-    tipoArchivoId: tipoId,
-    fechaVigencia: fechaVigenciaCalculada,
-  }));
-  
-  setError('');
-};
+  const handleTipoArchivoChange = (e) => {
+    const tipoId = e.target.value;
+    const tipo = tiposArchivoFiltrados.find(t => t.id == tipoId);
+    
+    setTipoSeleccionado(tipo);
+    
+    const fechaVigenciaCalculada = tipo?.vigencia_meses 
+      ? calcularFechaVigencia(formData.fechaEmision, tipo.vigencia_meses)
+      : '';
+    
+    setFormData(prev => ({
+      ...prev,
+      tipoArchivoId: tipoId,
+      fechaVigencia: fechaVigenciaCalculada,
+    }));
+    
+    setError('');
+  };
 
-// ✅ 5. Modificar cargarTiposArchivo para cargar TODOS los tipos (sin filtrar)
-const cargarTiposArchivo = async () => {
-  try {
-    setLoadingTipos(true);
-    const response = await getTiposDocumento();
-    const tipos = response || [];
+  const cargarTiposArchivo = async () => {
+    try {
+      setLoadingTipos(true);
+      const response = await getTiposDocumento();
+      const tipos = response || [];
+      
+      setTiposArchivo(tipos);
+      setTiposArchivoCompletos(tipos);
+    } catch (error) {
+      console.error('Error al cargar tipos de archivo:', error);
+      setError('Error al cargar los tipos de documento');
+    } finally {
+      setLoadingTipos(false);
+    }
+  };
+
+  const handleFechaEmisionChange = (e) => {
+    const nuevaFechaEmision = e.target.value;
     
-    // ✅ Guardar TODOS los tipos para el filtro del dashboard
-    setTiposArchivo(tipos);
+    const fechaVigenciaCalculada = tipoSeleccionado?.vigencia_meses
+      ? calcularFechaVigencia(nuevaFechaEmision, tipoSeleccionado.vigencia_meses)
+      : formData.fechaVigencia;
     
-    // ✅ Guardar también para el formulario (se filtrarán después)
-    setTiposArchivoCompletos(tipos);
-  } catch (error) {
-    console.error('Error al cargar tipos de archivo:', error);
-    setError('Error al cargar los tipos de documento');
-  } finally {
-    setLoadingTipos(false);
-  }
-};
-// ✅ 6. Recalcular vigencia al cambiar fecha de emisión
-const handleFechaEmisionChange = (e) => {
-  const nuevaFechaEmision = e.target.value;
-  
-  const fechaVigenciaCalculada = tipoSeleccionado?.vigencia_meses
-    ? calcularFechaVigencia(nuevaFechaEmision, tipoSeleccionado.vigencia_meses)
-    : formData.fechaVigencia;
-  
-  setFormData(prev => ({
-    ...prev,
-    fechaEmision: nuevaFechaEmision,
-    fechaVigencia: fechaVigenciaCalculada,
-  }));
-};
+    setFormData(prev => ({
+      ...prev,
+      fechaEmision: nuevaFechaEmision,
+      fechaVigencia: fechaVigenciaCalculada,
+    }));
+  };
 
   const generarCodigoPreview = async () => {
     try {
@@ -311,39 +254,46 @@ const handleFechaEmisionChange = (e) => {
     }
   };
 
-
   const handleMenuOpen = (event, documento) => {
-    setAnchorEl(event.currentTarget);
+    setMenuAnchor(event.currentTarget);
     setDocumentoSeleccionado(documento);
   };
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
+    setMenuAnchor(null);
   };
 
   const handleVerDocumento = () => {
-    setDialogVer(true);
+    setModalVer(documentoSeleccionado);
     handleMenuClose();
   };
 
   const handleDescargar = async () => {
     try {
+      console.log('Descargando archivo con ID:', documentoSeleccionado.id);
       await archivosOficialesService.descargarArchivo(documentoSeleccionado.id);
       setSuccess('Archivo descargado correctamente');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      setError('Error al descargar el archivo');
+      console.error('Error completo al descargar:', error);
+      setError(`Error al descargar el archivo: ${error.message || 'Error desconocido'}`);
     }
     handleMenuClose();
   };
 
-  const handleVisualizar = () => {
-    archivosOficialesService.visualizarArchivo(documentoSeleccionado.id);
-    handleMenuClose();
+  const handleVisualizar = async () => {
+    try {
+      await archivosOficialesService.visualizarArchivo(documentoSeleccionado.id);
+      handleMenuClose();
+    } catch (error) {
+      console.error('Error al visualizar:', error);
+      setError('Error al visualizar el archivo');
+      handleMenuClose();
+    }
   };
 
   const handleEliminarClick = () => {
-    setDialogEliminar(true);
+    setModalEliminar(documentoSeleccionado);
     handleMenuClose();
   };
 
@@ -353,25 +303,21 @@ const handleFechaEmisionChange = (e) => {
       setSuccess('Documento eliminado correctamente');
       setTimeout(() => setSuccess(''), 3000);
       
-      // ✅ Recargar solo si estamos en el tab de documentos
       if (tabValue === 0) {
         cargarDocumentos();
       }
       
-      setDialogEliminar(false);
+      setModalEliminar(null);
       setDocumentoSeleccionado(null);
     } catch (error) {
       setError('Error al eliminar el documento');
-      setDialogEliminar(false);
+      setModalEliminar(null);
     }
   };
 
-  // ✅ NUEVO: Manejar cambio de tipo de destinatario
-  const handleTipoDestinatarioChange = (event) => {
-    const nuevoTipo = event.target.value;
+  const handleTipoDestinatarioChange = (nuevoTipo) => {
     setTipoDestinatario(nuevoTipo);
     
-    // Limpiar campos del tipo anterior
     if (nuevoTipo === 'paciente') {
       setTrabajadorSeleccionado(null);
       setFormData(prev => ({ ...prev, trabajadorId: '', pacienteId: '' }));
@@ -432,21 +378,19 @@ const handleFechaEmisionChange = (e) => {
   };
 
   const validarFormulario = () => {
-    // ✅ VALIDACIÓN ACTUALIZADA
-  if (!formData.pacienteId && !formData.trabajadorId) {
-    setError('Debe seleccionar un paciente o un trabajador');
-    return false;
-  }
-  if (formData.pacienteId && formData.trabajadorId) {
-    setError('No puede seleccionar paciente y trabajador al mismo tiempo');
-    return false;
-  }
-  
-  // ✅ SOLO validar terapeuta si es paciente
-  if (tipoDestinatario === 'paciente' && !formData.terapeutaId) {
-    setError('Debe seleccionar el terapeuta responsable');
-    return false;
-  }
+    if (!formData.pacienteId && !formData.trabajadorId) {
+      setError('Debe seleccionar un paciente o un trabajador');
+      return false;
+    }
+    if (formData.pacienteId && formData.trabajadorId) {
+      setError('No puede seleccionar paciente y trabajador al mismo tiempo');
+      return false;
+    }
+    
+    if (tipoDestinatario === 'paciente' && !formData.terapeutaId) {
+      setError('Debe seleccionar el terapeuta responsable');
+      return false;
+    }
     if (!formData.tipoArchivoId) {
       setError('Debe seleccionar el tipo de archivo');
       return false;
@@ -466,52 +410,47 @@ const handleFechaEmisionChange = (e) => {
     return true;
   };
 
-    const handleSubmit = async () => {
-      if (!validarFormulario()) return;
+  const handleSubmit = async () => {
+    if (!validarFormulario()) return;
+    
+    try {
+      setLoadingForm(true);
+      setError('');
       
-      try {
-        setLoadingForm(true);
-        setError('');
+      const resultado = await archivosOficialesService.subirArchivo(archivo, formData);
+      
+      if (resultado.success) {
+        setCodigoGenerado(resultado.data);
+        setDialogExito(true);
         
-        const resultado = await archivosOficialesService.subirArchivo(archivo, formData);
+        setFormData({
+          pacienteId: '',
+          trabajadorId: '',
+          terapeutaId: '',
+          tipoArchivoId: '',
+          fechaEmision: new Date().toISOString().split('T')[0],
+          fechaVigencia: '',
+          descripcion: '',
+          codigoManual: '',
+        });
+        setPacienteSeleccionado(null);
+        setTrabajadorSeleccionado(null);
+        setTerapeutaSeleccionado(null);
+        setArchivo(null);
+        setCodigoGeneradoPreview('');
+        setTipoDestinatario('paciente');
+        setTipoSeleccionado(null);
         
-        if (resultado.success) {
-          setCodigoGenerado(resultado.data);
-          setDialogExito(true);
-          
-          // Resetear formulario
-          setFormData({
-            pacienteId: '',
-            trabajadorId: '',
-            terapeutaId: '',
-            tipoArchivoId: '',
-            fechaEmision: new Date().toISOString().split('T')[0],
-            fechaVigencia: '',
-            descripcion: '',
-            codigoManual: '',
-          });
-          setPacienteSeleccionado(null);
-          setTrabajadorSeleccionado(null);
-          setTerapeutaSeleccionado(null);
-          setArchivo(null);
-          setCodigoGeneradoPreview('');
-          setTipoDestinatario('paciente');
-          setTipoSeleccionado(null); // ✅ Agregar
-          
-          const input = document.getElementById('file-upload');
-          if (input) input.value = '';
-          
-          // ❌ ELIMINAR ESTA LÍNEA:
-          // await cargarDocumentos(); 
-          // ✅ Ya no es necesario porque se recargará al cambiar al tab 0
-        }
-      } catch (err) {
-        console.error('Error al subir archivo:', err);
-        setError(err.message || 'Error al subir el archivo. Intente nuevamente.');
-      } finally {
-        setLoadingForm(false);
+        const input = document.getElementById('file-upload');
+        if (input) input.value = '';
       }
-    };
+    } catch (err) {
+      console.error('Error al subir archivo:', err);
+      setError(err.message || 'Error al subir el archivo. Intente nuevamente.');
+    } finally {
+      setLoadingForm(false);
+    }
+  };
 
   const copiarCodigo = () => {
     if (codigoGenerado?.codigoValidacion) {
@@ -547,7 +486,6 @@ const handleFechaEmisionChange = (e) => {
     });
   };
 
-  // ✅ NUEVA FUNCIÓN: Obtener nombre del destinatario
   const obtenerNombreDestinatario = (doc) => {
     if (doc.paciente) {
       return `${doc.paciente.nombres} ${doc.paciente.apellido_paterno} ${doc.paciente.apellido_materno}`;
@@ -558,1632 +496,1078 @@ const handleFechaEmisionChange = (e) => {
     return '-';
   };
 
+  const getInitials = (nombre, apellido) => {
+    return `${nombre?.charAt(0) || ''}${apellido?.charAt(0) || ''}`.toUpperCase();
+  };
+
+  const paginatedDocumentos = documentosFiltrados.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const totalPages = Math.ceil(documentosFiltrados.length / rowsPerPage);
+
   if (loadingData) {
     return (
-      <Box sx={{ pt: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-        <CircularProgress sx={{ color: '#A3C644' }} size={60} />
-      </Box>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center pt-20">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-200 border-t-[#7B1FA2] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Cargando...</p>
+        </div>
+      </div>
     );
   }
 
-  return (
-    <><Box sx={{
-      pt: 10,
-      px: { xs: 2, sm: 3, md: 4 },
-      pb: 4,
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-      minHeight: '100vh'
-    }}>
-      <TopMenu/>
-      <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-        {/* Hero Header */}
-        <Box sx={{
-          mb: 4,
-          p: { xs: 3, sm: 4, md: 5 },
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-          borderRadius: 4,
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(circle at top right, rgba(163, 198, 68, 0.2), transparent 50%)',
-          }
-        }}>
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-              <Box sx={{
-                p: 2,
-                borderRadius: 3,
-                background: 'linear-gradient(135deg, #A3C644 0%, #8AB030 100%)',
-                boxShadow: '0 8px 24px rgba(163, 198, 68, 0.4)'
-              }}>
-                <InsertDriveFile sx={{ fontSize: 40, color: '#fff' }} />
-              </Box>
-              <Box>
-                <Typography variant="h3" sx={{
-                  fontWeight: 800,
-                  color: '#fff',
-                  mb: 0.5,
-                  fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' }
-                }}>
-                  Archivos Oficiales
-                </Typography>
-                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                  Sistema de gestión documental para pacientes y trabajadores
-                </Typography>
-              </Box>
-            </Stack>
+   return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 pt-24 lg:pt-12">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-[#7B1FA2] to-[#9C27B0] rounded-2xl flex items-center justify-center shadow-lg">
+              <FileText className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Archivos Oficiales</h1>
+              <p className="text-gray-600">Sistema de gestión documental para pacientes y trabajadores</p>
+            </div>
+          </div>
 
-            <Stack direction="row" spacing={3} sx={{ mt: 3 }}>
-              <Box sx={{
-                px: 3,
-                py: 1.5,
-                borderRadius: 2,
-                background: 'rgba(163, 198, 68, 0.15)',
-                border: '1px solid rgba(163, 198, 68, 0.3)'
-              }}>
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block' }}>
-                  Total Documentos
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#A3C644' }}>
-                  {documentos.length}
-                </Typography>
-              </Box>
-              <Box sx={{
-                px: 3,
-                py: 1.5,
-                borderRadius: 2,
-                background: 'rgba(163, 198, 68, 0.15)',
-                border: '1px solid rgba(163, 198, 68, 0.3)'
-              }}>
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block' }}>
-                  Este Mes
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#A3C644' }}>
-                  +{Math.floor(documentos.length * 0.3)}
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Box>
+          {/* Estadísticas */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <FolderOpen className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{documentos.length}</div>
+                  <div className="text-xs text-gray-600 font-medium">Total Documentos</div>
+                </div>
+              </div>
+            </div>
 
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{Math.floor(documentos.length * 0.8)}</div>
+                  <div className="text-xs text-gray-600 font-medium">Activos</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 col-span-2 sm:col-span-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">+{Math.floor(documentos.length * 0.3)}</div>
+                  <div className="text-xs text-gray-600 font-medium">Este Mes</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Alertas */}
         {error && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 3,
-              borderRadius: 3,
-              border: '1px solid #ef4444',
-              background: '#fef2f2'
-            }}
-            onClose={() => setError('')}
-          >
-            {error}
-          </Alert>
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900">{error}</p>
+            </div>
+            <button onClick={() => setError('')} className="text-red-600 hover:bg-red-100 p-1 rounded-lg transition-all">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
 
         {success && (
-          <Alert
-            severity="success"
-            sx={{
-              mb: 3,
-              borderRadius: 3,
-              border: '1px solid #22c55e',
-              background: '#f0fdf4'
-            }}
-            onClose={() => setSuccess('')}
-          >
-            {success}
-          </Alert>
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-900">{success}</p>
+            </div>
+            <button onClick={() => setSuccess('')} className="text-green-600 hover:bg-green-100 p-1 rounded-lg transition-all">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
 
-        {/* Modern Tabs */}
-        <Paper sx={{
-          borderRadius: 4,
-          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-          overflow: 'hidden',
-          background: '#fff'
-        }}>
-          <Box sx={{
-            borderBottom: '1px solid #e2e8f0',
-            background: 'linear-gradient(to right, #fafafa, #f5f5f5)'
-          }}>
-            <Tabs
-              value={tabValue}
-              onChange={(e, newValue) => setTabValue(newValue)}
-              sx={{
-                px: 2,
-                '& .MuiTab-root': {
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  textTransform: 'none',
-                  minHeight: 64,
-                  color: '#64748b',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    color: '#A3C644',
-                    background: 'rgba(163, 198, 68, 0.05)'
-                  }
-                },
-                '& .Mui-selected': {
-                  color: '#A3C644 !important',
-                  fontWeight: 700
-                },
-                '& .MuiTabs-indicator': {
-                  height: 3,
-                  borderRadius: '3px 3px 0 0',
-                  background: 'linear-gradient(90deg, #A3C644 0%, #8AB030 100%)'
-                }
-              }}
-            >
-              <Tab
-                icon={<FolderOpen />}
-                iconPosition="start"
-                label="Mis Documentos" />
-              <Tab
-                icon={<CloudUpload />}
-                iconPosition="start"
-                label="Subir Nuevo" />
-            </Tabs>
-          </Box>
+        {/* Tabs */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+          <div className="border-b border-gray-200 bg-gray-50">
+            <div className="flex">
+              <button
+                onClick={() => setTabValue(0)}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-all relative ${
+                  tabValue === 0
+                    ? 'text-[#7B1FA2] bg-white'
+                    : 'text-gray-600 hover:text-[#7B1FA2] hover:bg-gray-100'
+                }`}
+              >
+                <FolderOpen className="w-4 h-4" />
+                Mis Documentos
+                {tabValue === 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0]"></div>
+                )}
+              </button>
+              <button
+                onClick={() => setTabValue(1)}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-all relative ${
+                  tabValue === 1
+                    ? 'text-[#7B1FA2] bg-white'
+                    : 'text-gray-600 hover:text-[#7B1FA2] hover:bg-gray-100'
+                }`}
+              >
+                <CloudUpload className="w-4 h-4" />
+                Subir Nuevo
+                {tabValue === 1 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0]"></div>
+                )}
+              </button>
+            </div>
+          </div>
 
-          {/* TAB 1: DASHBOARD */}
+          {/* TAB 0: DASHBOARD */}
           {tabValue === 0 && (
-            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              {/* Search & Filters */}
-              <Grid container spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    placeholder="Buscar por código, paciente, trabajador, tipo..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        background: '#f8fafc',
-                        '&:hover': {
-                          background: '#f1f5f9'
-                        },
-                        '&.Mui-focused': {
-                          background: '#fff',
-                          boxShadow: '0 0 0 3px rgba(163, 198, 68, 0.1)'
-                        }
-                      }
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search sx={{ color: '#A3C644', fontSize: 24 }} />
-                        </InputAdornment>
-                      ),
-                    }} />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Tipo de documento"
-                    value={filtroTipo}
-                    onChange={(e) => setFiltroTipo(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        background: '#f8fafc'
-                      }
-                    }}
+            <div className="p-6">
+              {/* Filtros */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-5 h-5 text-[#7B1FA2]" />
+                    <h2 className="text-lg font-bold text-gray-900">Filtros</h2>
+                  </div>
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="text-sm font-medium text-[#7B1FA2] hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-all"
                   >
-                    <MenuItem value="">Todos</MenuItem>
-                    {tiposArchivo.map((tipo) => (
-                      <MenuItem key={tipo.id} value={tipo.id}>
-                        {tipo.nombre}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setFiltroTipo('');
-                    } }
-                    sx={{
-                      height: '100%',
-                      borderRadius: 3,
-                      borderWidth: 2,
-                      borderColor: '#e2e8f0',
-                      color: '#64748b',
-                      fontWeight: 600,
-                      '&:hover': {
-                        borderWidth: 2,
-                        borderColor: '#A3C644',
-                        background: 'rgba(163, 198, 68, 0.05)'
-                      }
-                    }}
-                  >
-                    Limpiar
-                  </Button>
-                </Grid>
-              </Grid>
+                    {showFilters ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                </div>
 
-              {/* Table */}
+                {showFilters && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Buscar por código, nombre..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all"
+                        />
+                      </div>
+
+                      <select
+                        value={filtroTipo}
+                        onChange={(e) => setFiltroTipo(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="">Todos los tipos</option>
+                        {tiposArchivo.map((tipo) => (
+                          <option key={tipo.id} value={tipo.id}>
+                            {tipo.nombre}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        onClick={() => {
+                          setSearchTerm('');
+                          setFiltroTipo('');
+                        }}
+                        className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+                      >
+                        <X className="w-4 h-4" />
+                        Limpiar
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => { cargarDocumentos(); }}
+                      className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Actualizar
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Lista de documentos */}
               {loadingDocs ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-                  <CircularProgress sx={{ color: '#A3C644' }} size={50} />
-                </Box>
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-gray-200 border-t-[#7B1FA2] rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-600">Cargando documentos...</p>
+                  </div>
+                </div>
               ) : documentosFiltrados.length === 0 ? (
-                <Paper sx={{
-                  p: 8,
-                  textAlign: 'center',
-                  background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
-                  borderRadius: 3,
-                  border: '2px dashed #e2e8f0'
-                }}>
-                  <Article sx={{ fontSize: 100, color: '#cbd5e1', mb: 3 }} />
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#475569', mb: 1 }}>
-                    No hay documentos
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    {searchTerm || filtroTipo ? 'Intenta ajustar los filtros' : 'Sube tu primer documento oficial'}
-                  </Typography>
-                </Paper>
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <p className="text-lg font-semibold text-gray-900 mb-1">No hay documentos</p>
+                    <p className="text-gray-600">
+                      {searchTerm || filtroTipo ? 'Intenta ajustar los filtros' : 'Sube tu primer documento oficial'}
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <>
-                  <TableContainer sx={{
-                    borderRadius: 3,
-                    border: '1px solid #e2e8f0',
-                    overflow: 'hidden'
-                  }}>
-                    <Table>
-                      <TableHead>
-                        <TableRow sx={{ background: 'linear-gradient(to right, #f8fafc, #f1f5f9)' }}>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Código</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Destinatario</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Tipo</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Categoría</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Terapeuta</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Fecha</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Estado</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#475569' }} align="center">Acciones</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {documentosFiltrados
-                          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                          .map((doc) => (
-                            <TableRow
-                              key={doc.id}
-                              hover
-                              sx={{
-                                '&:hover': {
-                                  background: 'rgba(163, 198, 68, 0.03)'
-                                }
-                              }}
-                            >
-                              <TableCell>
-                                <Chip
-                                  label={doc.codigoValidacion}
-                                  size="small"
-                                  sx={{
-                                    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                                    color: '#fff',
-                                    fontWeight: 700,
-                                    fontFamily: 'monospace',
-                                    fontSize: '0.8rem',
-                                    letterSpacing: 1
-                                  }} />
-                              </TableCell>
-                              <TableCell>
-                                <Stack direction="row" alignItems="center" spacing={1}>
-                                  {doc.paciente ? (
-                                    <Person sx={{ fontSize: 18, color: '#3b82f6' }} />
-                                  ) : (
-                                    <Work sx={{ fontSize: 18, color: '#f59e0b' }} />
-                                  )}
-                                  <Box>
-                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                      {obtenerNombreDestinatario(doc)}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ color: '#64748b' }}>
-                                      {doc.paciente ? 'Paciente' : 'Trabajador'}
-                                    </Typography>
-                                  </Box>
-                                </Stack>
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={doc.tipoArchivo?.nombre || '-'}
-                                  size="small"
-                                  sx={{
-                                    background: '#f1f5f9',
-                                    fontWeight: 600
-                                  }} />
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={doc.paciente ? 'Paciente' : 'Trabajador'}
-                                  size="small"
-                                  sx={{
-                                    background: doc.paciente
-                                      ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
-                                      : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                                    color: doc.paciente ? '#1e40af' : '#92400e',
-                                    fontWeight: 600
-                                  }} />
-                              </TableCell>
-                              <TableCell sx={{ color: '#64748b' }}>
-                                {`${doc.terapeuta?.nombres || ''} ${doc.terapeuta?.apellidos || ''}`}
-                              </TableCell>
-                              <TableCell sx={{ color: '#64748b' }}>
-                                {formatearFecha(doc.fechaEmision)}
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  icon={doc.estado === 'Activo' ? <CheckCircleOutline /> : <ErrorOutline />}
-                                  label={doc.estado || 'Activo'}
-                                  size="small"
-                                  sx={{
-                                    background: doc.estado === 'Activo'
-                                      ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
-                                      : '#f1f5f9',
-                                    color: doc.estado === 'Activo' ? '#fff' : '#64748b',
-                                    fontWeight: 600
-                                  }} />
-                              </TableCell>
-                              <TableCell align="center">
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => handleMenuOpen(e, doc)}
-                                  sx={{
-                                    color: '#A3C644',
-                                    '&:hover': {
-                                      background: 'rgba(163, 198, 68, 0.1)'
-                                    }
-                                  }}
-                                >
-                                  <MoreVert />
-                                </IconButton>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                  {/* Grid de tarjetas */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {paginatedDocumentos.map((doc) => {
+                      const isPaciente = doc.paciente;
 
-                  <TablePagination
-                    component="div"
-                    count={documentosFiltrados.length}
-                    page={page}
-                    onPageChange={(e, newPage) => setPage(newPage)}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={(e) => {
-                      setRowsPerPage(parseInt(e.target.value, 10));
-                      setPage(0);
-                    } }
-                    labelRowsPerPage="Filas por página:"
-                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-                    sx={{ borderTop: '1px solid #e2e8f0', mt: 2 }} />
+                      return (
+                        <div
+                          key={doc.id}
+                          className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-gray-300 transition-all group"
+                        >
+                          {/* Header */}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                                isPaciente ? 'bg-blue-100' : 'bg-amber-100'
+                              }`}>
+                                {isPaciente ? (
+                                  <User className="w-4 h-4 text-blue-600" />
+                                ) : (
+                                  <Briefcase className="w-4 h-4 text-amber-600" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {obtenerNombreDestinatario(doc)}
+                                </p>
+                                <p className={`text-xs font-medium ${isPaciente ? 'text-blue-600' : 'text-amber-600'}`}>
+                                  {isPaciente ? 'Paciente' : 'Trabajador'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => handleMenuOpen(e, doc)}
+                              className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Código */}
+                          <div className={`rounded-lg p-3 mb-4 ${
+                            isPaciente
+                              ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                              : 'bg-gradient-to-r from-amber-500 to-amber-600'
+                          }`}>
+                            <p className="text-xs text-white/80 font-medium mb-1">CÓDIGO</p>
+                            <p className="text-sm font-mono font-bold text-white">{doc.codigoValidacion}</p>
+                          </div>
+
+                          {/* Detalles */}
+                          <div className="space-y-2.5 mb-4">
+                            <div className="flex items-center gap-2">
+                              <FileText className={`w-4 h-4 flex-shrink-0 ${
+                                isPaciente ? 'text-blue-500' : 'text-amber-500'
+                              }`} />
+                              <span className="text-xs text-gray-600 truncate">{doc.tipoArchivo?.nombre}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className={`w-4 h-4 flex-shrink-0 ${
+                                isPaciente ? 'text-blue-500' : 'text-amber-500'
+                              }`} />
+                              <span className="text-xs text-gray-600">{formatearFecha(doc.fechaEmision)}</span>
+                            </div>
+                            {isPaciente && doc.terapeuta && (
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                <span className="text-xs text-gray-600 truncate">
+                                  {doc.terapeuta.nombres} {doc.terapeuta.apellidos}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer */}
+                          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${
+                              doc.estado === 'Activo'
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {doc.estado === 'Activo' ? (
+                                <CheckCircle2 className="w-3 h-3" />
+                              ) : (
+                                <AlertCircle className="w-3 h-3" />
+                              )}
+                              {doc.estado || 'Activo'}
+                            </div>
+                            <button
+                              onClick={() => setModalVer(doc)}
+                              className="text-xs font-medium text-[#7B1FA2] hover:text-[#9C27B0] transition-colors"
+                            >
+                              Ver detalles →
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Paginación */}
+                  {documentosFiltrados.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
+                          Mostrando <span className="font-semibold text-gray-900">{page * rowsPerPage + 1}</span> a{' '}
+                          <span className="font-semibold text-gray-900">
+                            {Math.min((page + 1) * rowsPerPage, documentosFiltrados.length)}
+                          </span>{' '}
+                          de <span className="font-semibold text-gray-900">{documentosFiltrados.length}</span>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-2 w-full sm:w-auto">
+                          <select
+                            value={rowsPerPage}
+                            onChange={(e) => {
+                              setRowsPerPage(parseInt(e.target.value));
+                              setPage(0);
+                            }}
+                            className="w-full sm:w-auto px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] cursor-pointer"
+                          >
+                            <option value={6}>6 por página</option>
+                            <option value={12}>12 por página</option>
+                            <option value={24}>24 por página</option>
+                          </select>
+
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => setPage(0)}
+                              disabled={page === 0}
+                              className="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+
+                            {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => {
+                              let pageNum;
+                              if (totalPages <= 3) {
+                                pageNum = i;
+                              } else if (page < 2) {
+                                pageNum = i;
+                              } else if (page > totalPages - 3) {
+                                pageNum = totalPages - 3 + i;
+                              } else {
+                                pageNum = page - 1 + i;
+                              }
+
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setPage(pageNum)}
+                                  className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                                    page === pageNum
+                                      ? 'bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white'
+                                      : 'hover:bg-gray-100 text-gray-700'
+                                  }`}
+                                >
+                                  {pageNum + 1}
+                                </button>
+                              );
+                            })}
+
+                            <button
+                              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                              disabled={page >= totalPages - 1}
+                              className="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
-
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                PaperProps={{
-                  sx: {
-                    borderRadius: 3,
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-                    mt: 1
-                  }
-                }}
-              >
-                <MenuItem onClick={handleVerDocumento} sx={{ py: 1.5 }}>
-                  <ListItemIcon><Visibility fontSize="small" /></ListItemIcon>
-                  <ListItemText>Ver Detalles</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleVisualizar} sx={{ py: 1.5 }}>
-                  <ListItemIcon><Article fontSize="small" /></ListItemIcon>
-                  <ListItemText>Abrir Archivo</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleDescargar} sx={{ py: 1.5 }}>
-                  <ListItemIcon><Download fontSize="small" /></ListItemIcon>
-                  <ListItemText>Descargar</ListItemText>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleEliminarClick} sx={{ color: 'error.main', py: 1.5 }}>
-                  <ListItemIcon><Delete fontSize="small" color="error" /></ListItemIcon>
-                  <ListItemText>Eliminar</ListItemText>
-                </MenuItem>
-              </Menu>
-            </Box>
+            </div>
           )}
 
-          {/* TAB 2: FORMULARIO SUBIDA */}
+          {/* TAB 1: FORMULARIO */}
           {tabValue === 1 && (
-            <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Grid container spacing={3}>
+            <div className="p-6">
+              <div className="space-y-6">
                 {/* Paso 1: Generar Código */}
-                <Grid item xs={12}>
-                  <Paper
-                    sx={{
-                      p: 4,
-                      background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-                      border: '2px solid #fbbf24',
-                      borderRadius: 4,
-                      position: 'relative',
-                      overflow: 'hidden',
-                      mb: 2,
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: -50,
-                        right: -50,
-                        width: 200,
-                        height: 200,
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(251, 191, 36, 0.2), transparent)',
-                      }
-                    }}
-                  >
-                    <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
-                      <Box sx={{
-                        p: 2,
-                        borderRadius: 3,
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                        boxShadow: '0 8px 16px rgba(245, 158, 11, 0.3)'
-                      }}>
-                        <CheckCircle sx={{ fontSize: 32, color: '#fff' }} />
-                      </Box>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#78350f', mb: 0.5 }}>
-                          Paso 1: Generar Código de Validación
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#92400e' }}>
-                          Genera el código primero, añádelo al documento, luego sube el archivo
-                        </Typography>
-                      </Box>
-                    </Stack>
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">Paso 1: Generar Código de Validación</h3>
+                      <p className="text-sm text-gray-600">Genera el código primero, añádelo al documento, luego sube el archivo</p>
+                    </div>
+                  </div>
 
-                    {!codigoGeneradoPreview ? (
-                      <Button
-                        variant="contained"
-                        size="large"
-                        onClick={generarCodigoPreview}
-                        disabled={loadingCodigoPreview}
-                        sx={{
-                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                          fontWeight: 700,
-                          px: 4,
-                          py: 1.5,
-                          borderRadius: 3,
-                          boxShadow: '0 8px 20px rgba(245, 158, 11, 0.4)',
-                          textTransform: 'none',
-                          fontSize: '1rem',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
-                            boxShadow: '0 10px 25px rgba(245, 158, 11, 0.5)',
-                          }
-                        }}
-                        startIcon={loadingCodigoPreview ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <Description />}
-                      >
-                        {loadingCodigoPreview ? 'Generando...' : 'Generar Código Único'}
-                      </Button>
-                    ) : (
-                      <Box sx={{ position: 'relative', zIndex: 1 }}>
-                        <Paper sx={{
-                          p: 4,
-                          background: '#fff',
-                          border: '3px solid #22c55e',
-                          borderRadius: 3,
-                          mb: 3,
-                          boxShadow: '0 8px 20px rgba(34, 197, 94, 0.2)'
-                        }}>
-                          <Typography variant="caption" sx={{
-                            fontWeight: 700,
-                            color: '#166534',
-                            display: 'block',
-                            mb: 2,
-                            letterSpacing: 1
-                          }}>
-                            ✓ CÓDIGO GENERADO
-                          </Typography>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Typography
-                              variant="h4"
-                              sx={{
-                                fontWeight: 800,
-                                fontFamily: 'monospace',
-                                color: '#22c55e',
-                                letterSpacing: 4,
-                                flex: 1,
-                              }}
-                            >
-                              {codigoGeneradoPreview}
-                            </Typography>
-                            <Tooltip title="Copiar código">
-                              <IconButton
-                                onClick={() => {
-                                  navigator.clipboard.writeText(codigoGeneradoPreview);
-                                  setSuccess('Código copiado');
-                                  setTimeout(() => setSuccess(''), 3000);
-                                } }
-                                sx={{
-                                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                                  color: '#fff',
-                                  boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
-                                  '&:hover': {
-                                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                                    transform: 'scale(1.05)'
-                                  },
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <ContentCopy />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </Paper>
-
-                        <Alert
-                          severity="warning"
-                          sx={{
-                            mb: 2,
-                            borderRadius: 2,
-                            border: '1px solid #f59e0b',
-                            background: '#fffbeb',
-                            '& .MuiAlert-icon': {
-                              color: '#f59e0b'
-                            }
-                          }}
-                        >
-                          <strong>IMPORTANTE:</strong> Añada este código al documento antes de subirlo.
-                        </Alert>
-
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => {
-                            setCodigoGeneradoPreview('');
-                            setFormData(prev => ({ ...prev, codigoManual: '' }));
-                          } }
-                          sx={{
-                            borderColor: '#f59e0b',
-                            color: '#f59e0b',
-                            borderRadius: 2,
-                            fontWeight: 600,
-                            '&:hover': {
-                              borderColor: '#d97706',
-                              background: 'rgba(245, 158, 11, 0.05)'
-                            }
-                          }}
-                        >
-                          Generar Otro Código
-                        </Button>
-                      </Box>
-                    )}
-                  </Paper>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }}>
-                    <Chip
-                      label="Paso 2: Complete la información"
-                      sx={{
-                        fontWeight: 700,
-                        background: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
-                        px: 2
-                      }} />
-                  </Divider>
-                </Grid>
-
-                {/* ✅ NUEVO: Selector de tipo de destinatario */}
-                <Grid item xs={12}>
-                  <Paper sx={{
-                    p: 3,
-                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                    borderRadius: 3,
-                    border: '2px solid #cbd5e1'
-                  }}>
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend" sx={{
-                        fontWeight: 700,
-                        color: '#1e293b',
-                        mb: 2,
-                        fontSize: '1.1rem'
-                      }}>
-                        ¿Para quién es este documento?
-                      </FormLabel>
-                      <RadioGroup
-                        row
-                        value={tipoDestinatario}
-                        onChange={handleTipoDestinatarioChange}
-                      >
-                        <FormControlLabel
-                          value="paciente"
-                          control={<Radio sx={{ color: '#3b82f6', '&.Mui-checked': { color: '#3b82f6' } }} />}
-                          label={<Stack direction="row" alignItems="center" spacing={1}>
-                            <Person sx={{ color: '#3b82f6' }} />
-                            <Typography sx={{ fontWeight: 600 }}>Paciente</Typography>
-                          </Stack>}
-                          sx={{
-                            mr: 4,
-                            px: 3,
-                            py: 1.5,
-                            borderRadius: 2,
-                            border: tipoDestinatario === 'paciente' ? '2px solid #3b82f6' : '2px solid transparent',
-                            background: tipoDestinatario === 'paciente' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                            transition: 'all 0.2s ease'
-                          }} />
-                        <FormControlLabel
-                          value="trabajador"
-                          control={<Radio sx={{ color: '#f59e0b', '&.Mui-checked': { color: '#f59e0b' } }} />}
-                          label={<Stack direction="row" alignItems="center" spacing={1}>
-                            <Work sx={{ color: '#f59e0b' }} />
-                            <Typography sx={{ fontWeight: 600 }}>Trabajador</Typography>
-                          </Stack>}
-                          sx={{
-                            px: 3,
-                            py: 1.5,
-                            borderRadius: 2,
-                            border: tipoDestinatario === 'trabajador' ? '2px solid #f59e0b' : '2px solid transparent',
-                            background: tipoDestinatario === 'trabajador' ? 'rgba(245, 158, 11, 0.05)' : 'transparent',
-                            transition: 'all 0.2s ease'
-                          }} />
-                      </RadioGroup>
-                    </FormControl>
-                  </Paper>
-                </Grid>
-
-                {/* ✅ Selector condicional: Paciente O Trabajador */}
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                      {tipoDestinatario === 'paciente' ? (
+                  {!codigoGeneradoPreview ? (
+                    <button
+                      onClick={generarCodigoPreview}
+                      disabled={loadingCodigoPreview}
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                    >
+                      {loadingCodigoPreview ? (
                         <>
-                          <Person sx={{ fontSize: 22, color: '#3b82f6' }} />
-                          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                            Seleccionar Paciente
-                          </Typography>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Generando...
                         </>
                       ) : (
                         <>
-                          <Work sx={{ fontSize: 22, color: '#f59e0b' }} />
-                          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                            Seleccionar Trabajador
-                          </Typography>
+                          <FileCheck className="w-5 h-5" />
+                          Generar Código Único
                         </>
                       )}
-                    </Stack>
-
-                   {tipoDestinatario === 'paciente' ? (
-                      <Autocomplete
-                        options={pacientes}
-                        getOptionLabel={(option) => `${option.nombres} ${option.apellido_paterno} ${option.apellido_materno} - ${option.numero_documento}`}
-                        value={pacienteSeleccionado}
-                        onChange={(e, newValue) => {
-                        
-                          setPacienteSeleccionado(newValue);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            pacienteId: newValue?.id || newValue?.paciente_id || '', 
-                            trabajadorId: '' 
-                          }));
-                          setError(''); // Limpiar error al seleccionar
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder="Buscar paciente por nombre o DNI..."
-                            fullWidth
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                borderRadius: 3,
-                                background: '#f8fafc',
-                                '&:hover': {
-                                  background: '#f1f5f9'
-                                }
-                              }
-                            }} />
-                        )}
-                        noOptionsText="No se encontraron pacientes" />
-                    ) : (
-                      <Autocomplete
-                        options={trabajadores}
-                        getOptionLabel={(option) => `${option.nombres} ${option.apellidos}${option.dni ? ` - ${option.dni}` : ''}`}
-                        value={trabajadorSeleccionado}
-                        onChange={(e, newValue) => {
-                         
-                          setTrabajadorSeleccionado(newValue);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            trabajadorId: newValue?.id || newValue?.trabajador_id || '', 
-                            pacienteId: '' 
-                          }));
-                          setError(''); // Limpiar error al seleccionar
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder="Buscar trabajador por nombre..."
-                            fullWidth
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                borderRadius: 3,
-                                background: '#f8fafc',
-                                '&:hover': {
-                                  background: '#f1f5f9'
-                                }
-                              }
-                            }} />
-                        )}
-                        noOptionsText="No se encontraron trabajadores" />
-                    )}
-                  </Box>
-                </Grid>
-
-              {/* Terapeuta Responsable - SOLO para pacientes */}
-              {tipoDestinatario === 'paciente' && (
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                      <PersonSearch sx={{ fontSize: 22, color: '#A3C644' }} />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                        Terapeuta Responsable
-                      </Typography>
-                    </Stack>
-                    <Autocomplete
-                      options={terapeutas}
-                      getOptionLabel={(option) => `${option.nombres} ${option.apellidos}${option.dni ? ` - ${option.dni}` : ''}`}
-                      value={terapeutaSeleccionado}
-                      onChange={(e, newValue) => {
-                        setTerapeutaSeleccionado(newValue);
-                        setFormData(prev => ({ ...prev, terapeutaId: newValue?.id || '' }));
-                      } }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          placeholder="Seleccionar terapeuta..."
-                          fullWidth
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: 3,
-                              background: '#f8fafc'
-                            }
-                          }} />
-                      )}
-                      noOptionsText="No se encontraron terapeutas" />
-                  </Box>
-                </Grid>
-              )}
-
-                {/* Tipo y Fecha */}
-                <Grid item xs={12} md={6}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                    <Description sx={{ fontSize: 22, color: '#A3C644' }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                      Tipo de Documento
-                    </Typography>
-                  </Stack>
-                  <TextField
-                    select
-                    fullWidth
-                    name="tipoArchivoId"
-                    value={formData.tipoArchivoId}
-                    onChange={handleTipoArchivoChange}
-                    placeholder="Seleccionar tipo..."
-                    disabled={loadingTipos}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        background: '#f8fafc'
-                      }
-                    }}
-                  >
-                    {loadingTipos ? (
-                      <MenuItem disabled>Cargando...</MenuItem>
-                    ) : (
-                      tiposArchivoFiltrados.map((tipo) => (
-                        <MenuItem key={tipo.id} value={tipo.id}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-                            <Typography>{tipo.nombre}</Typography>
-                            {tipo.vigencia_meses && (
-                              <Chip 
-                                label={`${tipo.vigencia_meses} ${tipo.vigencia_meses === 1 ? 'mes' : 'meses'}`}
-                                size="small"
-                                sx={{ 
-                                  ml: 2,
-                                  background: '#dcfce7', 
-                                  color: '#166534',
-                                  fontWeight: 600,
-                                  fontSize: '0.7rem',
-                                }}
-                              />
-                            )}
-                          </Box>
-                        </MenuItem>
-                      ))
-                    )}
-                  </TextField>
-                </Grid>
-
-                {tipoSeleccionado && (
-              <Grid item xs={12}>
-                <Alert
-                  severity={tipoSeleccionado.vigencia_meses ? "success" : "info"}
-                  sx={{ borderRadius: 3 }}
-                >
-                  {tipoSeleccionado.vigencia_meses ? (
-                    <>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ✓ Vigencia: {tipoSeleccionado.vigencia_meses} {tipoSeleccionado.vigencia_meses === 1 ? 'mes' : 'meses'}
-                      </Typography>
-                      {formData.fechaVigencia && (
-                        <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
-                          Vence el: <strong>{formatearFecha(formData.fechaVigencia)}</strong>
-                        </Typography>
-                      )}
-                    </>
+                    </button>
                   ) : (
-                    <Typography variant="body2">
-                      ∞ Este documento no tiene fecha de vencimiento
-                    </Typography>
+                    <div>
+                      <div className="bg-white border-2 border-green-500 rounded-xl p-5 mb-4">
+                        <p className="text-xs font-bold text-green-700 uppercase mb-2 tracking-wide">✓ Código Generado</p>
+                        <div className="flex items-center gap-3">
+                          <p className="text-2xl font-mono font-bold text-green-600 flex-1">{codigoGeneradoPreview}</p>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(codigoGeneradoPreview);
+                              setSuccess('Código copiado');
+                              setTimeout(() => setSuccess(''), 3000);
+                            }}
+                            className="p-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-amber-100 border border-amber-300 rounded-xl p-3 mb-3">
+                        <p className="text-xs font-semibold text-amber-900">
+                          <strong>IMPORTANTE:</strong> Añada este código al documento antes de subirlo.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setCodigoGeneradoPreview('');
+                          setFormData(prev => ({ ...prev, codigoManual: '' }));
+                        }}
+                        className="text-sm font-medium text-amber-700 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-all"
+                      >
+                        Generar Otro Código
+                      </button>
+                    </div>
                   )}
-                </Alert>
-              </Grid>
-            )}
+                </div>
 
+                {/* Paso 2: Tipo de destinatario */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Paso 2: Seleccionar Destinatario</h3>
+                  
+                  <div className="flex gap-3 mb-6">
+                    <button
+                      onClick={() => handleTipoDestinatarioChange('paciente')}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                        tipoDestinatario === 'paciente'
+                          ? 'bg-blue-50 border-2 border-blue-500 text-blue-700'
+                          : 'bg-gray-50 border-2 border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <User className="w-5 h-5" />
+                      Paciente
+                    </button>
+                    <button
+                      onClick={() => handleTipoDestinatarioChange('trabajador')}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                        tipoDestinatario === 'trabajador'
+                          ? 'bg-amber-50 border-2 border-amber-500 text-amber-700'
+                          : 'bg-gray-50 border-2 border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <Briefcase className="w-5 h-5" />
+                      Trabajador
+                    </button>
+                  </div>
 
-                {/* Fecha Emisión */}
-                <Grid item xs={12} md={6}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                    <CalendarToday sx={{ fontSize: 22, color: '#A3C644' }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                      Fecha de Emisión
-                    </Typography>
-                  </Stack>
-                  <TextField
-                    type="date"
-                    fullWidth
-                    name="fechaEmision"
-                    value={formData.fechaEmision}
-                    onChange={handleFechaEmisionChange}
-                    InputLabelProps={{ shrink: true }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        background: '#f8fafc'
-                      }
-                    }}
-                  />
-                </Grid>
-                {/* Fecha Vigencia */}
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b', mb: 1.5 }}>
-                    Fecha de Vigencia <span style={{ color: '#94a3b8' }}>(Opcional)</span>
-                  </Typography>
-                  <TextField
-                    type="date"
-                    fullWidth
-                    name="fechaVigencia"
-                    value={formData.fechaVigencia}
-                    onChange={handleInputChange}
-                    InputLabelProps={{ shrink: true }}
-                    error={!!errorFechaVigencia}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        background: '#f8fafc',
-                        '&.Mui-error': {
-                          borderColor: '#dc2626',
-                          '&:hover fieldset': {
-                            borderColor: '#dc2626',
-                          },
+                  {/* Selector de persona */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      {tipoDestinatario === 'paciente' ? 'Seleccionar Paciente' : 'Seleccionar Trabajador'}
+                    </label>
+                    <select
+                      value={tipoDestinatario === 'paciente' ? formData.pacienteId : formData.trabajadorId}
+                      onChange={(e) => {
+                        if (tipoDestinatario === 'paciente') {
+                          const paciente = pacientes.find(p => p.id == e.target.value);
+                          setPacienteSeleccionado(paciente);
+                          setFormData(prev => ({ ...prev, pacienteId: e.target.value, trabajadorId: '' }));
+                        } else {
+                          const trabajador = trabajadores.find(t => t.id == e.target.value);
+                          setTrabajadorSeleccionado(trabajador);
+                          setFormData(prev => ({ ...prev, trabajadorId: e.target.value, pacienteId: '' }));
                         }
-                      }
-                    }} />
-                  {errorFechaVigencia && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: '#dc2626',
-                        display: 'block',
-                        mt: 1,
-                        fontWeight: 600,
-                        fontSize: '0.75rem'
                       }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
                     >
-                      {errorFechaVigencia}
-                    </Typography>
+                      <option value="">Seleccionar...</option>
+                      {tipoDestinatario === 'paciente'
+                        ? pacientes.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.nombres} {p.apellido_paterno} {p.apellido_materno} - {p.numero_documento}
+                            </option>
+                          ))
+                        : trabajadores.map(t => (
+                            <option key={t.id} value={t.id}>
+                              {t.nombres} {t.apellidos} {t.dni ? `- ${t.dni}` : ''}
+                            </option>
+                          ))
+                      }
+                    </select>
+                  </div>
+
+                  {/* Terapeuta (solo para pacientes) */}
+                  {tipoDestinatario === 'paciente' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Terapeuta Responsable
+                      </label>
+                      <select
+                        value={formData.terapeutaId}
+                        onChange={(e) => {
+                          const terapeuta = terapeutas.find(t => t.id == e.target.value);
+                          setTerapeutaSeleccionado(terapeuta);
+                          setFormData(prev => ({ ...prev, terapeutaId: e.target.value }));
+                        }}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="">Seleccionar terapeuta...</option>
+                        {terapeutas.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.nombres} {t.apellidos} {t.dni ? `- ${t.dni}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
-                </Grid>
+                </div>
 
-                {/* Descripción */}
-                <Grid item xs={12}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b', mb: 1.5 }}>
-                    Descripción <span style={{ color: '#94a3b8' }}>(Opcional)</span>
-                  </Typography>
-                  <TextField
-                    multiline
-                    rows={4}
-                    fullWidth
-                    name="descripcion"
-                    value={formData.descripcion}
-                    onChange={handleInputChange}
-                    placeholder="Detalles adicionales sobre el documento..."
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        background: '#f8fafc'
-                      }
-                    }} />
-                </Grid>
+                {/* Paso 3: Detalles del documento */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Paso 3: Detalles del Documento</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Tipo de Documento
+                      </label>
+                      <select
+                        value={formData.tipoArchivoId}
+                        onChange={handleTipoArchivoChange}
+                        disabled={loadingTipos}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="">Seleccionar tipo...</option>
+                        {loadingTipos ? (
+                          <option disabled>Cargando...</option>
+                        ) : (
+                          tiposArchivoFiltrados.map((tipo) => (
+                            <option key={tipo.id} value={tipo.id}>
+                              {tipo.nombre}
+                              {tipo.vigencia_meses ? ` (${tipo.vigencia_meses} meses)` : ''}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
 
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 3 }} />
-                </Grid>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Fecha de Emisión
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.fechaEmision}
+                        onChange={handleFechaEmisionChange}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
 
-                {/* Subir Archivo */}
-                <Grid item xs={12}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                    <AttachFile sx={{ fontSize: 22, color: '#A3C644' }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                      Archivo
-                    </Typography>
-                    <Chip
-                      label="PDF, Word, JPG, PNG - Máx. 10MB"
-                      size="small"
-                      sx={{ background: '#f1f5f9', fontWeight: 600 }} />
-                  </Stack>
+                  {tipoSeleccionado && (
+                    <div className={`p-3 rounded-xl border mb-4 ${
+                      tipoSeleccionado.vigencia_meses
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-blue-50 border-blue-200'
+                    }`}>
+                      <p className="text-xs font-semibold">
+                        {tipoSeleccionado.vigencia_meses ? (
+                          <>
+                            ✓ Vigencia: {tipoSeleccionado.vigencia_meses} {tipoSeleccionado.vigencia_meses === 1 ? 'mes' : 'meses'}
+                            {formData.fechaVigencia && (
+                              <span className="block mt-1 text-gray-700">
+                                Vence el: <strong>{formatearFecha(formData.fechaVigencia)}</strong>
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          '∞ Este documento no tiene fecha de vencimiento'
+                        )}
+                      </p>
+                    </div>
+                  )}
 
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Fecha de Vigencia <span className="text-gray-400 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="fechaVigencia"
+                      value={formData.fechaVigencia}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+                        errorFechaVigencia
+                          ? 'border-red-300 focus:ring-red-200'
+                          : 'border-gray-200 focus:ring-[#A3C644] focus:border-transparent'
+                      }`}
+                    />
+                    {errorFechaVigencia && (
+                      <p className="text-xs text-red-600 mt-1 font-medium">{errorFechaVigencia}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Descripción <span className="text-gray-400 font-normal">(Opcional)</span>
+                    </label>
+                    <textarea
+                      name="descripcion"
+                      value={formData.descripcion}
+                      onChange={handleInputChange}
+                      rows={3}
+                      placeholder="Detalles adicionales sobre el documento..."
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A3C644] focus:border-transparent transition-all resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Paso 4: Subir archivo */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Paso 4: Subir Archivo</h3>
+                  
                   {!archivo ? (
-                    <Paper
-                      sx={{
-                        p: 6,
-                        textAlign: 'center',
-                        border: '3px dashed #cbd5e1',
-                        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                        borderRadius: 4,
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-                          borderColor: '#A3C644',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 8px 20px rgba(163, 198, 68, 0.2)'
-                        },
-                      }}
+                    <div
                       onClick={() => document.getElementById('file-upload').click()}
+                      className="border-3 border-dashed border-gray-300 rounded-2xl p-12 text-center hover:border-[#7B1FA2] hover:bg-purple-50 transition-all cursor-pointer group"
                     >
-                      <CloudUpload sx={{ fontSize: 80, color: '#A3C644', mb: 2 }} />
-                      <Typography variant="h6" sx={{ mb: 1, color: '#1e293b', fontWeight: 700 }}>
-                        Haz clic para seleccionar
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        o arrastra y suelta aquí
-                      </Typography>
+                      <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-all">
+                        <CloudUpload className="w-8 h-8 text-[#7B1FA2]" />
+                      </div>
+                      <p className="text-lg font-semibold text-gray-900 mb-1">Haz clic para seleccionar</p>
+                      <p className="text-sm text-gray-600 mb-3">o arrastra y suelta aquí</p>
+                      <p className="text-xs text-gray-500">PDF, Word, JPG, PNG - Máx. 10MB</p>
                       <input
                         id="file-upload"
                         type="file"
                         hidden
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                        onChange={handleArchivoChange} />
-                    </Paper>
+                        onChange={handleArchivoChange}
+                      />
+                    </div>
                   ) : (
-                    <Paper sx={{
-                      p: 3,
-                      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-                      borderRadius: 3,
-                      border: '2px solid #22c55e',
-                      boxShadow: '0 4px 12px rgba(34, 197, 94, 0.1)'
-                    }}>
-                      <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                          <Box sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
-                          }}>
-                            <FilePresent sx={{ fontSize: 40, color: '#fff' }} />
-                          </Box>
-                          <Box>
-                            <Typography variant="body1" sx={{ fontWeight: 700, color: '#166534' }}>
-                              {archivo.name}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#15803d' }}>
-                              {(archivo.size / 1024 / 1024).toFixed(2)} MB
-                            </Typography>
-                          </Box>
-                        </Stack>
-                        <IconButton
-                          onClick={handleRemoverArchivo}
-                          sx={{
-                            color: '#dc2626',
-                            '&:hover': {
-                              background: 'rgba(220, 38, 38, 0.1)'
-                            }
-                          }}
-                        >
-                          <Close />
-                        </IconButton>
-                      </Stack>
-                    </Paper>
+                    <div className="bg-green-50 border-2 border-green-500 rounded-xl p-4 flex items-center gap-4">
+                      <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <FileCheck className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-green-900 truncate">{archivo.name}</p>
+                        <p className="text-xs text-green-700">{(archivo.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                      <button
+                        onClick={handleRemoverArchivo}
+                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   )}
-                </Grid>
+                </div>
 
-                {/* Botón Submit */}
-                <Grid item xs={12}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    onClick={handleSubmit}
-                    disabled={loadingForm}
-                    sx={{
-                      mt: 3,
-                      py: 2,
-                      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                      fontSize: '1.1rem',
-                      fontWeight: 700,
-                      borderRadius: 3,
-                      textTransform: 'none',
-                      boxShadow: '0 10px 30px rgba(15, 23, 42, 0.3)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: '-100%',
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(90deg, transparent, rgba(163, 198, 68, 0.3), transparent)',
-                        transition: 'left 0.5s ease'
-                      },
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                        boxShadow: '0 15px 40px rgba(15, 23, 42, 0.4)',
-                        transform: 'translateY(-2px)',
-                        '&::before': {
-                          left: '100%'
-                        }
-                      },
-                      '&:active': {
-                        transform: 'translateY(0)'
-                      },
-                      transition: 'all 0.3s ease'
-                    }}
-                    startIcon={loadingForm ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : <CloudUpload sx={{ fontSize: 28 }} />}
-                  >
-                    {loadingForm ? 'Subiendo archivo...' : 'Subir Archivo Oficial'}
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
+                {/* Botón de envío */}
+                <button
+                  onClick={handleSubmit}
+                  disabled={loadingForm}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-bold text-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingForm ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Subiendo archivo...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5" />
+                      Subir Archivo Oficial
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           )}
-        </Paper>
-      </Box>
+        </div>
+      </div>
 
-      {/* Dialog Ver Detalles */}
-      <Dialog
-        open={dialogVer}
-        onClose={() => setDialogVer(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-          }
-        }}
-      >
-        <DialogTitle sx={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-          color: '#fff',
-          p: 3
-        }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Box sx={{
-                p: 1.5,
-                borderRadius: 2,
-                background: 'rgba(163, 198, 68, 0.2)'
-              }}>
-                <Article sx={{ fontSize: 28, color: '#A3C644' }} />
-              </Box>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                Detalles del Documento
-              </Typography>
-            </Stack>
-            <IconButton onClick={() => setDialogVer(false)} sx={{ color: '#fff' }}>
-              <Close />
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ mt: 3, p: 4 }}>
-          {documentoSeleccionado && (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Paper sx={{
-                  p: 3,
-                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                  borderRadius: 3,
-                  boxShadow: '0 8px 20px rgba(15, 23, 42, 0.3)'
-                }}>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, letterSpacing: 1 }}>
-                    CÓDIGO DE VALIDACIÓN
-                  </Typography>
-                  <Typography variant="h4" sx={{
-                    fontWeight: 800,
-                    fontFamily: 'monospace',
-                    color: '#A3C644',
-                    letterSpacing: 3,
-                    mt: 1
-                  }}>
-                    {documentoSeleccionado.codigoValidacion}
-                  </Typography>
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                  DESTINATARIO
-                </Typography>
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-                  {documentoSeleccionado.paciente ? (
-                    <Person sx={{ fontSize: 20, color: '#3b82f6' }} />
-                  ) : (
-                    <Work sx={{ fontSize: 20, color: '#f59e0b' }} />
+      {/* Modal Ver Documento */}
+      {modalVer && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] p-6 flex items-center justify-between sticky top-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-white font-bold">
+                  {getInitials(
+                    modalVer.paciente?.nombres || modalVer.trabajador?.nombres,
+                    modalVer.paciente?.apellido_paterno || modalVer.trabajador?.apellidos
                   )}
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                      {obtenerNombreDestinatario(documentoSeleccionado)}
-                    </Typography>
-                    <Chip
-                      label={documentoSeleccionado.paciente ? 'Paciente' : 'Trabajador'}
-                      size="small"
-                      sx={{
-                        mt: 0.5,
-                        background: documentoSeleccionado.paciente
-                          ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
-                          : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                        color: documentoSeleccionado.paciente ? '#1e40af' : '#92400e',
-                        fontWeight: 600
-                      }} />
-                  </Box>
-                </Stack>
-              </Grid>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{obtenerNombreDestinatario(modalVer)}</h2>
+                  <p className="text-white/80 text-sm">Detalles del Documento</p>
+                </div>
+              </div>
+              <button onClick={() => setModalVer(null)} className="text-white hover:bg-white/20 p-2 rounded-lg transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                  TERAPEUTA RESPONSABLE
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b', mt: 0.5 }}>
-                  {`${documentoSeleccionado.terapeuta?.nombres || ''} ${documentoSeleccionado.terapeuta?.apellidos || ''}`}
-                </Typography>
-              </Grid>
+            <div className="p-6 space-y-6">
+              {/* Código de validación */}
+              <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] rounded-xl p-5">
+                <p className="text-xs text-white/70 font-bold uppercase mb-2 tracking-wide">Código de Validación</p>
+                <p className="text-3xl font-mono font-bold text-white">{modalVer.codigoValidacion}</p>
+              </div>
 
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                  TIPO DE DOCUMENTO
-                </Typography>
-                <Box sx={{ mt: 1 }}>
-                  <Chip
-                    label={documentoSeleccionado.tipoArchivo?.nombre || '-'}
-                    sx={{
-                      background: '#f1f5f9',
-                      fontWeight: 600,
-                      color: '#1e293b'
-                    }} />
-                </Box>
-              </Grid>
+              {/* Información */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Destinatario</p>
+                  <div className="flex items-center gap-2">
+                    {modalVer.paciente ? (
+                      <div className="w-6 h-6 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <User className="w-4 h-4 text-blue-600" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <Briefcase className="w-4 h-4 text-amber-600" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{obtenerNombreDestinatario(modalVer)}</p>
+                      <p className="text-xs text-gray-500">{modalVer.paciente ? 'Paciente' : 'Trabajador'}</p>
+                    </div>
+                  </div>
+                </div>
 
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                  ESTADO
-                </Typography>
-                <Box sx={{ mt: 1 }}>
-                  <Chip
-                    icon={documentoSeleccionado.estado === 'Activo' ? <CheckCircleOutline /> : <ErrorOutline />}
-                    label={documentoSeleccionado.estado || 'Activo'}
-                    sx={{
-                      background: documentoSeleccionado.estado === 'Activo'
-                        ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
-                        : '#f1f5f9',
-                      color: documentoSeleccionado.estado === 'Activo' ? '#fff' : '#64748b',
-                      fontWeight: 600
-                    }} />
-                </Box>
-              </Grid>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Terapeuta</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {modalVer.terapeuta?.nombres} {modalVer.terapeuta?.apellidos}
+                  </p>
+                </div>
 
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                  FECHA DE EMISIÓN
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b', mt: 0.5 }}>
-                  {formatearFecha(documentoSeleccionado.fechaEmision)}
-                </Typography>
-              </Grid>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Documento</p>
+                  <p className="text-sm font-semibold text-gray-900">{modalVer.tipoArchivo?.nombre}</p>
+                </div>
 
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                  FECHA DE VIGENCIA
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b', mt: 0.5 }}>
-                  {formatearFecha(documentoSeleccionado.fechaVigencia) !== '-' ? formatearFecha(documentoSeleccionado.fechaVigencia) : 'Sin vigencia'}
-                </Typography>
-              </Grid>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Estado</p>
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                    modalVer.estado === 'Activo'
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {modalVer.estado === 'Activo' ? (
+                      <CheckCircle2 className="w-3 h-3" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3" />
+                    )}
+                    {modalVer.estado || 'Activo'}
+                  </div>
+                </div>
 
-              <Grid item xs={12}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                  NOMBRE DEL ARCHIVO
-                </Typography>
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-                  <FilePresent sx={{ color: '#A3C644' }} />
-                  <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                    {documentoSeleccionado.nombreArchivo || '-'}
-                  </Typography>
-                </Stack>
-              </Grid>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Fecha de Emisión</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatearFecha(modalVer.fechaEmision)}</p>
+                </div>
 
-              {documentoSeleccionado.descripcion && (
-                <Grid item xs={12}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', letterSpacing: 1 }}>
-                    DESCRIPCIÓN
-                  </Typography>
-                  <Paper sx={{ p: 3, mt: 1, background: '#f8fafc', borderRadius: 2 }}>
-                    <Typography variant="body2" sx={{ color: '#475569' }}>
-                      {documentoSeleccionado.descripcion}
-                    </Typography>
-                  </Paper>
-                </Grid>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Fecha de Vigencia</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatearFecha(modalVer.fechaVigencia) !== '-' ? formatearFecha(modalVer.fechaVigencia) : 'Sin vigencia'}
+                  </p>
+                </div>
+              </div>
+
+              {modalVer.nombreArchivo && (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">Nombre del Archivo</p>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#7B1FA2]" />
+                    <p className="text-sm font-semibold text-gray-900">{modalVer.nombreArchivo}</p>
+                  </div>
+                </div>
               )}
 
-              <Grid item xs={12}>
-                <Divider sx={{ my: 1 }} />
-              </Grid>
+              {modalVer.descripcion && (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">Descripción</p>
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <p className="text-sm text-gray-700">{modalVer.descripcion}</p>
+                  </div>
+                </div>
+              )}
 
-              <Grid item xs={12}>
-                <Alert
-                  severity="info"
-                  icon={<CheckCircleOutline />}
-                  sx={{
-                    borderRadius: 2,
-                    border: '1px solid #3b82f6',
-                    background: '#eff6ff'
-                  }}
-                >
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-xs text-blue-900">
                   Este documento puede validarse públicamente en: <br />
                   <strong>www.crecemos.com.pe/validar</strong>
-                </Alert>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 3, gap: 1, background: '#f8fafc' }}>
-          <Button
-            variant="outlined"
-            startIcon={<Download />}
-            onClick={handleDescargar}
-            sx={{
-              borderColor: '#cbd5e1',
-              color: '#475569',
-              borderRadius: 2,
-              fontWeight: 600,
-              '&:hover': {
-                borderColor: '#A3C644',
-                background: 'rgba(163, 198, 68, 0.05)'
-              }
-            }}
-          >
-            Descargar
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Visibility />}
-            onClick={handleVisualizar}
-            sx={{
-              background: 'linear-gradient(135deg, #A3C644 0%, #8AB030 100%)',
-              borderRadius: 2,
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(163, 198, 68, 0.3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #8AB030 0%, #7A9F28 100%)',
-                boxShadow: '0 6px 16px rgba(163, 198, 68, 0.4)'
-              }
-            }}
-          >
-            Abrir Archivo
-          </Button>
-        </DialogActions>
-      </Dialog>
+                </p>
+              </div>
+            </div>
 
-      {/* Dialog Eliminar */}
-      <Dialog
-        open={dialogEliminar}
-        onClose={() => setDialogEliminar(false)}
-        maxWidth="sm"
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-          }
-        }}
-      >
-        <DialogTitle sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          color: '#dc2626',
-          p: 3
-        }}>
-          <Box sx={{
-            p: 1.5,
-            borderRadius: 2,
-            background: 'rgba(220, 38, 38, 0.1)'
-          }}>
-            <ErrorOutline sx={{ fontSize: 32, color: '#dc2626' }} />
-          </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Confirmar Eliminación
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ p: 4 }}>
-          <Typography variant="body1" sx={{ mb: 3, color: '#475569' }}>
-            ¿Está seguro que desea eliminar este documento?
-          </Typography>
-          {documentoSeleccionado && (
-            <Paper sx={{
-              p: 3,
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-              borderLeft: '4px solid #f59e0b',
-              borderRadius: 2
-            }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: '#78350f', letterSpacing: 1 }}>
-                CÓDIGO:
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'monospace', mb: 1, color: '#92400e' }}>
-                {documentoSeleccionado.codigoValidacion}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#92400e' }}>
-                Tipo: {documentoSeleccionado.tipoArchivo?.nombre}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#92400e', mt: 0.5 }}>
-                Para: {obtenerNombreDestinatario(documentoSeleccionado)} ({documentoSeleccionado.paciente ? 'Paciente' : 'Trabajador'})
-              </Typography>
-            </Paper>
-          )}
-          <Alert
-            severity="warning"
-            sx={{
-              mt: 3,
-              borderRadius: 2,
-              border: '1px solid #f59e0b',
-              background: '#fffbeb'
-            }}
-          >
-            Esta acción no se puede deshacer. El documento quedará marcado como eliminado.
-          </Alert>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, gap: 1, background: '#f8fafc' }}>
-          <Button
-            variant="outlined"
-            onClick={() => setDialogEliminar(false)}
-            sx={{
-              borderColor: '#cbd5e1',
-              color: '#475569',
-              borderRadius: 2,
-              fontWeight: 600,
-              '&:hover': {
-                borderColor: '#94a3b8',
-                background: '#f1f5f9'
-              }
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleEliminarConfirmar}
-            sx={{
-              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
-              borderRadius: 2,
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)',
-                boxShadow: '0 6px 16px rgba(220, 38, 38, 0.4)'
-              }
-            }}
-            startIcon={<Delete />}
-          >
-            Eliminar
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <div className="border-t border-gray-200 p-4 flex gap-3 bg-gray-50">
+              <button
+                onClick={async () => {
+                  try {
+                    await archivosOficialesService.descargarArchivo(modalVer.id);
+                    setSuccess('Archivo descargado correctamente');
+                    setTimeout(() => setSuccess(''), 3000);
+                  } catch (error) {
+                    console.error('Error al descargar:', error);
+                    setError('Error al descargar el archivo');
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+              >
+                <Download className="w-4 h-4" />
+                Descargar
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await archivosOficialesService.visualizarArchivo(modalVer.id);
+                  } catch (error) {
+                    console.error('Error al visualizar:', error);
+                    setError('Error al visualizar el archivo');
+                  }
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all"
+              >
+                <Eye className="w-4 h-4" />
+                Abrir Archivo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Dialog de Éxito */}
-      <Dialog
-        open={dialogExito}
-        onClose={() => setDialogExito(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            overflow: 'hidden'
-          }
-        }}
-      >
-        <Box sx={{
-          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-          p: 2
-        }} />
-        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 2 }}>
-          <Box sx={{
-            width: 100,
-            height: 100,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto',
-            mb: 3,
-            boxShadow: '0 10px 30px rgba(34, 197, 94, 0.4)',
-            animation: 'pulse 2s ease-in-out infinite'
-          }}>
-            <CheckCircle sx={{ fontSize: 60, color: '#fff' }} />
-          </Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#1e293b', mb: 1 }}>
-            ¡Éxito!
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#64748b' }}>
-            Archivo subido correctamente
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ textAlign: 'center', px: 4, pb: 2 }}>
-          <Typography variant="body1" sx={{ mb: 3, color: '#475569', fontWeight: 500 }}>
-            Código de validación generado:
-          </Typography>
+      {/* Modal Eliminar */}
+      {modalEliminar && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden">
+            <div className="bg-red-50 border-b-2 border-red-200 p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-red-900">Confirmar Eliminación</h2>
+                  <p className="text-sm text-red-700">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+            </div>
 
-          <Paper
-            sx={{
-              p: 4,
-              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-              borderRadius: 3,
-              mb: 3,
-              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.3)',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: -50,
-                right: -50,
-                width: 150,
-                height: 150,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(163, 198, 68, 0.3), transparent)',
-              }
-            }}
-          >
-            <Typography variant="h3" sx={{
-              fontWeight: 800,
-              color: '#A3C644',
-              letterSpacing: 4,
-              fontFamily: 'monospace',
-              position: 'relative',
-              zIndex: 1
-            }}>
-              {codigoGenerado?.codigoValidacion}
-            </Typography>
-          </Paper>
+            <div className="p-6">
+              <p className="text-gray-900 font-medium mb-4">¿Estás seguro de que deseas eliminar la postulación de:</p>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#7B1FA2] to-[#9C27B0] flex items-center justify-center text-white font-bold">
+                    {getInitials(
+                      modalEliminar.paciente?.nombres || modalEliminar.trabajador?.nombres,
+                      modalEliminar.paciente?.apellido_paterno || modalEliminar.trabajador?.apellidos
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{obtenerNombreDestinatario(modalEliminar)}</p>
+                    <p className="text-xs text-gray-600">{modalEliminar.paciente ? 'Paciente' : 'Trabajador'}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 pt-3 border-t border-gray-200">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Código:</span>
+                    <span className="font-mono font-semibold text-gray-900">{modalEliminar.codigoValidacion}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Tipo:</span>
+                    <span className="font-medium text-gray-900">{modalEliminar.tipoArchivo?.nombre}</span>
+                  </div>
+                </div>
+              </div>
 
-          <Button
-            variant="outlined"
-            startIcon={<ContentCopy />}
-            onClick={copiarCodigo}
-            sx={{
-              mb: 3,
-              borderColor: '#A3C644',
-              color: '#A3C644',
-              borderRadius: 3,
-              fontWeight: 600,
-              px: 3,
-              py: 1,
-              '&:hover': {
-                borderColor: '#8AB030',
-                background: 'rgba(163, 198, 68, 0.05)',
-              },
-            }}
-          >
-            Copiar Código
-          </Button>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-900">Se eliminará toda la información del documento, incluyendo el archivo.</p>
+                </div>
+              </div>
 
-          <Alert
-            severity="info"
-            sx={{
-              textAlign: 'left',
-              borderRadius: 2,
-              border: '1px solid #3b82f6',
-              background: '#eff6ff'
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setModalEliminar(null)}
+                  className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleEliminarConfirmar}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-medium text-sm hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Éxito */}
+      {dialogExito && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2"></div>
+            
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+                <CheckCircle2 className="w-10 h-10 text-white" />
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Éxito!</h2>
+              <p className="text-gray-600 mb-6">Archivo subido correctamente</p>
+
+              <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] rounded-xl p-5 mb-4">
+                <p className="text-xs text-white/70 font-bold uppercase mb-2">Código de Validación</p>
+                <p className="text-2xl font-mono font-bold text-white">{codigoGenerado?.codigoValidacion}</p>
+              </div>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(codigoGenerado?.codigoValidacion);
+                  setSuccess('Código copiado');
+                  setTimeout(() => setSuccess(''), 3000);
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-200 transition-all mx-auto mb-4"
+              >
+                <Copy className="w-4 h-4" />
+                Copiar Código
+              </button>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-6">
+                <p className="text-xs text-blue-900">
+                  Este código puede validarse públicamente en: <br />
+                  <strong>www.crecemos.com.pe/validar</strong>
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setDialogExito(false);
+                    setCodigoGenerado(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all"
+                >
+                  Subir Otro
+                </button>
+                <button
+                  onClick={async () => {
+                    setDialogExito(false);
+                    setCodigoGenerado(null);
+                    setTabValue(0);
+                    // Recargar documentos
+                    await cargarDocumentos();
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white rounded-xl font-medium text-sm hover:shadow-lg transition-all"
+                >
+                  Ver Documentos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Menu contextual */}
+      {menuAnchor && (
+        <div className="fixed inset-0 z-40" onClick={handleMenuClose}>
+          <div
+            className="absolute bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-[180px]"
+            style={{
+              top: menuAnchor.getBoundingClientRect().bottom + 8,
+              left: menuAnchor.getBoundingClientRect().left,
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            Este código puede validarse públicamente en: <br />
-            <strong>www.crecemos.com.pe/validar</strong>
-          </Alert>
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 4, gap: 2, px: 4 }}>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              setDialogExito(false);
-              setCodigoGenerado(null);
-            } }
-            sx={{
-              px: 4,
-              py: 1.5,
-              borderRadius: 3,
-              borderColor: '#cbd5e1',
-              color: '#475569',
-              fontWeight: 600,
-              '&:hover': {
-                borderColor: '#94a3b8',
-                background: '#f1f5f9'
-              }
-            }}
-          >
-            Subir Otro
-          </Button>
-          <Button
-              variant="contained"
-              onClick={() => {
-                setDialogExito(false);
-                setCodigoGenerado(null);
-                setTabValue(0); // ✅ Esto trigger el useEffect que carga documentos
-     
-              }}
-              sx={{
-                px: 5,
-                py: 1.5,
-                borderRadius: 3,
-                background: 'linear-gradient(135deg, #A3C644 0%, #8AB030 100%)',
-                fontWeight: 600,
-                boxShadow: '0 4px 12px rgba(163, 198, 68, 0.3)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #8AB030 0%, #7A9F28 100%)',
-                  boxShadow: '0 6px 16px rgba(163, 198, 68, 0.4)'
-                },
-              }}
+            <button
+              onClick={handleVerDocumento}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all"
             >
-              Ver Documentos
-            </Button>
-        </DialogActions>
-      </Dialog>
-    </Box><style>
-        {`
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-        }
-      `}
-      </style>
-  </>
-);
+              <Eye className="w-4 h-4 text-gray-500" />
+              Ver Detalles
+            </button>
+            <button
+              onClick={handleVisualizar}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all"
+            >
+              <FileText className="w-4 h-4 text-gray-500" />
+              Abrir Archivo
+            </button>
+            <button
+              onClick={handleDescargar}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all"
+            >
+              <Download className="w-4 h-4 text-gray-500" />
+              Descargar
+            </button>
+            <div className="border-t border-gray-200 my-1"></div>
+            <button
+              onClick={handleEliminarClick}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default GestionArchivosOficiales;

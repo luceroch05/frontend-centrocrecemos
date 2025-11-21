@@ -75,13 +75,17 @@ const archivosOficialesService = {
    */
   descargarArchivo: async (id) => {
     try {
+      console.log('Iniciando descarga del archivo ID:', id);
       const response = await api.get(`${API_PATH}/${id}/descargar`, {
         responseType: 'blob',
       });
 
+      console.log('Respuesta recibida:', response);
+      console.log('Headers:', response.headers);
+
       const contentDisposition = response.headers['content-disposition'];
       let filename = 'archivo_descargado';
-      
+
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
         if (filenameMatch && filenameMatch[1]) {
@@ -89,24 +93,31 @@ const archivosOficialesService = {
         }
       }
 
-      const blob = new Blob([response.data], { 
-        type: response.headers['content-type'] || 'application/octet-stream' 
+      console.log('Nombre del archivo:', filename);
+
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/octet-stream'
       });
-      
+
+      console.log('Blob creado, tamaño:', blob.size);
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
-      
+
       link.remove();
       window.URL.revokeObjectURL(url);
 
+      console.log('Descarga completada');
       return { success: true, filename };
     } catch (error) {
-      console.error('Error al descargar:', error);
-      throw error.response?.data || error.message;
+      console.error('Error detallado al descargar:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      throw error.response?.data || error;
     }
   },
 
@@ -114,10 +125,29 @@ const archivosOficialesService = {
    * Visualizar archivo en nueva pestaña
    * @param {number} id - ID del archivo
    */
-  visualizarArchivo: (id) => {
-    const token = localStorage.getItem('access_token');
-    const baseURL = api.defaults.baseURL || '';
-    window.open(`${baseURL}${API_PATH}/${id}/descargar`, '_blank');
+  visualizarArchivo: async (id) => {
+    try {
+      const response = await api.get(`${API_PATH}/${id}/descargar`, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/pdf'
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+
+      // Limpiar después de un tiempo
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error al visualizar:', error);
+      throw error.response?.data || error.message;
+    }
   },
 
   /**
