@@ -12,7 +12,12 @@ import {
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  UserIcon,
+  CurrencyDollarIcon,
+  ClockIcon,
+  ChartBarIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
 // Contexto para compartir el estado del sidebar
@@ -44,7 +49,18 @@ const menuItems = [
   { text: 'Usuarios', path: '/intranet/usuarios', icon: UsersIcon },
   { text: 'Popup Inicio', path: '/intranet/popup-promocional', icon: BellAlertIcon },
   { text: 'Postulaciones', path: '/intranet/postulaciones', icon: BriefcaseIcon },
-  { text: 'Certificaciones', path: '/intranet/archivos-oficiales', icon: DocumentCheckIcon }
+  { text: 'Certificaciones', path: '/intranet/archivos-oficiales', icon: DocumentCheckIcon },
+  {
+    text: 'Recursos Humanos',
+    icon: UserIcon,
+    isDropdown: true,
+    subItems: [
+      { text: 'Empleados', path: '/intranet/rrhh/empleados', icon: UserIcon },
+      { text: 'Gratificaciones', path: '/intranet/rrhh/gratificaciones', icon: CurrencyDollarIcon },
+      { text: 'Historial de Pagos', path: '/intranet/rrhh/historial', icon: ClockIcon },
+      { text: 'Dashboard', path: '/intranet/rrhh/dashboard', icon: ChartBarIcon }
+    ]
+  }
 ];
 
 const Sidebar = () => {
@@ -53,6 +69,7 @@ const Sidebar = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState({});
 
   // Actualizar CSS variable para que el contenido se ajuste
   useEffect(() => {
@@ -234,6 +251,77 @@ const Sidebar = () => {
           <div className="space-y-1">
             {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
+
+              // Si es un dropdown
+              if (item.isDropdown) {
+                const isOpen = openDropdowns[item.text];
+                const isAnySubItemActive = item.subItems?.some(subItem => location.pathname === subItem.path);
+
+                return (
+                  <div key={item.text}>
+                    <button
+                      onClick={() => setOpenDropdowns(prev => ({ ...prev, [item.text]: !prev[item.text] }))}
+                      className={`menu-item w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl transition-all duration-300 group relative outline-none ${
+                        isAnySubItemActive
+                          ? 'text-gray-900'
+                          : 'text-gray-600 hover:text-gray-900'
+                      } ${isCollapsed ? 'justify-center' : ''}`}
+                      title={isCollapsed ? item.text : ''}
+                      style={{
+                        animation: `fadeIn 0.4s ease-out ${index * 0.05}s both`
+                      }}
+                    >
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                        isAnySubItemActive
+                          ? 'bg-[#7B1FA2] text-white shadow-md scale-105'
+                          : 'bg-transparent text-gray-500 group-hover:text-[#7B1FA2] group-hover:bg-purple-50 group-hover:scale-110'
+                      }`}>
+                        <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <span
+                        className={`font-semibold text-sm flex-1 text-left transition-all duration-500 overflow-hidden ${
+                          isCollapsed ? 'opacity-0 w-0' : 'opacity-100'
+                        }`}
+                      >
+                        {item.text}
+                      </span>
+                      {!isCollapsed && (
+                        <ChevronDownIcon className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                      )}
+                    </button>
+
+                    {/* Submenú */}
+                    {!isCollapsed && isOpen && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {item.subItems.map((subItem, subIndex) => {
+                          const SubIcon = subItem.icon;
+                          const isSubActive = location.pathname === subItem.path;
+
+                          return (
+                            <button
+                              key={subItem.text}
+                              onClick={() => navigate(subItem.path)}
+                              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-300 group outline-none ${
+                                isSubActive
+                                  ? 'bg-purple-50 text-[#7B1FA2]'
+                                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                              }`}
+                            >
+                              <SubIcon className="w-4 h-4 flex-shrink-0" />
+                              <span className="font-medium text-sm">{subItem.text}</span>
+                              {isSubActive && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#A3C644] flex-shrink-0 ml-auto"></div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Item normal (sin dropdown)
               const isActive = location.pathname === item.path;
 
               return (

@@ -44,6 +44,12 @@ import ArchivosOficiales from '../pages/ArchivosOficiales';
 import GestionPopup from '../pages/GestionPopup';
 import PostulacionesDashboard from '../pages/PostulacionesDashboard';
 
+// Páginas de RR.HH.
+import EmpleadosPage from '../pages/rrhh/EmpleadosPage';
+import GratificacionesPage from '../pages/rrhh/GratificacionesPage';
+import HistorialPagosPage from '../pages/rrhh/HistorialPagosPage';
+import DashboardRRHH from '../pages/rrhh/DashboardRRHH';
+
 
 export const AppRouter = () => {
   return (
@@ -121,7 +127,50 @@ export const AppRouter = () => {
           </PrivateRoute>
         } />
 
+        {/* Rutas de RR.HH. */}
+        <Route path="/intranet/rrhh/dashboard" element={
+          <PrivateRoute>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <DashboardRRHH />
+              </SidebarContentWrapper>
+            </SidebarProvider>
+          </PrivateRoute>
+        } />
 
+        <Route path="/intranet/rrhh/empleados" element={
+          <PrivateRoute>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <EmpleadosPage />
+              </SidebarContentWrapper>
+            </SidebarProvider>
+          </PrivateRoute>
+        } />
+
+        <Route path="/intranet/rrhh/gratificaciones" element={
+          <PrivateRoute>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <GratificacionesPage />
+              </SidebarContentWrapper>
+            </SidebarProvider>
+          </PrivateRoute>
+        } />
+
+        <Route path="/intranet/rrhh/historial" element={
+          <PrivateRoute>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <HistorialPagosPage />
+              </SidebarContentWrapper>
+            </SidebarProvider>
+          </PrivateRoute>
+        } />
 
         <Route path="/intranet/popup-promocional" element={
           <PrivateRoute>
