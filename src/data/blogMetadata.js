@@ -40,6 +40,19 @@ export const blogMetadata = [
     readTime: '25 min lectura',
     author: 'Lic. Giselle Burgos Del Rosario',
     heroImage: '/assets/img/blog/violencia-adultos-mayores.jpg'
+  },
+  {
+    id: 4,
+    slug: 'alimentos-omega-3-ninos-neurodivergentes',
+    title: 'Alimentos que contienen Omega 3: Guía completa para niños neurodivergentes',
+    excerpt: 'El Omega 3 es un nutriente esencial para el desarrollo cerebral, la regulación emocional y el bienestar general. Descubre qué alimentos naturales aportan Omega 3 y cómo incluirlos en la alimentación infantil.',
+    image: '/assets/img/blog/omega.jpg',
+    date: '24 Noviembre 2025',
+    category: 'nutricion',
+    categoryName: 'Nutrición',
+    readTime: '12 min lectura',
+    author: 'Leonardo Yactayo Uceda',
+    heroImage: '/assets/img/blog/omega3-portada.jpg'
   }
   // Aquí agregas más blogs...
 ];

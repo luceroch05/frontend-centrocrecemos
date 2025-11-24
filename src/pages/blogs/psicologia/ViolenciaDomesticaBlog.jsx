@@ -968,7 +968,7 @@ export default function ViolenciaDomesticaBlog() {
               </h5>
               <p style={{ marginBottom: '0.75rem', color: '#666', fontSize: '0.95rem', lineHeight: '1.5' }}>
                 <i className="bi bi-award-fill me-2" style={{ color: '#c263f9' }}></i>
-                Psicóloga - Centro Crecemos
+                Psicóloga Clínica - Centro Crecemos
               </p>
               <a
                 href="https://www.crecemos.com.pe"

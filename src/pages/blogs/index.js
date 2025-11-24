@@ -4,6 +4,7 @@
 // Blogs de Nutrición
 import CushuroBlog from './nutricion/CushuroBlog';
 import QuinuaBlog from './nutricion/QuinuaBlog';
+import Omega3Blog from './nutricion/Omega3Blog';
 
 // Blogs de Desarrollo Infantil
 // import EjemploBlog from './desarrollo-infantil/EjemploBlog';
@@ -25,6 +26,7 @@ export const blogComponents = {
   'cushuro-superalimento-peruano-ninos-neurodivergentes': CushuroBlog,
   'quinua-superalimento-peruano-ninos-neurodivergentes': QuinuaBlog,
   'violencia-domestica-adultos-mayores-historia-muchas-capas': ViolenciaDomesticaBlog,
+  'alimentos-omega-3-ninos-neurodivergentes': Omega3Blog,
   // Agrega más blogs aquí...
   // 'slug-del-blog': ComponenteBlog,
 };
@@ -34,4 +36,5 @@ export {
   CushuroBlog,
   QuinuaBlog,
   ViolenciaDomesticaBlog,
+  Omega3Blog,
 };
