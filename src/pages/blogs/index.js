@@ -9,7 +9,7 @@ import QuinuaBlog from './nutricion/QuinuaBlog';
 // import EjemploBlog from './desarrollo-infantil/EjemploBlog';
 
 // Blogs de Psicología
-// import EjemploBlog from './psicologia/EjemploBlog';
+import ViolenciaDomesticaBlog from './psicologia/ViolenciaDomesticaBlog';
 
 // Blogs de Terapias
 // import EjemploBlog from './terapias/EjemploBlog';
@@ -24,6 +24,7 @@ import QuinuaBlog from './nutricion/QuinuaBlog';
 export const blogComponents = {
   'cushuro-superalimento-peruano-ninos-neurodivergentes': CushuroBlog,
   'quinua-superalimento-peruano-ninos-neurodivergentes': QuinuaBlog,
+  'violencia-domestica-adultos-mayores-historia-muchas-capas': ViolenciaDomesticaBlog,
   // Agrega más blogs aquí...
   // 'slug-del-blog': ComponenteBlog,
 };
@@ -32,4 +33,5 @@ export const blogComponents = {
 export {
   CushuroBlog,
   QuinuaBlog,
+  ViolenciaDomesticaBlog,
 };

@@ -8,7 +8,7 @@ export const blogMetadata = [
     title: 'Cushuro: Un superalimento peruano ideal para niños neurodivergentes desde el primer año',
     excerpt: 'El cushuro, también conocido como llullucha, es una alga andina que crece en lagunas de altura. Su textura suave, fresca y gelatinosa lo convierte en un alimento muy interesante para niños neurodivergentes.',
     image: '/assets/img/blog/cuch.png',
-    date: '15 Enero 2025',
+    date: '15 Noviembre 2025',
     category: 'nutricion',
     categoryName: 'Nutrición',
     readTime: '8 min lectura',
@@ -21,12 +21,25 @@ export const blogMetadata = [
     title: 'Quinua: El superalimento peruano ideal para niños neurodivergentes',
     excerpt: 'La quinua es un pseudocereal andino con un perfil nutricional excepcional. Su textura suave, versatilidad y riqueza en nutrientes esenciales la convierte en un aliado fundamental para el desarrollo de niños neurodivergentes.',
     image: '/assets/img/blog/qinua-portada.jpg',
-    date: '20 Enero 2025',
+    date: '20 Noviembre 2025',
     category: 'nutricion',
     categoryName: 'Nutrición',
     readTime: '10 min lectura',
     author: 'Centro Crecemos',
     heroImage: '/assets/img/blog/qinua-portada.jpg'
+  },
+  {
+    id: 3,
+    slug: 'violencia-domestica-adultos-mayores-historia-muchas-capas',
+    title: 'Más allá de la violencia doméstica: una historia con muchas capas',
+    excerpt: 'A muchos adultos mayores la vida no les pesa por los años, sino por las historias que han cargado desde la infancia: silencios impuestos, miedos aprendidos, sacrificios exigidos y una forma de amar marcada por el deber.',
+    image: '/assets/img/blog/violencia 1.jpg',
+    date: '24 Noviembre 2025',
+    category: 'psicologia',
+    categoryName: 'Psicología',
+    readTime: '25 min lectura',
+    author: 'Lic. Giselle Burgos Del Rosario',
+    heroImage: '/assets/img/blog/violencia-adultos-mayores.jpg'
   }
   // Aquí agregas más blogs...
 ];

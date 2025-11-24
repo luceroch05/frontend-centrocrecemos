@@ -229,8 +229,6 @@ export default function BlogPage() {
                     style={{
                       '--category-color': categoria.color
                     }}
-                    data-aos="zoom-in"
-                    data-aos-delay={100 + (index * 50)}
                   >
                     <i className={`bi ${categoria.icon} me-2`}></i>
                     {categoria.nombre}
@@ -365,7 +363,7 @@ export default function BlogPage() {
         }
 
         .category-btn:hover {
-          transform: translateY(-3px) scale(1.05);
+          transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(0,0,0,0.15);
           border-color: var(--category-color);
           color: var(--category-color);
