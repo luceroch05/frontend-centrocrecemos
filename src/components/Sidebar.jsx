@@ -46,13 +46,12 @@ const menuItems = [
   { text: 'Agenda', path: '/intranet/agenda', icon: CalendarDaysIcon },
   { text: 'Pacientes', path: '/intranet/lista-pacientes', icon: UserGroupIcon },
   { text: 'Reportes', path: '/intranet/reportes-evaluaciones', icon: DocumentChartBarIcon },
-  { text: 'Usuarios', path: '/intranet/usuarios', icon: UsersIcon },
   { text: 'Popup Inicio', path: '/intranet/popup-promocional', icon: BellAlertIcon },
   { text: 'Postulaciones', path: '/intranet/postulaciones', icon: BriefcaseIcon },
   { text: 'Certificaciones', path: '/intranet/archivos-oficiales', icon: DocumentCheckIcon },
   {
     text: 'Recursos Humanos',
-    icon: UserIcon,
+    icon: UsersIcon,
     isDropdown: true,
     subItems: [
       { text: 'Empleados', path: '/intranet/rrhh/empleados', icon: UserIcon },

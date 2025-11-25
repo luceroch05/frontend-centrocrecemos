@@ -1,264 +1,175 @@
 import React, { useState, useEffect } from 'react';
 import {
-  PencilIcon,
-  TrashIcon,
-  UserIcon,
-  MagnifyingGlassIcon,
-  CurrencyDollarIcon,
-  BanknotesIcon,
-  CalendarIcon,
-  BuildingLibraryIcon,
-  CreditCardIcon,
-  InformationCircleIcon,
-  CheckCircleIcon,
-  XMarkIcon,
-  Cog6ToothIcon,
-  DocumentPlusIcon
-} from '@heroicons/react/24/outline';
-import { calcularGratificaciones, getEmpleados, registrarPagoMensual } from '../../services/rrhhService';
-import { crearTrabajador, updateTrabajador, getTrabajadorById } from '../../services/trabajadorService';
+  UserPlus, Edit2, Power, Check, X, Search, Eye,
+  Mail, Phone, MapPin, User, Users, Briefcase, Shield,
+  DollarSign, Calendar, Building2, CreditCard,
+  Settings, Trash2, CheckCircle, XCircle,
+  Info, Shirt
+} from 'lucide-react';
+import {
+  getTrabajadores,
+  crearTrabajador,
+  getRoles,
+  getEspecialidades,
+  activarTrabajador,
+  desactivarTrabajador,
+  updateTrabajador
+} from '../../services/trabajadorService';
+import { registrarPagoMensual } from '../../services/rrhhService';
 import api from '../../services/api';
 
 export default function EmpleadosPage() {
   const [empleados, setEmpleados] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingEmpleado, setEditingEmpleado] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showInactivos, setShowInactivos] = useState(false);
-  const [showPagoModal, setShowPagoModal] = useState(false);
-  const [empleadoParaPago, setEmpleadoParaPago] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [empleadoParaEliminar, setEmpleadoParaEliminar] = useState(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [successTitle, setSuccessTitle] = useState('');
-  const [pagoData, setPagoData] = useState({
-    mes: new Date().toLocaleString('es-ES', { month: 'long' }).toLowerCase(),
-    anio: new Date().getFullYear(),
-    fechaPago: new Date().toISOString().split('T')[0]
-  });
-  const [formData, setFormData] = useState({
-    sueldo_base: '',
-    fecha_ingreso: '',
-    numero_cuenta: '',
-    banco: ''
-  });
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroRol, setFiltroRol] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('activo'); // Por defecto solo activos
+
+  // Estados de modales
+  const [modalNuevo, setModalNuevo] = useState(false);
+  const [modalEditar, setModalEditar] = useState(false);
+  const [modalDetalle, setModalDetalle] = useState(false);
+  const [modalPago, setModalPago] = useState(false);
+  const [modalDelete, setModalDelete] = useState(false);
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
+
+  // Notificaciones
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
   useEffect(() => {
-    cargarEmpleados();
+    cargarDatos();
   }, []);
 
-  const cargarEmpleados = async () => {
+  const cargarDatos = async () => {
     try {
-      const data = await getEmpleados();
-      setEmpleados(data);
+      setLoading(true);
+      const [trabajadoresData, rolesData, especialidadesData] = await Promise.all([
+        getTrabajadores(),
+        getRoles(),
+        getEspecialidades()
+      ]);
+      setEmpleados(trabajadoresData);
+      setRoles(rolesData);
+      setEspecialidades(especialidadesData);
     } catch (error) {
-      console.error('Error al cargar empleados:', error);
+      console.error('Error al cargar datos:', error);
+      showNotification('Error al cargar los datos', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const showSuccessAlert = (title, message) => {
-    setSuccessTitle(title);
-    setSuccessMessage(message);
-    setShowSuccessModal(true);
+  const showNotification = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: 'success' });
+    }, 3000);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleToggleActivo = async (empleado) => {
     try {
-      // Solo actualizar datos de RRHH
-      await updateTrabajador(editingEmpleado.id, formData);
-      showSuccessAlert(
-        '✓ Éxito',
-        `Configuración financiera actualizada exitosamente para ${editingEmpleado.nombres} ${editingEmpleado.apellidos}`
-      );
-      cargarEmpleados();
-      handleCloseModal();
+      if (empleado.estado === 1 || empleado.estado === true) {
+        await desactivarTrabajador(empleado.id);
+        showNotification('Empleado desactivado correctamente', 'success');
+      } else {
+        await activarTrabajador(empleado.id);
+        showNotification('Empleado activado correctamente', 'success');
+      }
+      cargarDatos();
     } catch (error) {
-      console.error('Error al actualizar datos de RRHH:', error);
-      alert('Error al actualizar la configuración financiera. Por favor, intente nuevamente.');
+      showNotification('Error al cambiar el estado del empleado', 'error');
     }
   };
 
-  const handleDelete = (empleado) => {
-    setEmpleadoParaEliminar(empleado);
-    setShowDeleteModal(true);
-  };
-
-  const handleCloseDeleteModal = () => {
-    setShowDeleteModal(false);
-    setEmpleadoParaEliminar(null);
-  };
-
-  const handleConfirmDelete = async () => {
+  const handleDelete = async () => {
     try {
-      await api.delete(`/trabajadores/${empleadoParaEliminar.id}`);
-      showSuccessAlert(
-        '✓ Eliminado',
-        'Empleado eliminado exitosamente'
-      );
-      handleCloseDeleteModal();
-      cargarEmpleados();
+      await api.delete(`/trabajadores/${empleadoSeleccionado.id}`);
+      showNotification('Empleado eliminado exitosamente', 'success');
+      setModalDelete(false);
+      setEmpleadoSeleccionado(null);
+      cargarDatos();
     } catch (error) {
       console.error('Error al eliminar empleado:', error);
-      alert('Error al eliminar el empleado. Por favor, intente nuevamente.');
+      showNotification('Error al eliminar el empleado', 'error');
     }
   };
 
-  const handleEdit = (empleado) => {
-    setEditingEmpleado(empleado);
-    setFormData({
-      sueldo_base: empleado.sueldo_base || '',
-      fecha_ingreso: empleado.fecha_ingreso || '',
-      numero_cuenta: empleado.numero_cuenta || '',
-      banco: empleado.banco || ''
-    });
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setEditingEmpleado(null);
-    setFormData({
-      sueldo_base: '',
-      fecha_ingreso: '',
-      numero_cuenta: '',
-      banco: ''
-    });
-  };
-
-  const handleOpenPagoModal = (empleado) => {
-    setEmpleadoParaPago(empleado);
-    setPagoData({
-      mes: new Date().toLocaleString('es-ES', { month: 'long' }).toLowerCase(),
-      anio: new Date().getFullYear(),
-      fechaPago: new Date().toISOString().split('T')[0]
-    });
-    setShowPagoModal(true);
-  };
-
-  const handleClosePagoModal = () => {
-    setShowPagoModal(false);
-    setEmpleadoParaPago(null);
-  };
-
-  const handleRegistrarPago = async (e) => {
-    e.preventDefault();
-    try {
-      await registrarPagoMensual({
-        empleadoId: empleadoParaPago.id,
-        mes: pagoData.mes,
-        anio: pagoData.anio,
-        monto: empleadoParaPago.sueldo_base,
-        fechaPago: pagoData.fechaPago
-      });
-      const mesCapitalizado = pagoData.mes.charAt(0).toUpperCase() + pagoData.mes.slice(1);
-      const mensaje = `Empleado: ${empleadoParaPago.nombres} ${empleadoParaPago.apellidos}\nMes: ${mesCapitalizado} ${pagoData.anio}\nMonto: S/ ${Number(empleadoParaPago.sueldo_base).toLocaleString('es-PE', {minimumFractionDigits: 2})}\nFecha de pago: ${new Date(pagoData.fechaPago).toLocaleDateString('es-PE')}`;
-      showSuccessAlert('✓ Pago Registrado', mensaje);
-      handleClosePagoModal();
-    } catch (error) {
-      console.error('Error al registrar pago:', error);
-      alert(error.response?.data?.message || 'Error al registrar el pago mensual. Por favor, intente nuevamente.');
-    }
-  };
-
+  // Filtrar empleados
   const empleadosFiltrados = empleados.filter(emp => {
-    // Filtro por estado (activo/inactivo)
-    const cumpleEstado = showInactivos ? true : emp.estado === true;
+    const matchBusqueda = !busqueda ||
+      emp.nombres?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      emp.apellidos?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      emp.dni?.includes(busqueda) ||
+      emp.email?.toLowerCase().includes(busqueda.toLowerCase());
 
-    // Filtro por búsqueda
-    const cumpleBusqueda =
-      (emp.nombres || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (emp.apellidos || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (emp.cargo || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchRol = !filtroRol || emp.rol?.nombre === filtroRol;
+    const matchEstado = !filtroEstado ||
+      (filtroEstado === 'activo' && (emp.estado === 1 || emp.estado === true)) ||
+      (filtroEstado === 'inactivo' && (emp.estado === 0 || emp.estado === false));
 
-    return cumpleEstado && cumpleBusqueda;
+    return matchBusqueda && matchRol && matchEstado;
   });
 
-const calcularCostoAnual = (sueldo_base) => {
-  const sueldoAnual = sueldo_base * 12;           // 12 meses
-  const gratificaciones = sueldo_base * 0.25 ; // 25% julio + 25% diciembre
-  return sueldoAnual + (gratificaciones * 2);
-};
+  const calcularCostoAnual = (sueldo_base) => {
+    if (!sueldo_base) return 0;
+    const sueldoAnual = sueldo_base * 12;
+    const gratificaciones = sueldo_base * 0.25 * 2;
+    return sueldoAnual + gratificaciones;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-center">
+          <div className="relative w-12 h-12 mx-auto">
+            <div className="absolute inset-0 border-2 border-gray-100 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-[#7B1FA2] rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400 mt-3 text-xs font-medium tracking-wide">Cargando empleados...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-white p-6">
+      {/* Notification */}
+      {notification.show && (
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg border transform transition-all duration-300 ${
+          notification.type === 'success'
+            ? 'bg-white border-gray-200'
+            : 'bg-white border-red-200'
+        } flex items-center gap-2.5`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${notification.type === 'success' ? 'bg-[#A3C644]' : 'bg-red-500'}`}></div>
+          <span className="text-xs font-medium text-gray-700">{notification.message}</span>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Empleados</h1>
-        <p className="text-gray-600">Administra la información financiera de tu personal</p>
-      </div>
-
-      {/* Info Banner */}
-      <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <InformationCircleIcon className="w-6 h-6 text-blue-600" />
+      <div className="mb-8">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1.5">Gestión de Empleados</h1>
+            <p className="text-sm text-gray-500">Administra el personal completo de la institución</p>
           </div>
-          <div className="flex-1">
-            <p className="text-sm text-gray-700">
-              <span className="font-semibold text-gray-900">Nota:</span> Los empleados se crean desde el módulo de Usuarios.
-              Aquí solo asignas datos financieros (sueldo, banco, cuenta).
-            </p>
-          </div>
-        </div>
-      </div>
 
-      {/* Barra de Búsqueda y Filtros */}
-      <div className="mb-6 space-y-4">
-        <div className="relative">
-          <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, cargo o DNI..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white shadow-sm"
-          />
-        </div>
-
-        {/* Toggle para mostrar inactivos */}
-        <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${showInactivos ? 'bg-amber-100' : 'bg-green-100'}`}>
-              <UserIcon className={`w-6 h-6 ${showInactivos ? 'text-amber-600' : 'text-green-600'}`} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                {showInactivos ? 'Mostrando todos los empleados' : 'Mostrando solo empleados activos'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {showInactivos
-                  ? 'Incluye empleados retirados para liquidaciones finales'
-                  : 'Activa para ver empleados inactivos'}
-              </p>
-            </div>
-          </div>
           <button
-            onClick={() => setShowInactivos(!showInactivos)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              showInactivos ? 'bg-amber-500' : 'bg-gray-300'
-            }`}
+            onClick={() => setModalNuevo(true)}
+            className="flex items-center gap-2 bg-[#7B1FA2] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
           >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                showInactivos ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
+            <UserPlus className="w-4 h-4" />
+            Nuevo Empleado
           </button>
         </div>
-      </div>
 
-      {/* Estadísticas */}
-      {!loading && empleados.length > 0 && (
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <UserIcon className="w-6 h-6 text-blue-600" />
+                <Users className="w-6 h-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{empleados.length}</p>
@@ -269,10 +180,12 @@ const calcularCostoAnual = (sueldo_base) => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{empleados.filter(e => e.estado === true).length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {empleados.filter(e => e.estado === true || e.estado === 1).length}
+                </p>
                 <p className="text-sm text-gray-500">Activos</p>
               </div>
             </div>
@@ -280,577 +193,1224 @@ const calcularCostoAnual = (sueldo_base) => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                <XMarkIcon className="w-6 h-6 text-amber-600" />
+                <XCircle className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{empleados.filter(e => e.estado === false).length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {empleados.filter(e => e.estado === false || e.estado === 0).length}
+                </p>
                 <p className="text-sm text-gray-500">Inactivos</p>
               </div>
             </div>
           </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">
+                  S/ {empleados
+                    .filter(e => e.estado === true || e.estado === 1)
+                    .reduce((sum, e) => sum + calcularCostoAnual(e.sueldo_base || 0), 0)
+                    .toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-500">Costo Anual</p>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Tabla */}
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          <p className="mt-2 text-gray-600">Cargando empleados...</p>
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-3">
+          <div className="flex-1 min-w-[300px] relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre, DNI o email..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7B1FA2] transition-all"
+            />
+          </div>
+
+          <select
+            value={filtroRol}
+            onChange={(e) => setFiltroRol(e.target.value)}
+            className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7B1FA2] transition-all bg-white"
+          >
+            <option value="">Todos los roles</option>
+            {roles.map(rol => (
+              <option key={rol.id} value={rol.nombre}>{rol.nombre}</option>
+            ))}
+          </select>
+
+          <select
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+            className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7B1FA2] transition-all bg-white"
+          >
+            <option value="">Todos los estados</option>
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Lista de empleados */}
+      {empleadosFiltrados.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-gray-200">
+          <div className="w-16 h-16 bg-gradient-to-br from-[#9C27B0] to-[#BA68C8] opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="w-8 h-8 text-gray-600" />
+          </div>
+          <p className="text-gray-600 font-medium text-base mb-1">No se encontraron empleados</p>
+          <p className="text-gray-400 text-sm">Ajusta los filtros de búsqueda</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empleado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cargo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sueldo Mensual</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Costo Anual</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Ingreso</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {empleadosFiltrados.map((empleado) => (
-                  <tr
-                    key={empleado.id}
-                    className={`transition-colors ${
-                      empleado.estado === false
-                        ? 'bg-amber-50 hover:bg-amber-100'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                          <UserIcon className="h-6 w-6 text-purple-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {empleado.nombres} {empleado.apellidos}
-                          </div>
-                          <div className="text-sm text-gray-500">{empleado.numeroDocumento}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{empleado.cargo || 'N/A'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        S/ {empleado.sueldo_base ? Number(empleado.sueldo_base).toLocaleString() : '0'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-blue-600">
-                        S/ {calcularCostoAnual(empleado.sueldo_base).toLocaleString('es-PE', {minimumFractionDigits: 0})}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Incluye beneficios
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {empleado.fecha_ingreso ? new Date(empleado.fecha_ingreso).toLocaleDateString('es-PE') : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        empleado.estado === true
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-amber-100 text-amber-800 border border-amber-300'
-                      }`}>
-                        {empleado.estado === true ? '✓ Activo' : '⊘ Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEdit(empleado)}
-                          className="group relative p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-all hover:shadow-sm"
-                          title="Configurar datos financieros"
-                        >
-                          <Cog6ToothIcon className="w-5 h-5" />
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            Configurar
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => handleOpenPagoModal(empleado)}
-                          className="group relative p-2 text-green-600 hover:bg-green-50 rounded-lg transition-all hover:shadow-sm"
-                          title="Registrar pago mensual"
-                        >
-                          <BanknotesIcon className="w-5 h-5" />
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            Registrar Pago
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(empleado)}
-                          className="group relative p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all hover:shadow-sm"
-                          title="Eliminar empleado"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            Eliminar
-                          </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {empleadosFiltrados.length === 0 && (
-            <div className="text-center py-12">
-              <UserIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No se encontraron empleados</p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {empleadosFiltrados.map((empleado) => (
+            <TarjetaEmpleado
+              key={empleado.id}
+              empleado={empleado}
+              onEditar={(emp) => {
+                setEmpleadoSeleccionado(emp);
+                setModalEditar(true);
+              }}
+              onToggleActivo={handleToggleActivo}
+              onVerDetalle={(emp) => {
+                setEmpleadoSeleccionado(emp);
+                setModalDetalle(true);
+              }}
+              onPago={(emp) => {
+                setEmpleadoSeleccionado(emp);
+                setModalPago(true);
+              }}
+              onDelete={(emp) => {
+                setEmpleadoSeleccionado(emp);
+                setModalDelete(true);
+              }}
+            />
+          ))}
         </div>
       )}
 
-      {/* Modal Registro de Pago */}
-      {showPagoModal && empleadoParaPago && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            {/* Header del Modal */}
-            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <BanknotesIcon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Registrar Pago Mensual</h2>
-                  <p className="text-sm text-green-100">Sueldo regular sin gratificación</p>
-                </div>
-              </div>
-              <button
-                onClick={handleClosePagoModal}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
-              >
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* Info del Empleado */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wide">Empleado</label>
-                    <p className="font-semibold text-gray-900">{empleadoParaPago.nombres} {empleadoParaPago.apellidos}</p>
-                  </div>
-                  <div className="text-right">
-                    <label className="text-xs text-gray-500 uppercase tracking-wide">Sueldo Base</label>
-                    <p className="text-2xl font-bold text-green-600">
-                      S/ {Number(empleadoParaPago.sueldo_base).toLocaleString('es-PE', {minimumFractionDigits: 2})}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <form onSubmit={handleRegistrarPago}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <CalendarIcon className="w-4 h-4 text-gray-500" />
-                      Mes de Pago
-                    </label>
-                    <select
-                      value={pagoData.mes}
-                      onChange={(e) => setPagoData({...pagoData, mes: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent capitalize"
-                      required
-                    >
-                      <option value="enero">Enero</option>
-                      <option value="febrero">Febrero</option>
-                      <option value="marzo">Marzo</option>
-                      <option value="abril">Abril</option>
-                      <option value="mayo">Mayo</option>
-                      <option value="junio">Junio</option>
-                      <option value="julio">Julio</option>
-                      <option value="agosto">Agosto</option>
-                      <option value="septiembre">Septiembre</option>
-                      <option value="octubre">Octubre</option>
-                      <option value="noviembre">Noviembre</option>
-                      <option value="diciembre">Diciembre</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Año</label>
-                      <select
-                        value={pagoData.anio}
-                        onChange={(e) => setPagoData({...pagoData, anio: parseInt(e.target.value)})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        required
-                      >
-                        {[...Array(5)].map((_, i) => {
-                          const year = new Date().getFullYear() - 2 + i;
-                          return <option key={year} value={year}>{year}</option>;
-                        })}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Pago</label>
-                      <input
-                        type="date"
-                        value={pagoData.fechaPago}
-                        onChange={(e) => setPagoData({...pagoData, fechaPago: e.target.value})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Advertencia para empleados inactivos */}
-                  {empleadoParaPago.estado === false && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-start gap-3">
-                        <InformationCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm text-red-900 font-medium mb-1">⚠️ Empleado Inactivo</p>
-                          <p className="text-sm text-red-800">
-                            Este empleado está marcado como inactivo. Este pago probablemente es para
-                            liquidación final, vacaciones truncas, o pagos pendientes.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Nota Informativa */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <InformationCircleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-amber-900 font-medium mb-1">Pago Regular</p>
-                        <p className="text-sm text-amber-800">
-                          Este pago se registrará como sueldo mensual regular. Para meses con gratificación
-                          (julio/diciembre), usa el módulo de Gratificaciones.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botones de Acción */}
-                <div className="flex gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={handleClosePagoModal}
-                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <CheckCircleIcon className="w-5 h-5" />
-                    Registrar Pago
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+      {/* Modales */}
+      {modalNuevo && (
+        <ModalNuevoEmpleado
+          onClose={() => setModalNuevo(false)}
+          roles={roles}
+          especialidades={especialidades}
+          onSuccess={() => {
+            cargarDatos();
+            showNotification('Empleado creado correctamente', 'success');
+          }}
+          onError={(msg) => showNotification(msg, 'error')}
+        />
       )}
 
-      {/* Modal de Éxito */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-6 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                  <CheckCircleIcon className="w-10 h-10 text-green-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-white">{successTitle}</h2>
-              </div>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-700 text-center whitespace-pre-line mb-6">
-                {successMessage}
-              </p>
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:shadow-lg transition-all"
-              >
-                Aceptar
-              </button>
-            </div>
-          </div>
-        </div>
+      {modalEditar && empleadoSeleccionado && (
+        <ModalEditarEmpleado
+          empleado={empleadoSeleccionado}
+          onClose={() => {
+            setModalEditar(false);
+            setEmpleadoSeleccionado(null);
+          }}
+          roles={roles}
+          especialidades={especialidades}
+          onSuccess={() => {
+            cargarDatos();
+            showNotification('Empleado actualizado correctamente', 'success');
+          }}
+          onError={(msg) => showNotification(msg, 'error')}
+        />
       )}
 
-      {/* Modal Datos Financieros */}
-      {showModal && editingEmpleado && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header del Modal */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <Cog6ToothIcon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Configuración Financiera</h2>
-                  <p className="text-sm text-purple-100">Datos de nómina y pagos</p>
-                </div>
-              </div>
-              <button
-                onClick={handleCloseModal}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
-              >
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* Información del Empleado - Solo Lectura */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <UserIcon className="w-5 h-5 text-gray-600" />
-                  <h3 className="font-semibold text-gray-900">Información del Empleado</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wide">Nombre Completo</label>
-                    <p className="font-medium text-gray-900">{editingEmpleado.nombres} {editingEmpleado.apellidos}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wide">DNI</label>
-                    <p className="font-medium text-gray-900">{editingEmpleado.dni || editingEmpleado.numeroDocumento || 'No registrado'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wide">Cargo</label>
-                    <p className="font-medium text-gray-900">
-                      {typeof editingEmpleado.cargo === 'object'
-                        ? editingEmpleado.cargo?.nombre || 'No asignado'
-                        : editingEmpleado.cargo || 'No asignado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wide">Especialidad</label>
-                    <p className="font-medium text-gray-900">
-                      {typeof editingEmpleado.especialidad === 'object'
-                        ? editingEmpleado.especialidad?.nombre || 'No asignada'
-                        : editingEmpleado.especialidad || 'No asignada'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Formulario de Datos Financieros */}
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <CreditCardIcon className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-semibold text-gray-900">Datos Financieros</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <BanknotesIcon className="w-4 h-4 text-gray-500" />
-                        Sueldo Base Mensual (S/)
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        step="0.01"
-                        min="0"
-                        placeholder="1200.00"
-                        value={formData.sueldo_base}
-                        onChange={(e) => setFormData({...formData, sueldo_base: e.target.value})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-gray-500" />
-                        Fecha de Ingreso
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.fecha_ingreso}
-                        onChange={(e) => setFormData({...formData, fecha_ingreso: e.target.value})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <BuildingLibraryIcon className="w-4 h-4 text-gray-500" />
-                        Banco
-                      </label>
-                      <select
-                        value={formData.banco}
-                        onChange={(e) => setFormData({...formData, banco: e.target.value})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="">Seleccionar banco...</option>
-                        <option value="BCP">BCP - Banco de Crédito del Perú</option>
-                        <option value="BBVA">BBVA</option>
-                        <option value="INTERBANK">Interbank</option>
-                        <option value="SCOTIABANK">Scotiabank</option>
-                        <option value="BANBIF">BanBif</option>
-                        <option value="PICHINCHA">Banco Pichincha</option>
-                        <option value="CAJA HUANCAYO">Caja Huancayo</option>
-                        <option value="MI BANCO">Mi Banco</option>
-                        <option value="OTROS">Otros</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <CreditCardIcon className="w-4 h-4 text-gray-500" />
-                        Número de Cuenta
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="19123456789"
-                        value={formData.numero_cuenta}
-                        onChange={(e) => setFormData({...formData, numero_cuenta: e.target.value})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Nota Informativa */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-blue-900 font-medium mb-1">Información importante</p>
-                      <p className="text-sm text-blue-800">
-                        El sueldo base y la fecha de ingreso son necesarios para el cálculo de gratificaciones
-                        (julio y diciembre). Los datos bancarios se utilizarán para registrar los pagos.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botones de Acción */}
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <CheckCircleIcon className="w-5 h-5" />
-                    Guardar Configuración
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+      {modalDetalle && empleadoSeleccionado && (
+        <ModalDetalleEmpleado
+          empleado={empleadoSeleccionado}
+          onClose={() => {
+            setModalDetalle(false);
+            setEmpleadoSeleccionado(null);
+          }}
+          onEditar={() => {
+            setModalDetalle(false);
+            setModalEditar(true);
+          }}
+        />
       )}
 
-      {/* Modal Confirmación de Eliminación */}
-      {showDeleteModal && empleadoParaEliminar && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            {/* Header del Modal */}
-            <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <TrashIcon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Confirmar Eliminación</h2>
-                  <p className="text-sm text-red-100">Esta acción no se puede deshacer</p>
-                </div>
-              </div>
-              <button
-                onClick={handleCloseDeleteModal}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
-              >
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
+      {modalPago && empleadoSeleccionado && (
+        <ModalPago
+          empleado={empleadoSeleccionado}
+          onClose={() => {
+            setModalPago(false);
+            setEmpleadoSeleccionado(null);
+          }}
+          onSuccess={() => {
+            showNotification('Pago registrado exitosamente', 'success');
+          }}
+          onError={(msg) => showNotification(msg, 'error')}
+        />
+      )}
 
-            <div className="p-6">
-              {/* Info del Empleado */}
-              <div className="bg-red-50 rounded-xl p-4 mb-6 border-2 border-red-200">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <UserIcon className="w-7 h-7 text-red-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-red-600 font-medium mb-1">Empleado a eliminar:</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {empleadoParaEliminar.nombres} {empleadoParaEliminar.apellidos}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      DNI: {empleadoParaEliminar.numeroDocumento || 'No registrado'}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Cargo: {empleadoParaEliminar.cargo || 'No asignado'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Advertencia */}
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <InformationCircleIcon className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-amber-900 mb-2">⚠️ Advertencia Importante</p>
-                    <p className="text-sm text-amber-800 mb-2">
-                      Al eliminar este empleado, también se eliminarán:
-                    </p>
-                    <ul className="list-disc list-inside text-sm text-amber-800 space-y-1">
-                      <li>Todo el historial de pagos</li>
-                      <li>Datos financieros y bancarios</li>
-                      <li>Registros de gratificaciones</li>
-                      <li>Todos los registros asociados</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botones de Acción */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleCloseDeleteModal}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmDelete}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <TrashIcon className="w-5 h-5" />
-                  Eliminar Definitivamente
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {modalDelete && empleadoSeleccionado && (
+        <ModalConfirmDelete
+          empleado={empleadoSeleccionado}
+          onClose={() => {
+            setModalDelete(false);
+            setEmpleadoSeleccionado(null);
+          }}
+          onConfirm={handleDelete}
+        />
       )}
     </div>
   );
 }
+
+// Componente Tarjeta Empleado
+const TarjetaEmpleado = ({ empleado, onEditar, onToggleActivo, onVerDetalle, onPago, onDelete }) => {
+  const esActivo = empleado.estado === 1 || empleado.estado === true;
+
+  return (
+    <div className="group relative bg-white rounded-xl p-4 border border-gray-200 hover:border-[#7B1FA2]/50 hover:shadow-sm transition-all">
+      <div className="flex items-start gap-3 mb-3">
+        {/* Avatar */}
+        <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm transition-all ${
+          esActivo
+            ? 'bg-gradient-to-br from-[#7B1FA2] to-[#6A1B9A]'
+            : 'bg-gradient-to-br from-gray-400 to-gray-500'
+        }`}>
+          {(empleado.nombres?.[0] || '').toUpperCase()}{(empleado.apellidos?.[0] || '').toUpperCase()}
+        </div>
+
+        {/* Info principal */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1">
+            {empleado.nombres || ''} {empleado.apellidos || ''}
+          </h3>
+          <div className="flex items-center gap-2 text-xs text-gray-600 mb-1.5">
+            <User className="w-3 h-3 flex-shrink-0 text-blue-500" />
+            <span className="font-medium">@{empleado.username}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <Mail className="w-3 h-3 flex-shrink-0 text-green-500" />
+            <span className="truncate">{empleado.email}</span>
+          </div>
+        </div>
+
+        {/* Estado badge */}
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border flex-shrink-0 ${
+          esActivo
+            ? 'bg-green-50 border-green-200'
+            : 'bg-gray-50 border-gray-200'
+        }`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${esActivo ? 'bg-green-500' : 'bg-gray-500'}`} />
+          <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+            esActivo ? 'text-green-700' : 'text-gray-700'
+          }`}>
+            {esActivo ? 'Activo' : 'Inactivo'}
+          </span>
+        </div>
+      </div>
+
+      {/* Info adicional */}
+      <div className="space-y-1.5 mb-3">
+        <div className="flex items-center gap-2 text-xs">
+          <Shield className="w-3 h-3 flex-shrink-0 text-[#7B1FA2]" />
+          <span className="font-medium text-gray-700">{empleado.rol?.nombre}</span>
+        </div>
+
+        {empleado.especialidad && (
+          <div className="flex items-center gap-2 text-xs">
+            <Briefcase className="w-3 h-3 flex-shrink-0 text-orange-500" />
+            <span className="text-gray-600">{empleado.especialidad.nombre}</span>
+          </div>
+        )}
+
+        {empleado.sueldo_base && (
+          <div className="flex items-center gap-2 text-xs">
+            <DollarSign className="w-3 h-3 flex-shrink-0 text-green-500" />
+            <span className="text-gray-600">S/ {Number(empleado.sueldo_base).toLocaleString()}/mes</span>
+          </div>
+        )}
+      </div>
+
+      {/* Acciones */}
+      <div className="space-y-2 pt-3 border-t border-gray-100">
+        {/* Primera fila de acciones */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => onVerDetalle(empleado)}
+            className="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 border border-blue-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-100 transition-all"
+            title="Ver información completa"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Ver
+          </button>
+
+          <button
+            onClick={() => onEditar(empleado)}
+            className="flex-1 flex items-center justify-center gap-2 bg-[#A3C644] text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#8FB82D] transition-all"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            Editar
+          </button>
+
+          {empleado.sueldo_base && (
+            <button
+              onClick={() => onPago(empleado)}
+              className="flex-1 flex items-center justify-center gap-2 bg-green-50 text-green-600 border border-green-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-100 transition-all"
+            >
+              <DollarSign className="w-3.5 h-3.5" />
+              Pago
+            </button>
+          )}
+        </div>
+
+        {/* Segunda fila - Estado */}
+        <button
+          onClick={() => onToggleActivo(empleado)}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+            esActivo
+              ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+              : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+          }`}
+          title={esActivo ? 'Desactivar empleado' : 'Activar empleado'}
+        >
+          <Power className="w-3.5 h-3.5" />
+          {esActivo ? 'Desactivar' : 'Activar'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Modal Nuevo Empleado (simplificado - reutiliza componentes del módulo anterior)
+const ModalNuevoEmpleado = ({ onClose, roles, especialidades, onSuccess, onError }) => {
+  const [formData, setFormData] = useState({
+    nombres: '',
+    apellidos: '',
+    dni: '',
+    usuario: '',
+    contrasena: '',
+    email: '',
+    rol: '',
+    especialidad: '',
+    cargo: '',
+    telefono: '',
+    telefono_emergencia: '',
+    contacto_emergencia: '',
+    talla_polo: '',
+    talla_pantalon: '',
+    talla_zapatos: '',
+    sueldo_base: '',
+    fecha_ingreso: '',
+    numero_cuenta: '',
+    banco: ''
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: null });
+    }
+  };
+
+  const validarFormulario = () => {
+    const erroresNuevos = {};
+    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'contrasena', 'email', 'rol', 'cargo'];
+
+    const rolObj = roles.find(r => r.nombre === formData.rol);
+    if (rolObj?.nombre === 'Terapeuta') {
+      camposObligatorios.push('especialidad');
+    }
+
+    camposObligatorios.forEach(campo => {
+      if (!formData[campo]?.trim()) {
+        erroresNuevos[campo] = 'Este campo es obligatorio';
+      }
+    });
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      erroresNuevos.email = 'Email inválido';
+    }
+
+    if (formData.dni && !/^\d{8}$/.test(formData.dni)) {
+      erroresNuevos.dni = 'Debe tener 8 dígitos';
+    }
+
+    setErrors(erroresNuevos);
+    return Object.keys(erroresNuevos).length === 0;
+  };
+
+  const handleGuardar = async () => {
+    if (!validarFormulario()) {
+      onError('Por favor corrige los errores');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const rolObj = roles.find(r => r.nombre === formData.rol);
+      const especialidadObj = especialidades.find(e => e.nombre === formData.especialidad);
+
+      const data = {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        dni: formData.dni,
+        username: formData.usuario,
+        password: formData.contrasena,
+        email: formData.email,
+        rol_id: rolObj?.id,
+        rol: formData.rol,
+        especialidad_id: especialidadObj?.id || null,
+        cargo: formData.cargo,
+        telefono: formData.telefono || null,
+        telefono_emergencia: formData.telefono_emergencia || null,
+        contacto_emergencia: formData.contacto_emergencia || null,
+        talla_polo: formData.talla_polo || null,
+        talla_pantalon: formData.talla_pantalon || null,
+        talla_zapatos: formData.talla_zapatos || null,
+        sueldo_base: formData.sueldo_base || null,
+        fecha_ingreso: formData.fecha_ingreso || null,
+        numero_cuenta: formData.numero_cuenta || null,
+        banco: formData.banco || null
+      };
+
+      await crearTrabajador(data);
+      onSuccess();
+      onClose();
+    } catch (error) {
+      onError('Error al crear el empleado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rolSeleccionado = roles.find(r => r.nombre === formData.rol);
+  const esTerapeuta = rolSeleccionado?.nombre === 'Terapeuta';
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-3xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1.5">Nuevo Empleado</h2>
+              <p className="text-sm text-white/90">Completa los datos del nuevo empleado</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Contenido con scroll */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {/* Sección: Datos Personales */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Datos Personales
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Nombres" name="nombres" value={formData.nombres} onChange={handleChange} error={errors.nombres} required />
+                <InputField label="Apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} error={errors.apellidos} required />
+                <InputField label="DNI" name="dni" value={formData.dni} onChange={handleChange} error={errors.dni} maxLength={8} required />
+                <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required />
+                <InputField label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange} maxLength={9} />
+              </div>
+            </div>
+
+            {/* Sección: Acceso al Sistema */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Acceso al Sistema
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Usuario" name="usuario" value={formData.usuario} onChange={handleChange} error={errors.usuario} required />
+                <InputField label="Contraseña" name="contrasena" type="password" value={formData.contrasena} onChange={handleChange} error={errors.contrasena} required />
+                <SelectField label="Rol" name="rol" value={formData.rol} onChange={handleChange} error={errors.rol} options={roles.map(r => r.nombre)} required />
+                <InputField label="Cargo" name="cargo" value={formData.cargo} onChange={handleChange} error={errors.cargo} required />
+                {esTerapeuta && (
+                  <div className="md:col-span-2">
+                    <SelectField label="Especialidad" name="especialidad" value={formData.especialidad} onChange={handleChange} error={errors.especialidad} options={especialidades.map(e => e.nombre)} required />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sección: Contacto y Emergencia (Opcional) */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                Información de Contacto (Opcional)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Teléfono de Emergencia" name="telefono_emergencia" value={formData.telefono_emergencia} onChange={handleChange} maxLength={9} />
+                <div className="md:col-span-2">
+                  <InputField label="Contacto de Emergencia" name="contacto_emergencia" value={formData.contacto_emergencia} onChange={handleChange} placeholder="Nombre completo del contacto" />
+                </div>
+              </div>
+            </div>
+
+            {/* Sección: Tallas (Opcional) */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                <Shirt className="w-4 h-4" />
+                Tallas de Uniforme (Opcional)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SelectField
+                  label="Talla Polo/Camisa"
+                  name="talla_polo"
+                  value={formData.talla_polo}
+                  onChange={handleChange}
+                  options={['XS', 'S', 'M', 'L', 'XL', 'XXL']}
+                />
+                <SelectField
+                  label="Talla Pantalón"
+                  name="talla_pantalon"
+                  value={formData.talla_pantalon}
+                  onChange={handleChange}
+                  options={['26', '28', '30', '32', '34', '36', '38', '40', '42', '44']}
+                />
+                <SelectField
+                  label="Talla Zapatos"
+                  name="talla_zapatos"
+                  value={formData.talla_zapatos}
+                  onChange={handleChange}
+                  options={['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45']}
+                />
+              </div>
+            </div>
+
+            {/* Sección: Datos Financieros (Opcional) */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Datos Financieros (Opcional)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Sueldo Base (S/)" name="sueldo_base" type="number" step="0.01" value={formData.sueldo_base} onChange={handleChange} />
+                <InputField label="Fecha de Ingreso" name="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={handleChange} />
+                <SelectField
+                  label="Banco"
+                  name="banco"
+                  value={formData.banco}
+                  onChange={handleChange}
+                  options={['BCP', 'BBVA', 'INTERBANK', 'SCOTIABANK', 'BANBIF', 'PICHINCHA', 'OTROS']}
+                />
+                <InputField label="Número de Cuenta" name="numero_cuenta" value={formData.numero_cuenta} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleGuardar}
+            disabled={loading}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Guardar
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Modal Editar (combina datos personales + financieros)
+const ModalEditarEmpleado = ({ empleado, onClose, roles, especialidades, onSuccess, onError }) => {
+  const [formData, setFormData] = useState({
+    nombres: empleado.nombres || '',
+    apellidos: empleado.apellidos || '',
+    dni: empleado.dni || '',
+    usuario: empleado.username || '',
+    email: empleado.email || '',
+    rol: empleado.rol?.nombre || '',
+    especialidad: empleado.especialidad?.nombre || '',
+    contrasena: '',
+    cargo: empleado.cargo || '',
+    telefono: empleado.telefono || '',
+    telefono_emergencia: empleado.telefono_emergencia || '',
+    contacto_emergencia: empleado.contacto_emergencia || '',
+    direccion: empleado.direccion || '',
+    distrito: empleado.distrito || '',
+    provincia: empleado.provincia || '',
+    departamento: empleado.departamento || '',
+    talla_polo: empleado.talla_polo || '',
+    talla_pantalon: empleado.talla_pantalon || '',
+    talla_zapatos: empleado.talla_zapatos || '',
+    sueldo_base: empleado.sueldo_base || '',
+    fecha_ingreso: empleado.fecha_ingreso || '',
+    numero_cuenta: empleado.numero_cuenta || '',
+    banco: empleado.banco || ''
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: null });
+    }
+  };
+
+  const validarFormulario = () => {
+    const erroresNuevos = {};
+    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'email', 'rol', 'cargo'];
+
+    const rolObj = roles.find(r => r.nombre === formData.rol);
+    if (rolObj?.nombre === 'Terapeuta') {
+      camposObligatorios.push('especialidad');
+    }
+
+    camposObligatorios.forEach(campo => {
+      if (!formData[campo]?.trim()) {
+        erroresNuevos[campo] = 'Este campo es obligatorio';
+      }
+    });
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      erroresNuevos.email = 'Email inválido';
+    }
+
+    if (formData.dni && !/^\d{8}$/.test(formData.dni)) {
+      erroresNuevos.dni = 'Debe tener 8 dígitos';
+    }
+
+    setErrors(erroresNuevos);
+    return Object.keys(erroresNuevos).length === 0;
+  };
+
+  const handleGuardar = async () => {
+    if (!validarFormulario()) {
+      onError('Por favor corrige los errores');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const rolObj = roles.find(r => r.nombre === formData.rol);
+      const especialidadObj = especialidades.find(e => e.nombre === formData.especialidad);
+
+      const data = {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        dni: formData.dni,
+        username: formData.usuario,
+        email: formData.email,
+        rol_id: rolObj?.id,
+        rol: formData.rol,
+        especialidad_id: especialidadObj?.id || null,
+        cargo: formData.cargo,
+        telefono: formData.telefono || null,
+        telefono_emergencia: formData.telefono_emergencia || null,
+        contacto_emergencia: formData.contacto_emergencia || null,
+        direccion: formData.direccion || null,
+        distrito: formData.distrito || null,
+        provincia: formData.provincia || null,
+        departamento: formData.departamento || null,
+        talla_polo: formData.talla_polo || null,
+        talla_pantalon: formData.talla_pantalon || null,
+        talla_zapatos: formData.talla_zapatos || null,
+        sueldo_base: formData.sueldo_base || null,
+        fecha_ingreso: formData.fecha_ingreso || null,
+        numero_cuenta: formData.numero_cuenta || null,
+        banco: formData.banco || null
+      };
+
+      if (formData.contrasena?.trim()) {
+        data.password = formData.contrasena;
+      }
+
+      await updateTrabajador(empleado.id, data);
+      onSuccess();
+      onClose();
+    } catch (error) {
+      onError('Error al actualizar el empleado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rolSeleccionado = roles.find(r => r.nombre === formData.rol);
+  const esTerapeuta = rolSeleccionado?.nombre === 'Terapeuta';
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-3xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1.5">Editar Empleado</h2>
+              <p className="text-sm text-white/90">{empleado.nombres} {empleado.apellidos}</p>
+            </div>
+            <button onClick={onClose} className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {/* Datos Personales */}
+            <Section title="Datos Personales" icon={User}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Nombres" name="nombres" value={formData.nombres} onChange={handleChange} error={errors.nombres} required />
+                <InputField label="Apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} error={errors.apellidos} required />
+                <InputField label="DNI" name="dni" value={formData.dni} onChange={handleChange} error={errors.dni} maxLength={8} required />
+                <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required />
+                <InputField label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange} maxLength={9} />
+              </div>
+            </Section>
+
+            {/* Acceso */}
+            <Section title="Acceso al Sistema" icon={Shield}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Usuario" name="usuario" value={formData.usuario} onChange={handleChange} error={errors.usuario} required />
+                <InputField label="Nueva Contraseña" name="contrasena" type="password" value={formData.contrasena} onChange={handleChange} placeholder="Dejar en blanco para mantener" />
+                <SelectField label="Rol" name="rol" value={formData.rol} onChange={handleChange} error={errors.rol} options={roles.map(r => r.nombre)} required />
+                <InputField label="Cargo" name="cargo" value={formData.cargo} onChange={handleChange} error={errors.cargo} required />
+                {esTerapeuta && (
+                  <div className="md:col-span-2">
+                    <SelectField label="Especialidad" name="especialidad" value={formData.especialidad} onChange={handleChange} error={errors.especialidad} options={especialidades.map(e => e.nombre)} required />
+                  </div>
+                )}
+              </div>
+            </Section>
+
+            {/* Contacto */}
+            <Section title="Información de Contacto" icon={MapPin}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Teléfono Personal" name="telefono" value={formData.telefono} onChange={handleChange} maxLength={9} />
+                <InputField label="Teléfono de Emergencia" name="telefono_emergencia" value={formData.telefono_emergencia} onChange={handleChange} maxLength={9} />
+                <div className="md:col-span-2">
+                  <InputField label="Contacto de Emergencia" name="contacto_emergencia" value={formData.contacto_emergencia} onChange={handleChange} placeholder="Nombre completo del contacto" />
+                </div>
+                <InputField label="Distrito" name="distrito" value={formData.distrito} onChange={handleChange} />
+                <InputField label="Provincia" name="provincia" value={formData.provincia} onChange={handleChange} />
+                <InputField label="Departamento" name="departamento" value={formData.departamento} onChange={handleChange} />
+                <div className="md:col-span-2">
+                  <InputField label="Dirección" name="direccion" value={formData.direccion} onChange={handleChange} multiline />
+                </div>
+              </div>
+            </Section>
+
+            {/* Tallas */}
+            <Section title="Tallas de Uniforme" icon={Shirt}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SelectField
+                  label="Talla Polo/Camisa"
+                  name="talla_polo"
+                  value={formData.talla_polo}
+                  onChange={handleChange}
+                  options={['XS', 'S', 'M', 'L', 'XL', 'XXL']}
+                />
+                <SelectField
+                  label="Talla Pantalón"
+                  name="talla_pantalon"
+                  value={formData.talla_pantalon}
+                  onChange={handleChange}
+                  options={['26', '28', '30', '32', '34', '36', '38', '40', '42', '44']}
+                />
+                <SelectField
+                  label="Talla Zapatos"
+                  name="talla_zapatos"
+                  value={formData.talla_zapatos}
+                  onChange={handleChange}
+                  options={['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45']}
+                />
+              </div>
+            </Section>
+
+            {/* Datos Financieros */}
+            <Section title="Datos Financieros" icon={DollarSign}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField label="Sueldo Base (S/)" name="sueldo_base" type="number" step="0.01" value={formData.sueldo_base} onChange={handleChange} />
+                <InputField label="Fecha de Ingreso" name="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={handleChange} />
+                <SelectField
+                  label="Banco"
+                  name="banco"
+                  value={formData.banco}
+                  onChange={handleChange}
+                  options={['BCP', 'BBVA', 'INTERBANK', 'SCOTIABANK', 'BANBIF', 'PICHINCHA', 'OTROS']}
+                />
+                <InputField label="Número de Cuenta" name="numero_cuenta" value={formData.numero_cuenta} onChange={handleChange} />
+              </div>
+            </Section>
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3 justify-end">
+          <button onClick={onClose} disabled={loading} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all">
+            Cancelar
+          </button>
+          <button
+            onClick={handleGuardar}
+            disabled={loading}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Guardar
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Modal Detalle (igual que antes)
+const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
+  const esActivo = empleado.estado === 1 || empleado.estado === true;
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-2xl bg-white shadow-xl z-50 overflow-hidden flex flex-col">
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#7B1FA2] via-[#8E24AA] to-[#AB47BC] p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-sm">
+                {(empleado.nombres?.[0] || '').toUpperCase()}{(empleado.apellidos?.[0] || '').toUpperCase()}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  {empleado.nombres || ''} {empleado.apellidos || ''}
+                </h2>
+                <p className="text-sm text-white/90">@{empleado.username}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 ${
+            esActivo ? 'bg-green-50 border-green-300 text-green-700' : 'bg-gray-50 border-gray-300 text-gray-700'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${esActivo ? 'bg-green-500' : 'bg-gray-500'}`} />
+            <span className="text-xs font-bold uppercase tracking-wide">
+              {esActivo ? 'Empleado Activo' : 'Empleado Inactivo'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {/* Datos Personales */}
+            <DetalleSection title="Datos Personales">
+              <div className="grid grid-cols-2 gap-4">
+                <InfoField label="Nombres" value={empleado.nombres} />
+                <InfoField label="Apellidos" value={empleado.apellidos} />
+                <InfoField label="DNI" value={empleado.dni} />
+                <InfoField label="Email" value={empleado.email} />
+                <InfoField label="Teléfono" value={empleado.telefono} />
+              </div>
+            </DetalleSection>
+
+            {/* Información Profesional */}
+            <DetalleSection title="Información Profesional">
+              <div className="grid grid-cols-2 gap-4">
+                <InfoField label="Rol" value={empleado.rol?.nombre || 'N/A'} />
+                <InfoField label="Cargo" value={empleado.cargo} />
+                {empleado.especialidad && (
+                  <InfoField label="Especialidad" value={empleado.especialidad.nombre} />
+                )}
+              </div>
+            </DetalleSection>
+
+            {/* Datos Financieros */}
+            {(empleado.sueldo_base || empleado.banco) && (
+              <DetalleSection title="Datos Financieros">
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoField label="Sueldo Base" value={empleado.sueldo_base ? `S/ ${Number(empleado.sueldo_base).toLocaleString()}` : 'No registrado'} />
+                  <InfoField label="Fecha Ingreso" value={empleado.fecha_ingreso ? new Date(empleado.fecha_ingreso).toLocaleDateString('es-PE') : 'No registrada'} />
+                  <InfoField label="Banco" value={empleado.banco} />
+                  <InfoField label="Número de Cuenta" value={empleado.numero_cuenta} />
+                </div>
+              </DetalleSection>
+            )}
+
+            {/* Contacto y Dirección */}
+            <DetalleSection title="Información de Contacto">
+              <div className="grid grid-cols-2 gap-4">
+                <InfoField label="Teléfono Personal" value={empleado.telefono || 'No registrado'} />
+                <InfoField label="Teléfono de Emergencia" value={empleado.telefono_emergencia || 'No registrado'} />
+                <div className="col-span-2">
+                  <InfoField label="Contacto de Emergencia" value={empleado.contacto_emergencia || 'No registrado'} />
+                </div>
+              </div>
+            </DetalleSection>
+
+            {/* Dirección */}
+            {empleado.direccion && (
+              <DetalleSection title="Dirección">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <InfoField label="Dirección Completa" value={empleado.direccion} />
+                  </div>
+                  <InfoField label="Distrito" value={empleado.distrito} />
+                  <InfoField label="Provincia" value={empleado.provincia} />
+                  <InfoField label="Departamento" value={empleado.departamento} />
+                </div>
+              </DetalleSection>
+            )}
+
+            {/* Tallas */}
+            {(empleado.talla_polo || empleado.talla_pantalon || empleado.talla_zapatos) && (
+              <DetalleSection title="Tallas de Uniforme">
+                <div className="grid grid-cols-3 gap-4">
+                  <InfoField label="Polo/Camisa" value={empleado.talla_polo || 'No registrada'} />
+                  <InfoField label="Pantalón" value={empleado.talla_pantalon || 'No registrada'} />
+                  <InfoField label="Zapatos" value={empleado.talla_zapatos || 'No registrada'} />
+                </div>
+              </DetalleSection>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3 justify-end">
+          <button onClick={onClose} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all">
+            Cerrar
+          </button>
+          <button
+            onClick={onEditar}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all"
+          >
+            <Edit2 className="w-4 h-4" />
+            Editar Empleado
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Modal Pago
+const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
+  const [pagoData, setPagoData] = useState({
+    mes: new Date().toLocaleString('es-ES', { month: 'long' }).toLowerCase(),
+    anio: new Date().getFullYear(),
+    fechaPago: new Date().toISOString().split('T')[0]
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await registrarPagoMensual({
+        empleadoId: empleado.id,
+        mes: pagoData.mes,
+        anio: pagoData.anio,
+        monto: empleado.sueldo_base,
+        fechaPago: pagoData.fechaPago
+      });
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Error al registrar pago:', error);
+      onError(error.response?.data?.message || 'Error al registrar el pago');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+          <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">Registrar Pago Mensual</h2>
+              <p className="text-sm text-green-100">Sueldo regular</p>
+            </div>
+            <button onClick={onClose} className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-xs text-gray-500 uppercase tracking-wide">Empleado</label>
+                  <p className="font-semibold text-gray-900">{empleado.nombres} {empleado.apellidos}</p>
+                </div>
+                <div className="text-right">
+                  <label className="text-xs text-gray-500 uppercase tracking-wide">Sueldo Base</label>
+                  <p className="text-2xl font-bold text-green-600">
+                    S/ {Number(empleado.sueldo_base).toLocaleString('es-PE', {minimumFractionDigits: 2})}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mes de Pago</label>
+                <select
+                  value={pagoData.mes}
+                  onChange={(e) => setPagoData({...pagoData, mes: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent capitalize"
+                  required
+                >
+                  {['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'].map(mes => (
+                    <option key={mes} value={mes}>{mes.charAt(0).toUpperCase() + mes.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                  <select
+                    value={pagoData.anio}
+                    onChange={(e) => setPagoData({...pagoData, anio: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  >
+                    {[...Array(5)].map((_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return <option key={year} value={year}>{year}</option>;
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Pago</label>
+                  <input
+                    type="date"
+                    value={pagoData.fechaPago}
+                    onChange={(e) => setPagoData({...pagoData, fechaPago: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Registrando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Registrar Pago
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Modal Confirmación Delete
+const ModalConfirmDelete = ({ empleado, onClose, onConfirm }) => {
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
+            <h2 className="text-xl font-bold text-white">Confirmar Eliminación</h2>
+            <p className="text-sm text-red-100">Esta acción no se puede deshacer</p>
+          </div>
+
+          <div className="p-6">
+            <div className="bg-red-50 rounded-xl p-4 mb-6 border-2 border-red-200">
+              <p className="text-sm text-red-600 font-medium mb-1">Empleado a eliminar:</p>
+              <p className="text-lg font-bold text-gray-900">{empleado.nombres} {empleado.apellidos}</p>
+              <p className="text-sm text-gray-600 mt-1">DNI: {empleado.dni}</p>
+            </div>
+
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6">
+              <p className="text-sm font-bold text-amber-900 mb-2">⚠️ Advertencia</p>
+              <ul className="list-disc list-inside text-sm text-amber-800 space-y-1">
+                <li>Todo el historial de pagos</li>
+                <li>Datos financieros y bancarios</li>
+                <li>Registros de gratificaciones</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={onConfirm}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-5 h-5" />
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Componentes auxiliares
+const Section = ({ title, icon: Icon, children }) => (
+  <div>
+    <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+      <Icon className="w-4 h-4" />
+      {title}
+    </h3>
+    {children}
+  </div>
+);
+
+const DetalleSection = ({ title, children }) => (
+  <div>
+    <h3 className="text-base font-bold text-gray-900 mb-4">{title}</h3>
+    {children}
+  </div>
+);
+
+const InputField = ({ label, name, value, onChange, error, type = 'text', required, maxLength, placeholder, multiline, step }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {multiline ? (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        rows={2}
+        className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all resize-none bg-white text-gray-900 font-medium ${
+          error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+        }`}
+      />
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        step={step}
+        className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all bg-white text-gray-900 font-medium ${
+          error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+        }`}
+      />
+    )}
+    {error && (
+      <p className="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+        <span className="w-1 h-1 rounded-full bg-red-500"></span>
+        {error}
+      </p>
+    )}
+  </div>
+);
+
+const SelectField = ({ label, name, value, onChange, error, options, required }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <select
+      name={name}
+      value={value}
+      onChange={onChange}
+      className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all bg-white text-gray-900 font-medium ${
+        error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+      }`}
+    >
+      <option value="">Seleccionar {label.toLowerCase()}</option>
+      {options.map(option => (
+        <option key={option} value={option}>{option}</option>
+      ))}
+    </select>
+    {error && (
+      <p className="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+        <span className="w-1 h-1 rounded-full bg-red-500"></span>
+        {error}
+      </p>
+    )}
+  </div>
+);
+
+const InfoField = ({ label, value }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+      {label}
+    </label>
+    <p className="text-sm text-gray-900 font-medium">{value || 'N/A'}</p>
+  </div>
+);
