@@ -20,7 +20,8 @@
       "Bash(pkill:*)",
       "Bash(curl:*)",
       "Bash(del \"C:\\Users\\Lucero\\Desktop\\centro-crecemos\\src\\rrhh\\empleado.entity.ts\")",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
