@@ -513,21 +513,13 @@ const VerificarDocumentos = () => {
       <header className="verificar-header">
         <div className="verificar-header-inner">
           <div className="verificar-brand">
-<<<<<<< HEAD
-            
-=======
            
->>>>>>> upstream/main
             <div className="verificar-brand-text">
               <h1>Validador de Documentos</h1>
               <p>Verifica emisión, vigencia y estado del paciente</p>
             </div>
           </div>
-<<<<<<< HEAD
-          
-=======
          
->>>>>>> upstream/main
         </div>
       </header>
 
