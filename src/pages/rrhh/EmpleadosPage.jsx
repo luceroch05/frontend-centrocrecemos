@@ -1069,7 +1069,7 @@ const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
               <DetalleSection title="Datos Financieros">
                 <div className="grid grid-cols-2 gap-4">
                   <InfoField label="Sueldo Base" value={empleado.sueldo_base ? `S/ ${Number(empleado.sueldo_base).toLocaleString()}` : 'No registrado'} />
-                  <InfoField label="Fecha Ingreso" value={empleado.fecha_ingreso ? new Date(empleado.fecha_ingreso).toLocaleDateString('es-PE') : 'No registrada'} />
+                  <InfoField label="Fecha Ingreso" value={empleado.fecha_ingreso ? empleado.fecha_ingreso.split('-').reverse().join('/') : 'No registrada'} />
                   <InfoField label="Banco" value={empleado.banco} />
                   <InfoField label="Número de Cuenta" value={empleado.numero_cuenta} />
                 </div>
@@ -1133,28 +1133,50 @@ const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
 
 // Modal Pago
 const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
+  // Formatear fecha actual sin problemas de timezone
+  const hoy = new Date();
+  const fechaHoyFormateada = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+
   const [pagoData, setPagoData] = useState({
     mes: new Date().toLocaleString('es-ES', { month: 'long' }).toLowerCase(),
     anio: new Date().getFullYear(),
-    fechaPago: new Date().toISOString().split('T')[0]
+    fechaPago: fechaHoyFormateada
   });
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setShowConfirm(true);
+  };
+
+  const confirmarPago = async () => {
+    setShowConfirm(false);
     setLoading(true);
     try {
+      // Convertir sueldo_base a número y redondear a 2 decimales
+      const montoNumero = parseFloat(parseFloat(empleado.sueldo_base).toFixed(2));
+
+      console.log('Datos del pago:', {
+        empleadoId: empleado.id,
+        mes: pagoData.mes,
+        anio: pagoData.anio,
+        monto: montoNumero,
+        fechaPago: pagoData.fechaPago
+      });
+
       await registrarPagoMensual({
         empleadoId: empleado.id,
         mes: pagoData.mes,
         anio: pagoData.anio,
-        monto: empleado.sueldo_base,
+        monto: montoNumero,
         fechaPago: pagoData.fechaPago
       });
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error al registrar pago:', error);
+      console.error('Detalles del error:', error.response?.data);
       onError(error.response?.data?.message || 'Error al registrar el pago');
     } finally {
       setLoading(false);
@@ -1266,6 +1288,81 @@ const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Confirmación */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-white font-bold text-lg">Confirmar Registro de Pago</h3>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center text-white font-bold">
+                  {empleado.nombres[0]}{empleado.apellidos[0]}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {empleado.nombres} {empleado.apellidos}
+                  </p>
+                  <p className="text-sm text-gray-500">{empleado.cargo}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Periodo</span>
+                  <span className="font-semibold text-gray-900 capitalize">
+                    {pagoData.mes} {pagoData.anio}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Fecha de Pago</span>
+                  <span className="font-semibold text-gray-900">
+                    {pagoData.fechaPago.split('-').reverse().join('/')}
+                  </span>
+                </div>
+                <div className="pt-3 border-t-2 border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-bold text-gray-900">Monto a Pagar</span>
+                    <span className="text-xl font-bold text-green-600">
+                      S/ {Number(empleado.sueldo_base).toLocaleString('es-PE', {minimumFractionDigits: 2})}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
+                <p className="text-xs text-gray-700 text-center">
+                  ¿Estás seguro de registrar este pago? Esta acción no se puede deshacer.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarPago}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {loading ? 'Registrando...' : 'Confirmar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

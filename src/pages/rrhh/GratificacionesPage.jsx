@@ -9,11 +9,14 @@ export default function GratificacionesPage() {
   const [resumen, setResumen] = useState({
     totalGratificaciones: 0,
     totalSueldos: 0,
-    empleadosConDerecho: 0
+    empleadosConDerecho: 0,
+    empleadosPagados: 0,
+    empleadosPendientes: 0
   });
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmModal, setConfirmModal] = useState({ open: false, gratificacion: null });
 
   useEffect(() => {
     cargarGratificaciones();
@@ -27,7 +30,9 @@ export default function GratificacionesPage() {
       setResumen({
         totalGratificaciones: data.totalGratificaciones,
         totalSueldos: data.totalSueldos,
-        empleadosConDerecho: data.empleadosConDerecho
+        empleadosConDerecho: data.empleadosConDerecho,
+        empleadosPagados: data.empleadosPagados || 0,
+        empleadosPendientes: data.empleadosPendientes || 0
       });
     } catch (error) {
       console.error('Error al calcular gratificaciones:', error);
@@ -37,11 +42,33 @@ export default function GratificacionesPage() {
     }
   };
 
-  const guardarGratificacion = async (gratificacion) => {
+  const abrirConfirmacion = (gratificacion) => {
+    setConfirmModal({ open: true, gratificacion });
+  };
+
+  const cerrarConfirmacion = () => {
+    setConfirmModal({ open: false, gratificacion: null });
+  };
+
+  const guardarGratificacion = async () => {
+    const gratificacion = confirmModal.gratificacion;
+    if (!gratificacion) return;
+
+    cerrarConfirmacion();
+
     try {
+      // Convertir a número y redondear a 2 decimales
+      const montoNumero = parseFloat(parseFloat(gratificacion.gratificacionProporcional).toFixed(2));
+
+      console.log('Datos de la gratificación:', {
+        empleadoId: gratificacion.id,
+        monto: montoNumero,
+        periodo: `${periodo}-${anio}`
+      });
+
       const response = await registrarGratificacion({
         empleadoId: gratificacion.id,
-        monto: gratificacion.gratificacionProporcional,
+        monto: montoNumero,
         periodo: `${periodo}-${anio}`
       });
       setSnackbar({
@@ -56,8 +83,11 @@ export default function GratificacionesPage() {
         },
         severity: 'success'
       });
+      // Recargar gratificaciones para actualizar el estado
+      await cargarGratificaciones();
     } catch (error) {
       console.error('Error al registrar gratificación:', error);
+      console.error('Detalles del error:', error.response?.data);
       setSnackbar({
         open: true,
         message: error.response?.data?.message || 'Error al registrar la gratificación',
@@ -226,10 +256,10 @@ export default function GratificacionesPage() {
         </div>
 
         {/* Resumen - Cards estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-600">Empleados</span>
+              <span className="text-sm font-semibold text-gray-600">Total Empleados</span>
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                 <User className="w-5 h-5 text-blue-600" />
               </div>
@@ -238,11 +268,33 @@ export default function GratificacionesPage() {
             <div className="text-xs text-gray-500 mt-1">Con derecho</div>
           </div>
 
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-200 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-gray-600">Pagados</span>
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-green-600">{resumen.empleadosPagados}</div>
+            <div className="text-xs text-gray-500 mt-1">Completados</div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-amber-200 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-gray-600">Pendientes</span>
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-amber-600">{resumen.empleadosPendientes}</div>
+            <div className="text-xs text-gray-500 mt-1">Por pagar</div>
+          </div>
+
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-gray-600">Gratificaciones</span>
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-purple-600" />
               </div>
             </div>
             <div className="text-2xl font-bold text-gray-900">S/ {resumen.totalGratificaciones.toLocaleString('es-PE', {minimumFractionDigits: 2})}</div>
@@ -251,20 +303,9 @@ export default function GratificacionesPage() {
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-600">Sueldos Totales</span>
-              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-gray-900">S/ {resumen.totalSueldos.toLocaleString('es-PE', {minimumFractionDigits: 2})}</div>
-            <div className="text-xs text-gray-500 mt-1">Base + Gratificación</div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-gray-600">Periodo</span>
-              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-purple-600" />
+              <div className="w-10 h-10 bg-[#7B1FA2]/10 rounded-xl flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-[#7B1FA2]" />
               </div>
             </div>
             <div className="text-xl font-bold text-gray-900 capitalize">{periodo} {anio}</div>
@@ -300,7 +341,7 @@ export default function GratificacionesPage() {
                             {grat.nombres} {grat.apellidos}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Ingreso: {new Date(grat.fecha_ingreso).toLocaleDateString('es-PE')}
+                            Ingreso: {grat.fecha_ingreso.split('-').reverse().join('/')}
                           </div>
                         </div>
                       </div>
@@ -335,12 +376,26 @@ export default function GratificacionesPage() {
                       <div className="text-xs text-gray-500">{grat.numero_cuenta}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => guardarGratificacion(grat)}
-                        className="px-4 py-2 bg-gradient-to-r from-[#A3C644] to-[#8FB933] text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all"
-                      >
-                        Registrar
-                      </button>
+                      {grat.yaPagado ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="px-4 py-2 bg-green-50 text-green-700 text-sm font-semibold rounded-xl border border-green-200 flex items-center gap-2 justify-center">
+                            <CheckCircle className="w-4 h-4" />
+                            Ya Pagado
+                          </span>
+                          {grat.fechaPago && (
+                            <span className="text-xs text-gray-500 text-center">
+                              {grat.fechaPago.split('-').reverse().join('/')}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => abrirConfirmacion(grat)}
+                          className="px-4 py-2 bg-gradient-to-r from-[#A3C644] to-[#8FB933] text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all"
+                        >
+                          Registrar
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -405,6 +460,86 @@ export default function GratificacionesPage() {
             </div>
           </div>
         </div>
+
+        {/* Modal de Confirmación */}
+        {confirmModal.open && confirmModal.gratificacion && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+              <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-white font-bold text-lg">Confirmar Registro de Pago</h3>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#7B1FA2] to-[#9C27B0] rounded-xl flex items-center justify-center text-white font-bold">
+                    {confirmModal.gratificacion.nombres[0]}{confirmModal.gratificacion.apellidos[0]}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {confirmModal.gratificacion.nombres} {confirmModal.gratificacion.apellidos}
+                    </p>
+                    <p className="text-sm text-gray-500">{confirmModal.gratificacion.cargo}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Sueldo Base</span>
+                    <span className="font-semibold text-gray-900">
+                      S/ {confirmModal.gratificacion.sueldoBase.toLocaleString('es-PE', {minimumFractionDigits: 2})}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Gratificación (25%)</span>
+                    <span className="font-semibold text-[#A3C644]">
+                      S/ {confirmModal.gratificacion.gratificacionProporcional.toLocaleString('es-PE', {minimumFractionDigits: 2})}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Meses trabajados</span>
+                    <span className="font-semibold text-gray-900">
+                      {confirmModal.gratificacion.mesesTrabajados} / 6
+                    </span>
+                  </div>
+                  <div className="pt-3 border-t-2 border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-base font-bold text-gray-900">Total a Pagar</span>
+                      <span className="text-xl font-bold text-[#7B1FA2]">
+                        S/ {confirmModal.gratificacion.sueldoTotal.toLocaleString('es-PE', {minimumFractionDigits: 2})}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
+                  <p className="text-xs text-gray-700 text-center">
+                    ¿Estás seguro de registrar este pago? Esta acción no se puede deshacer.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={cerrarConfirmacion}
+                    className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={guardarGratificacion}
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#A3C644] to-[#8FB933] text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
