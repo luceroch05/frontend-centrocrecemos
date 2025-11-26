@@ -12,7 +12,6 @@ const menuItems = [
   { text: 'Popup Inicio', path: '/intranet/popup-promocional' },
   { text: 'Postulaciones', path: '/intranet/postulaciones', adminOnly: true },
   { text: 'Certificaciones', path: '/intranet/archivos-oficiales', adminOnly: true }
-
 ];
 
 const TopMenu = () => {
