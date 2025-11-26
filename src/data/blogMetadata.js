@@ -53,6 +53,19 @@ export const blogMetadata = [
     readTime: '12 min lectura',
     author: 'Leonardo Yactayo Uceda',
     heroImage: '/assets/img/blog/omega3-portada.jpg'
+  },
+  {
+    id: 5,
+    slug: '25-noviembre-dia-eliminacion-violencia-mujer',
+    title: '25 de Noviembre: El Día que Nos Recuerda que la Lucha Continúa',
+    excerpt: 'El color naranja inunda las calles, redes sociales y espacios públicos. La razón detrás de su uso es muy importante: se conmemoró el Día Internacional de la Eliminación de la Violencia contra la Mujer.',
+    image: '/assets/img/blog/25nov-portada.jpg',
+    date: '25 Noviembre 2025',
+    category: 'psicologia',
+    categoryName: 'Psicología',
+    readTime: '8 min lectura',
+    author: 'Lic. Giselle Burgos Del Rosario',
+    heroImage: '/assets/img/blog/25noviembre1.jpg'
   }
   // Aquí agregas más blogs...
 ];

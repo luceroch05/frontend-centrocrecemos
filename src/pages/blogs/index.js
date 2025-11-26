@@ -11,6 +11,7 @@ import Omega3Blog from './nutricion/Omega3Blog';
 
 // Blogs de Psicología
 import ViolenciaDomesticaBlog from './psicologia/ViolenciaDomesticaBlog';
+import Dia25NoviembreBlog from './psicologia/Dia25NoviembreBlog';
 
 // Blogs de Terapias
 // import EjemploBlog from './terapias/EjemploBlog';
@@ -27,6 +28,7 @@ export const blogComponents = {
   'quinua-superalimento-peruano-ninos-neurodivergentes': QuinuaBlog,
   'violencia-domestica-adultos-mayores-historia-muchas-capas': ViolenciaDomesticaBlog,
   'alimentos-omega-3-ninos-neurodivergentes': Omega3Blog,
+  '25-noviembre-dia-eliminacion-violencia-mujer': Dia25NoviembreBlog,
   // Agrega más blogs aquí...
   // 'slug-del-blog': ComponenteBlog,
 };
@@ -37,4 +39,5 @@ export {
   QuinuaBlog,
   ViolenciaDomesticaBlog,
   Omega3Blog,
+  Dia25NoviembreBlog,
 };
