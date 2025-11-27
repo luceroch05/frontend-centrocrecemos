@@ -83,3 +83,97 @@ export const registrarPagoMensual = async (data) => {
   );
   return response.data;
 };
+
+// ========== VACACIONES ==========
+
+// Calcular vacaciones disponibles para todos los empleados
+export const calcularVacaciones = async (data) => {
+  const response = await axios.post(
+    `${API_BASE_URL}/vacaciones/calcular`,
+    data,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// Registrar vacaciones
+export const registrarVacacion = async (data) => {
+  const response = await axios.post(
+    `${API_BASE_URL}/vacaciones`,
+    data,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// Obtener todas las vacaciones con filtros
+export const getVacaciones = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.empleadoId) params.append('empleadoId', filters.empleadoId);
+  if (filters.anio) params.append('anio', filters.anio);
+
+  const response = await axios.get(
+    `${API_BASE_URL}/vacaciones?${params.toString()}`,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// Eliminar una vacación
+export const deleteVacacion = async (id) => {
+  const response = await axios.delete(
+    `${API_BASE_URL}/vacaciones/${id}`,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// ========== CUENTAS BANCARIAS ==========
+
+// Obtener cuentas bancarias de un trabajador
+export const getCuentasBancarias = async (trabajadorId) => {
+  const response = await axios.get(
+    `${API_BASE_URL}/cuentas-bancarias/trabajador/${trabajadorId}`,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// Crear una nueva cuenta bancaria
+export const crearCuentaBancaria = async (data) => {
+  const response = await axios.post(
+    `${API_BASE_URL}/cuentas-bancarias`,
+    data,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// Actualizar una cuenta bancaria
+export const actualizarCuentaBancaria = async (id, data) => {
+  const response = await axios.put(
+    `${API_BASE_URL}/cuentas-bancarias/${id}`,
+    data,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// Marcar cuenta como principal
+export const marcarCuentaPrincipal = async (id) => {
+  const response = await axios.put(
+    `${API_BASE_URL}/cuentas-bancarias/${id}/marcar-principal`,
+    {},
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};
+
+// Eliminar una cuenta bancaria
+export const eliminarCuentaBancaria = async (id) => {
+  const response = await axios.delete(
+    `${API_BASE_URL}/cuentas-bancarias/${id}`,
+    { headers: getAuthHeaders() }
+  );
+  return response.data;
+};

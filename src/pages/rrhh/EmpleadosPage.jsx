@@ -17,7 +17,7 @@ import {
 } from '../../services/trabajadorService';
 import { registrarPagoMensual } from '../../services/rrhhService';
 import api from '../../services/api';
-
+import CuentasBancarias from '../../components/CuentasBancarias'; // Ajusta la ruta según tu estructura
 export default function EmpleadosPage() {
   const [empleados, setEmpleados] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -959,20 +959,23 @@ const ModalEditarEmpleado = ({ empleado, onClose, roles, especialidades, onSucce
             </Section>
 
             {/* Datos Financieros */}
-            <Section title="Datos Financieros" icon={DollarSign}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputField label="Sueldo Base (S/)" name="sueldo_base" type="number" step="0.01" value={formData.sueldo_base} onChange={handleChange} />
-                <InputField label="Fecha de Ingreso" name="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={handleChange} />
-                <SelectField
-                  label="Banco"
-                  name="banco"
-                  value={formData.banco}
-                  onChange={handleChange}
-                  options={['BCP', 'BBVA', 'INTERBANK', 'SCOTIABANK', 'BANBIF', 'PICHINCHA', 'OTROS']}
-                />
-                <InputField label="Número de Cuenta" name="numero_cuenta" value={formData.numero_cuenta} onChange={handleChange} />
-              </div>
-            </Section>
+          {/* Datos Financieros */}
+<Section title="Datos Financieros" icon={DollarSign}>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <InputField label="Sueldo Base (S/)" name="sueldo_base" type="number" step="0.01" value={formData.sueldo_base} onChange={handleChange} />
+    <InputField label="Fecha de Ingreso" name="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={handleChange} />
+  </div>
+  
+  {/* Componente de Cuentas Bancarias */}
+  <div className="mt-4">
+    <CuentasBancarias 
+      trabajadorId={empleado.id}
+      onUpdate={() => {
+        console.log('Cuentas actualizadas');
+      }}
+    />
+  </div>
+</Section>
           </div>
         </div>
 
@@ -1067,11 +1070,20 @@ const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
             {/* Datos Financieros */}
             {(empleado.sueldo_base || empleado.banco) && (
               <DetalleSection title="Datos Financieros">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   <InfoField label="Sueldo Base" value={empleado.sueldo_base ? `S/ ${Number(empleado.sueldo_base).toLocaleString()}` : 'No registrado'} />
                   <InfoField label="Fecha Ingreso" value={empleado.fecha_ingreso ? empleado.fecha_ingreso.split('-').reverse().join('/') : 'No registrada'} />
-                  <InfoField label="Banco" value={empleado.banco} />
-                  <InfoField label="Número de Cuenta" value={empleado.numero_cuenta} />
+                </div>
+                
+                {/* Cuentas Bancarias */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <CuentasBancarias 
+                    trabajadorId={empleado.id}
+                    onUpdate={() => {
+                      console.log('Cuentas actualizadas');
+                    }}
+                    readOnly={true}
+                  />
                 </div>
               </DetalleSection>
             )}

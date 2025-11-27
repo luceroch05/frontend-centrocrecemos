@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROLES_NAMES, ROLES } from '../constants/roles';
+import NotificacionesVacaciones from './NotificacionesVacaciones';
 import {
   CalendarDaysIcon,
   UserGroupIcon,
@@ -17,7 +18,8 @@ import {
   CurrencyDollarIcon,
   ClockIcon,
   ChartBarIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 
 // Contexto para compartir el estado del sidebar
@@ -26,7 +28,7 @@ export const SidebarContext = createContext();
 export const useSidebar = () => {
   const context = useContext(SidebarContext);
   if (!context) {
-    return { isCollapsed: false }; // Valor por defecto
+    return { isCollapsed: false };
   }
   return context;
 };
@@ -56,6 +58,7 @@ const menuItems = [
     subItems: [
       { text: 'Empleados', path: '/intranet/rrhh/empleados', icon: UserIcon },
       { text: 'Gratificaciones', path: '/intranet/rrhh/gratificaciones', icon: CurrencyDollarIcon },
+      { text: 'Vacaciones', path: '/intranet/rrhh/vacaciones', icon: CalendarIcon },
       { text: 'Historial de Pagos', path: '/intranet/rrhh/historial', icon: ClockIcon },
       { text: 'Dashboard', path: '/intranet/rrhh/dashboard', icon: ChartBarIcon }
     ]
@@ -70,7 +73,6 @@ const Sidebar = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState({});
 
-  // Actualizar CSS variable para que el contenido se ajuste
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--sidebar-width',
@@ -78,12 +80,10 @@ const Sidebar = () => {
     );
   }, [isCollapsed]);
 
-  // Cerrar menú móvil al cambiar de ruta
   useEffect(() => {
     setIsMobileOpen(false);
   }, [location.pathname]);
 
-  // Cerrar menú móvil al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (isMobileOpen && !e.target.closest('.mobile-sidebar') && !e.target.closest('.mobile-hamburger')) {
@@ -158,30 +158,32 @@ const Sidebar = () => {
         }}
       >
         {/* Logo */}
-        <div className="p-3 flex items-center justify-center overflow-hidden">
-          <div className={`transition-all duration-500 ease-in-out ${isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 w-0'}`}>
-            {isCollapsed && (
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center">
+        <div className="p-3 flex items-center justify-between overflow-hidden">
+          <div className="flex items-center overflow-hidden">
+            <div className={`transition-all duration-500 ease-in-out ${isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 w-0'}`}>
+              {isCollapsed && (
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center">
+                  <img
+                    src="/videologo.png"
+                    alt="Logo"
+                    className="w-12 h-12 object-contain transition-transform duration-500 hover:scale-110"
+                  />
+                </div>
+              )}
+            </div>
+            <div className={`transition-all duration-500 ease-in-out ${!isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 w-0 absolute'}`}>
+              {!isCollapsed && (
                 <img
-                  src="/videologo.png"
-                  alt="Logo"
-                  className="w-12 h-12 object-contain transition-transform duration-500 hover:scale-110"
+                  src="/logo-text-short.png"
+                  alt="Logo Crecemos"
+                  className="h-10 w-auto object-contain transition-transform duration-500 hover:scale-105"
                 />
-              </div>
-            )}
-          </div>
-          <div className={`transition-all duration-500 ease-in-out ${!isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 w-0 absolute'}`}>
-            {!isCollapsed && (
-              <img
-                src="/logo-text-short.png"
-                alt="Logo Crecemos"
-                className="h-10 w-auto object-contain transition-transform duration-500 hover:scale-105"
-              />
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Toggle Button - Solo en desktop */}
+        {/* Toggle Button */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="hidden lg:flex absolute top-7 -right-3 w-6 h-6 bg-white rounded-full items-center justify-center text-gray-400 hover:text-[#7B1FA2] hover:bg-purple-50 hover:scale-110 transition-all duration-300 shadow-md hover:shadow-lg outline-none"
@@ -251,7 +253,6 @@ const Sidebar = () => {
             {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
 
-              // Si es un dropdown
               if (item.isDropdown) {
                 const isOpen = openDropdowns[item.text];
                 const isAnySubItemActive = item.subItems?.some(subItem => location.pathname === subItem.path);
@@ -289,7 +290,6 @@ const Sidebar = () => {
                       )}
                     </button>
 
-                    {/* Submenú */}
                     {!isCollapsed && isOpen && (
                       <div className="ml-4 mt-1 space-y-1">
                         {item.subItems.map((subItem, subIndex) => {
@@ -320,7 +320,6 @@ const Sidebar = () => {
                 );
               }
 
-              // Item normal (sin dropdown)
               const isActive = location.pathname === item.path;
 
               return (
@@ -363,11 +362,17 @@ const Sidebar = () => {
           </div>
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile & Notifications */}
         <div className="p-3" style={{ borderTop: '1px solid #e9ecef' }}>
           {isCollapsed ? (
-            // Vista colapsada - Solo iconos verticales
-            <div className="flex flex-col gap-2">
+            // Vista colapsada - Iconos verticales centrados
+            <div className="flex flex-col items-center gap-2">
+              {/* Notificaciones */}
+              <div className="w-full flex justify-center">
+                <NotificacionesVacaciones />
+              </div>
+
+              {/* Avatar del usuario */}
               <button
                 onClick={() => navigate('/intranet/mi-perfil')}
                 className="w-full flex items-center justify-center p-2.5 text-gray-500 rounded-xl transition-all duration-300 outline-none hover:scale-110 hover:bg-purple-50"
@@ -386,6 +391,7 @@ const Sidebar = () => {
                 </div>
               </button>
 
+              {/* Cerrar sesión */}
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center p-2.5 text-gray-500 rounded-xl transition-all duration-300 outline-none hover:scale-110 hover:rotate-6"
@@ -402,8 +408,9 @@ const Sidebar = () => {
               </button>
             </div>
           ) : (
-            // Vista expandida - Perfil completo
+            // Vista expandida - Layout horizontal completo
             <div className="space-y-2">
+              {/* Botón de perfil completo */}
               <button
                 onClick={() => navigate('/intranet/mi-perfil')}
                 className="w-full flex items-center gap-3 p-2.5 text-gray-600 rounded-xl transition-all duration-300 group outline-none hover:scale-[1.02]"
@@ -432,20 +439,27 @@ const Sidebar = () => {
                 <UserCircleIcon className="w-4 h-4 text-gray-400 group-hover:text-[#7B1FA2] flex-shrink-0 transition-all duration-300 group-hover:scale-125" />
               </button>
 
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 p-2.5 text-gray-500 rounded-xl transition-all duration-300 outline-none hover:scale-[1.02]"
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#6b7280'; }}
-              >
-                <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                <span className="text-xs font-medium">Cerrar sesión</span>
-              </button>
+              {/* Fila de notificaciones y cerrar sesión */}
+              <div className="flex items-center gap-2">
+                <div className="flex-shrink-0">
+                  <NotificacionesVacaciones />
+                </div>
+                
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 flex items-center justify-center gap-2 p-2.5 text-gray-500 rounded-xl transition-all duration-300 outline-none hover:scale-[1.02]"
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#6b7280'; }}
+                >
+                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                  <span className="text-xs font-medium">Cerrar sesión</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -454,7 +468,6 @@ const Sidebar = () => {
   );
 };
 
-// Wrapper para el contenido principal que se ajusta al sidebar
 export const SidebarContentWrapper = ({ children }) => {
   const { isCollapsed } = useSidebar();
 

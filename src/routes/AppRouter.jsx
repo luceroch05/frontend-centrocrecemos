@@ -48,6 +48,7 @@ import EmpleadosPage from '../pages/rrhh/EmpleadosPage';
 import GratificacionesPage from '../pages/rrhh/GratificacionesPage';
 import HistorialPagosPage from '../pages/rrhh/HistorialPagosPage';
 import DashboardRRHH from '../pages/rrhh/DashboardRRHH';
+import VacacionesPage from '../pages/rrhh/VacacionesPage';
 
 
 export const AppRouter = () => {
@@ -156,6 +157,17 @@ export const AppRouter = () => {
               <Sidebar />
               <SidebarContentWrapper>
                 <HistorialPagosPage />
+              </SidebarContentWrapper>
+            </SidebarProvider>
+          </PrivateRoute>
+        } />
+
+        <Route path="/intranet/rrhh/vacaciones" element={
+          <PrivateRoute>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <VacacionesPage />
               </SidebarContentWrapper>
             </SidebarProvider>
           </PrivateRoute>
