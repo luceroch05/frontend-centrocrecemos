@@ -1,9 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, UserPlus, Loader2, Briefcase, User } from 'lucide-react';
 import { ROLES } from '../../constants/roles';
+import { getTrabajadoresByServicio } from '../../services/trabajadorServicioService';
 
 const AsignarServicioModal = ({ open, onClose, servicios, terapeutas, nuevoServicio, setNuevoServicio, onAsignar }) => {
   const [saving, setSaving] = useState(false);
+  const [terapeutasFiltrados, setTerapeutasFiltrados] = useState([]);
+  const [loadingTerapeutas, setLoadingTerapeutas] = useState(false);
+
+  // Encontrar el ID del servicio seleccionado
+  const servicioSeleccionado = useMemo(() => {
+    return servicios.find(s => s.nombre === nuevoServicio.servicio);
+  }, [servicios, nuevoServicio.servicio]);
+
+  // Cargar terapeutas filtrados cuando se selecciona un servicio
+  useEffect(() => {
+    const cargarTerapeutasFiltrados = async () => {
+      if (servicioSeleccionado) {
+        setLoadingTerapeutas(true);
+        try {
+          const trabajadoresDelServicio = await getTrabajadoresByServicio(servicioSeleccionado.id);
+          // Filtrar solo los que sean terapeutas activos
+          const terapeutasDelServicio = trabajadoresDelServicio.filter(
+            t => t.estado === true && t.rol?.id === ROLES.TERAPEUTA
+          );
+          setTerapeutasFiltrados(terapeutasDelServicio);
+        } catch (error) {
+          console.error('Error al cargar terapeutas del servicio:', error);
+          // Si hay error, mostrar todos los terapeutas
+          setTerapeutasFiltrados(terapeutas.filter(t => t.estado === true && t.rol?.id === ROLES.TERAPEUTA));
+        } finally {
+          setLoadingTerapeutas(false);
+        }
+      } else {
+        // Si no hay servicio seleccionado, mostrar todos
+        setTerapeutasFiltrados(terapeutas.filter(t => t.estado === true && t.rol?.id === ROLES.TERAPEUTA));
+      }
+    };
+
+    cargarTerapeutasFiltrados();
+  }, [servicioSeleccionado, terapeutas]);
 
   const handleAsignar = async () => {
     setSaving(true);
@@ -71,19 +107,37 @@ const AsignarServicioModal = ({ open, onClose, servicios, terapeutas, nuevoServi
               <User className="w-4 h-4 text-[#7B1FA2]" />
               Terapeuta
               <span className="text-red-500">*</span>
+              {loadingTerapeutas && (
+                <Loader2 className="w-3 h-3 animate-spin text-[#7B1FA2]" />
+              )}
             </label>
             <select
               value={nuevoServicio.terapeuta}
               onChange={e => setNuevoServicio({ ...nuevoServicio, terapeuta: e.target.value })}
-              className="w-full px-4 py-2.5 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#7B1FA2] transition-colors bg-white"
+              disabled={loadingTerapeutas || !nuevoServicio.servicio}
+              className="w-full px-4 py-2.5 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#7B1FA2] transition-colors bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
             >
-              <option value="">Seleccione un terapeuta</option>
-              {terapeutas.filter(t => t.estado === true && t.rol?.id === ROLES.TERAPEUTA).map(t => (
+              <option value="">
+                {!nuevoServicio.servicio
+                  ? 'Primero seleccione un servicio'
+                  : loadingTerapeutas
+                  ? 'Cargando terapeutas...'
+                  : terapeutasFiltrados.length === 0
+                  ? 'No hay terapeutas para este servicio'
+                  : 'Seleccione un terapeuta'}
+              </option>
+              {terapeutasFiltrados.map(t => (
                 <option key={t.id} value={t.nombres + ' ' + t.apellidos}>
                   {t.nombres} {t.apellidos}{t.especialidad ? ` — ${t.especialidad.nombre}` : ''}
                 </option>
               ))}
             </select>
+            {nuevoServicio.servicio && terapeutasFiltrados.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                {terapeutasFiltrados.length} terapeuta{terapeutasFiltrados.length !== 1 ? 's' : ''} disponible{terapeutasFiltrados.length !== 1 ? 's' : ''} para este servicio
+              </p>
+            )}
           </div>
         </div>
 

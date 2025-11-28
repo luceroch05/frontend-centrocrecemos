@@ -24,7 +24,8 @@
       "Bash(npm uninstall:*)",
       "Bash(tasklist:*)",
       "Bash(if exist dist rmdir /s /q dist)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(mysql:*)"
     ],
     "deny": [],
     "ask": []

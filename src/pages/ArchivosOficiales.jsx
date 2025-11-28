@@ -507,6 +507,20 @@ const GestionArchivosOficiales = () => {
 
   const totalPages = Math.ceil(documentosFiltrados.length / rowsPerPage);
 
+  // Calcular documentos del mes calendario actual (ej: todo noviembre, todo diciembre)
+  // ✅ MOVIDO ANTES del return condicional para cumplir con las reglas de hooks
+  const documentosEsteMes = useMemo(() => {
+    const ahora = new Date();
+    const mesActual = ahora.getMonth(); // 0-11
+    const añoActual = ahora.getFullYear();
+
+    return documentos.filter(doc => {
+      if (!doc.fechaEmision) return false;
+      const fechaDoc = new Date(doc.fechaEmision);
+      return fechaDoc.getMonth() === mesActual && fechaDoc.getFullYear() === añoActual;
+    }).length;
+  }, [documentos]);
+
   if (loadingData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center pt-20">
@@ -518,47 +532,7 @@ const GestionArchivosOficiales = () => {
     );
   }
 
-  // Calcular documentos del mes calendario actual (ej: todo noviembre, todo diciembre)
-  const documentosEsteMes = useMemo(() => {
-    const ahora = new Date();
-    const mesActual = ahora.getMonth(); // 0-11
-    const añoActual = ahora.getFullYear();
-    
-    return documentos.filter(doc => {
-      if (!doc.fechaEmision) return false;
-      const fechaDoc = new Date(doc.fechaEmision);
-      return fechaDoc.getMonth() === mesActual && fechaDoc.getFullYear() === añoActual;
-    }).length;
-  }, [documentos]);
-
-  useEffect(() => {
-    let filtered = [...documentos];
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(doc => {
-        const pacienteNombre = doc.paciente 
-          ? `${doc.paciente.nombres} ${doc.paciente.apellido_paterno} ${doc.paciente.apellido_materno}`.toLowerCase()
-          : '';
-        const trabajadorNombre = doc.trabajador
-          ? `${doc.trabajador.nombres} ${doc.trabajador.apellidos}`.toLowerCase()
-          : '';
-        
-        return doc.codigoValidacion?.toLowerCase().includes(term) ||
-              pacienteNombre.includes(term) ||
-              trabajadorNombre.includes(term) ||
-              doc.tipoArchivo?.nombre?.toLowerCase().includes(term) ||
-              doc.nombreArchivo?.toLowerCase().includes(term);
-      });
-    }
-
-    if (filtroTipo) {
-      filtered = filtered.filter(doc => doc.tipoArchivo?.id === filtroTipo);
-    }
-
-    setDocumentosFiltrados(filtered);
-  }, [searchTerm, filtroTipo, documentos]);
-   return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 pt-24 lg:pt-12">
         {/* Header */}
