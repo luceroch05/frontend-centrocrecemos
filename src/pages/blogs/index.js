@@ -5,6 +5,7 @@
 import CushuroBlog from './nutricion/CushuroBlog';
 import QuinuaBlog from './nutricion/QuinuaBlog';
 import Omega3Blog from './nutricion/Omega3Blog';
+import TumboBlog from './nutricion/TumboBlog';
 
 // Blogs de Desarrollo Infantil
 // import EjemploBlog from './desarrollo-infantil/EjemploBlog';
@@ -29,6 +30,7 @@ export const blogComponents = {
   'violencia-domestica-adultos-mayores-historia-muchas-capas': ViolenciaDomesticaBlog,
   'alimentos-omega-3-ninos-neurodivergentes': Omega3Blog,
   '25-noviembre-dia-eliminacion-violencia-mujer': Dia25NoviembreBlog,
+  'tumbo-fruta-andina-ninos-neurodivergentes': TumboBlog,
   // Agrega más blogs aquí...
   // 'slug-del-blog': ComponenteBlog,
 };
@@ -40,4 +42,5 @@ export {
   ViolenciaDomesticaBlog,
   Omega3Blog,
   Dia25NoviembreBlog,
+  TumboBlog,
 };

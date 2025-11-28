@@ -66,6 +66,19 @@ export const blogMetadata = [
     readTime: '8 min lectura',
     author: 'Lic. Giselle Burgos Del Rosario',
     heroImage: '/assets/img/blog/25noviembre1.jpg'
+  },
+  {
+    id: 6,
+    slug: 'tumbo-fruta-andina-ninos-neurodivergentes',
+    title: 'Tumbo: Una fruta andina ideal para niños neurodivergentes desde el primer año',
+    excerpt: 'El tumbo, también llamado curuba o parcha andina, es una fruta originaria de los Andes. Su pulpa suave y jugosa, junto con su sabor ligeramente ácido, la convierten en una opción muy adecuada para niños neurodivergentes.',
+    image: '/assets/img/blog/tumboportada.jpg',
+    date: '28 Noviembre 2025',
+    category: 'nutricion',
+    categoryName: 'Nutrición',
+    readTime: '8 min lectura',
+    author: 'Leonardo Yactayo Uceda',
+    heroImage: '/assets/img/blog/tumbo-portada.jpg'
   }
   // Aquí agregas más blogs...
 ];
