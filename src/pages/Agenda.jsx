@@ -35,6 +35,7 @@ import { ROLES } from '../constants/roles';
 
 const Agenda = () => {
   const [fechaActual, setFechaActual] = useState(new Date());
+  const [fechaCalendario, setFechaCalendario] = useState(new Date());
   const [modalAbierto, setModalAbierto] = useState(false);
   const [slotSeleccionado, setSlotSeleccionado] = useState(null);
   const [terapeutaFiltro, setTerapeutaFiltro] = useState('');
@@ -288,12 +289,43 @@ const Agenda = () => {
     }
   };
 
+  const obtenerLimitesSemanaMostrada = (fecha) => {
+    const hoy = new Date(fecha);
+    const dia = hoy.getDay();
+    const diferencia = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
+    const primerDia = new Date(hoy);
+    primerDia.setDate(diferencia);
+    primerDia.setHours(0, 0, 0, 0);
+
+    const ultimoDia = new Date(primerDia);
+    ultimoDia.setDate(primerDia.getDate() + 6);
+    ultimoDia.setHours(23, 59, 59, 999);
+
+    return { primerDia, ultimoDia };
+  };
+
+  const obtenerCitasConfirmadas = (citas) => {
+    return citas?.filter(c => c.estado_id === 2 || c.estado === 'confirmada').length || 0;
+  };
+
+  const obtenerCitasSemana = (citas, fecha) => {
+    const { primerDia, ultimoDia } = obtenerLimitesSemanaMostrada(fecha);
+    
+    return citas?.filter(c => {
+      // Crear fecha sin considerar la zona horaria
+      const [year, month, day] = c.fecha.split('-');
+      const citaDate = new Date(year, month - 1, day);
+      citaDate.setHours(0, 0, 0, 0);
+      
+      return citaDate >= primerDia && citaDate <= ultimoDia;
+    }).length || 0;
+  };
+
   // Obtener el terapeuta seleccionado para el modal
   const obtenerTerapeutaSeleccionado = () => {
     if (currentUser?.rol?.id === ROLES.TERAPEUTA) {
       return currentUser;
     } else if (terapeutaFiltro) {
-      // Convertir terapeutaFiltro a número si es string, porque los IDs vienen como números
       const filtroId = typeof terapeutaFiltro === 'string' ? parseInt(terapeutaFiltro) : terapeutaFiltro;
       const terapeuta = trabajadores.find(t => t.id === filtroId);
       return terapeuta;
@@ -348,25 +380,16 @@ const Agenda = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">{Math.floor((citas?.length || 0) * 0.7)}</div>
-                  <div className="text-xs text-gray-600 font-medium">Confirmadas</div>
-                </div>
-              </div>
-            </div>
-
+          
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 col-span-2 sm:col-span-1">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">+{Math.floor((citas?.length || 0) * 0.3)}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {obtenerCitasSemana(citas, fechaCalendario)}
+                  </div>
                   <div className="text-xs text-gray-600 font-medium">Esta Semana</div>
                 </div>
               </div>
@@ -450,7 +473,10 @@ const Agenda = () => {
             getEstadoColor={getEstadoColor}
             getEstadoIcon={getEstadoIcon}
             fechaActual={fechaActual}
-            onFechaChange={setFechaActual}
+            onFechaChange={(nuevaFecha) => {
+              setFechaActual(nuevaFecha);
+              setFechaCalendario(nuevaFecha);
+            }}
             currentUser={currentUser}
           />
         )}

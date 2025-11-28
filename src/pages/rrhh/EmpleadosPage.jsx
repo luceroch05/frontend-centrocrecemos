@@ -494,6 +494,7 @@ const ModalNuevoEmpleado = ({ onClose, roles, especialidades, onSuccess, onError
     usuario: '',
     contrasena: '',
     email: '',
+    correo_corporativo: '',
     rol: '',
     especialidad: '',
     cargo: '',
@@ -564,6 +565,7 @@ const ModalNuevoEmpleado = ({ onClose, roles, especialidades, onSuccess, onError
         username: formData.usuario,
         password: formData.contrasena,
         email: formData.email,
+        correo_corporativo: formData.correo_corporativo || null,
         rol_id: rolObj?.id,
         rol: formData.rol,
         especialidad_id: especialidadObj?.id || null,
@@ -627,7 +629,8 @@ const ModalNuevoEmpleado = ({ onClose, roles, especialidades, onSuccess, onError
                 <InputField label="Nombres" name="nombres" value={formData.nombres} onChange={handleChange} error={errors.nombres} required />
                 <InputField label="Apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} error={errors.apellidos} required />
                 <InputField label="DNI" name="dni" value={formData.dni} onChange={handleChange} error={errors.dni} maxLength={8} required />
-                <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required />
+                <InputField label="Email Personal" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required />
+                <InputField label="Email Corporativo" name="correo_corporativo" type="email" value={formData.correo_corporativo} onChange={handleChange} placeholder="correo@crecemos.com.pe" />
                 <InputField label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange} maxLength={9} />
               </div>
             </div>
@@ -758,6 +761,7 @@ const ModalEditarEmpleado = ({ empleado, onClose, roles, especialidades, onSucce
     dni: empleado.dni || '',
     usuario: empleado.username || '',
     email: empleado.email || '',
+    correo_corporativo: empleado.correo_corporativo || '',
     rol: empleado.rol?.nombre || '',
     especialidad: empleado.especialidad?.nombre || '',
     contrasena: '',
@@ -832,6 +836,7 @@ const ModalEditarEmpleado = ({ empleado, onClose, roles, especialidades, onSucce
         dni: formData.dni,
         username: formData.usuario,
         email: formData.email,
+        correo_corporativo: formData.correo_corporativo || null,
         rol_id: rolObj?.id,
         rol: formData.rol,
         especialidad_id: especialidadObj?.id || null,
@@ -894,7 +899,8 @@ const ModalEditarEmpleado = ({ empleado, onClose, roles, especialidades, onSucce
                 <InputField label="Nombres" name="nombres" value={formData.nombres} onChange={handleChange} error={errors.nombres} required />
                 <InputField label="Apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} error={errors.apellidos} required />
                 <InputField label="DNI" name="dni" value={formData.dni} onChange={handleChange} error={errors.dni} maxLength={8} required />
-                <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required />
+                <InputField label="Email Personal" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required />
+                <InputField label="Email Corporativo" name="correo_corporativo" type="email" value={formData.correo_corporativo} onChange={handleChange} placeholder="correo@crecemos.com.pe" />
                 <InputField label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange} maxLength={9} />
               </div>
             </Section>
@@ -1052,7 +1058,8 @@ const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
                 <InfoField label="Nombres" value={empleado.nombres} />
                 <InfoField label="Apellidos" value={empleado.apellidos} />
                 <InfoField label="DNI" value={empleado.dni} />
-                <InfoField label="Email" value={empleado.email} />
+                <InfoField label="Email Personal" value={empleado.email} />
+                <InfoField label="Email Corporativo" value={empleado.correo_corporativo} />
                 <InfoField label="Teléfono" value={empleado.telefono} />
               </div>
             </DetalleSection>

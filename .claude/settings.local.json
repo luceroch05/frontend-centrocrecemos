@@ -22,7 +22,9 @@
       "Bash(del \"C:\\Users\\Lucero\\Desktop\\centro-crecemos\\src\\rrhh\\empleado.entity.ts\")",
       "Bash(timeout:*)",
       "Bash(npm uninstall:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(if exist dist rmdir /s /q dist)",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []
