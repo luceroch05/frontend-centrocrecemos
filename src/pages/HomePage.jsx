@@ -83,7 +83,7 @@ export default function HomePage() {
   return (
     <main className="main">
        {/* Popup/Promo Modal */}
-    {/*  {showPopup && (
+      {showPopup && (
         <div className="promo-popup-overlay">
           <div className="promo-popup-container" data-aos="zoom-in">
             <div className="promo-popup-content">
@@ -97,7 +97,7 @@ export default function HomePage() {
               
               <div className="promo-image-container">
                 <img 
-                  src="/assets/img/index/Cyber-wow-2025-Noviembre.png" // Cambia por la ruta de tu imagen promocional
+                  src="/assets/img/index/diainternacionaldelaviolenciacontralamujer.png" // Cambia por la ruta de tu imagen promocional
                   alt="Promoción especial - Centro Crecemos"
                   className="promo-image"
                 />
@@ -107,7 +107,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      )} */ }
+      )} 
   <section id="hero" className="hero section" style={{ paddingTop: '150px' }}>
       <div className="container" data-aos="fade-up" data-aos-delay="100">
         <div className="row align-items-center">
