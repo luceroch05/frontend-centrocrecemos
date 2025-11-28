@@ -973,6 +973,7 @@ const ModalEditarEmpleado = ({ empleado, onClose, roles, especialidades, onSucce
       onUpdate={() => {
         console.log('Cuentas actualizadas');
       }}
+      readOnly={false}
     />
   </div>
 </Section>
@@ -1080,7 +1081,7 @@ const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
                   <CuentasBancarias 
                     trabajadorId={empleado.id}
                     onUpdate={() => {
-                      console.log('Cuentas actualizadas');
+                     
                     }}
                     readOnly={true}
                   />
