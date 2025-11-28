@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, Heart, HardDrive, Camera, Clock, AlertCircle, ChevronDown, X } from 'lucide-react';
-import { getPacienteById, getServiciosPorPaciente, updatePacienteById, getEstadosPaciente, cambiarEstadoPaciente } from '../services/pacienteService';
+import { getPacienteById, getServiciosPorPaciente, updatePacienteById, getEstadosPaciente, cambiarEstadoPaciente, asignarServicioPaciente } from '../services/pacienteService';
+import api from '../services/api';
 import { getDistritos, getTiposDocumento, getGeneros } from '../services/catalogoService';
 import FiliacionView from '../components/EditarPaciente/FiliacionView';
 import HistoriaClinicaView from '../components/EditarPaciente/HistoriaClinicaView';
@@ -200,10 +201,13 @@ const EditarPacientePage = () => {
 
   const handleSubmit = async (event, datosActualizados = null) => {
     event.preventDefault();
+    console.log('🚀 handleSubmit INICIADO');
+    console.log('📦 Datos recibidos:', datosActualizados);
     setSaving(true);
-    
+
     const pacienteData = datosActualizados || paciente;
-    
+    console.log('📋 Datos del paciente a usar:', pacienteData);
+
     const data = {
       nombres: pacienteData.nombres,
       apellido_paterno: pacienteData.apellido_paterno,
@@ -224,14 +228,30 @@ const EditarPacientePage = () => {
       alergias: pacienteData.alergias,
       medicamentos_actuales: pacienteData.medicamentos_actuales
     };
+
+    console.log('📤 Datos a enviar a la API:', data);
+    console.log('🔑 ID del paciente:', id);
+
     try {
-      await updatePacienteById(id, data);
+      console.log('⏳ Llamando a updatePacienteById...');
+      const response = await updatePacienteById(id, data);
+      console.log('✅ Respuesta de la API:', response);
+
+      // Actualizar el estado del paciente con los nuevos datos
+      setPaciente(prev => ({
+        ...prev,
+        ...pacienteData
+      }));
+
       setSnackbar({ open: true, message: 'Datos guardados correctamente', severity: 'success' });
     } catch (error) {
+      console.error('❌ Error al guardar:', error);
+      console.error('❌ Error completo:', error.response?.data);
       setSnackbar({ open: true, message: 'Error al guardar los datos', severity: 'error' });
-      console.error(error);
+      throw error; // Re-lanzar el error para que lo capture handleFormSubmit
     } finally {
       setSaving(false);
+      console.log('🏁 handleSubmit FINALIZADO');
     }
   };
 
@@ -239,13 +259,13 @@ const EditarPacientePage = () => {
     setCambiandoEstado(true);
     try {
       const estadoSeleccionado = estadosPaciente.find(e => e.id === estadoId);
-      
+
       if (!estadoSeleccionado) {
         throw new Error('Estado no encontrado');
       }
 
       await cambiarEstadoPaciente(paciente.id, estadoId, user_id);
-      
+
       setPaciente(prev => ({
         ...prev,
         estado: {
@@ -253,13 +273,13 @@ const EditarPacientePage = () => {
           nombre: estadoSeleccionado.nombre
         }
       }));
-      
+
       setSnackbar({
         open: true,
         message: `Estado cambiado a: ${estadoSeleccionado.nombre}`,
         severity: 'success'
       });
-      
+
       setAnchorEstado(null);
     } catch (error) {
       console.error('Error al cambiar estado:', error);
@@ -270,6 +290,131 @@ const EditarPacientePage = () => {
       });
     } finally {
       setCambiandoEstado(false);
+    }
+  };
+
+  const handleAsignarServicio = async () => {
+    console.log('🎯 handleAsignarServicio iniciado');
+    console.log('📋 Datos del nuevo servicio:', nuevoServicio);
+
+    try {
+      // Encontrar el ID del servicio seleccionado
+      const servicioSeleccionado = serviciosDisponibles.find(s => s.nombre === nuevoServicio.servicio);
+      if (!servicioSeleccionado) {
+        throw new Error('Servicio no encontrado');
+      }
+
+      // Encontrar el ID del terapeuta seleccionado
+      const terapeutaSeleccionado = terapeutasDisponibles.find(
+        t => `${t.nombres} ${t.apellidos}` === nuevoServicio.terapeuta
+      );
+      if (!terapeutaSeleccionado) {
+        throw new Error('Terapeuta no encontrado');
+      }
+
+      console.log('📤 Asignando servicio:', {
+        paciente_id: parseInt(id),
+        servicio_id: servicioSeleccionado.id,
+        terapeuta_id: terapeutaSeleccionado.id
+      });
+
+      // Llamar a la API
+      await asignarServicioPaciente({
+        paciente_id: parseInt(id),
+        servicio_id: servicioSeleccionado.id,
+        terapeuta_id: terapeutaSeleccionado.id
+      });
+
+      console.log('✅ Servicio asignado exitosamente');
+
+      // Recargar los servicios del paciente
+      const serviciosActualizados = await getServiciosPorPaciente(id);
+      setPaciente(prev => ({
+        ...prev,
+        servicios: serviciosActualizados
+      }));
+
+      // Mostrar mensaje de éxito
+      setSnackbar({
+        open: true,
+        message: 'Servicio asignado correctamente',
+        severity: 'success'
+      });
+
+      // Cerrar el modal y limpiar el formulario
+      setOpenAsignarServicio(false);
+      setNuevoServicio({ servicio: '', terapeuta: '' });
+
+    } catch (error) {
+      console.error('❌ Error al asignar servicio:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Error al asignar el servicio',
+        severity: 'error'
+      });
+      throw error;
+    }
+  };
+
+  const handleEditarTerapeuta = async () => {
+    console.log('🎯 handleEditarTerapeuta iniciado');
+    console.log('📋 Servicio a editar:', servicioAEditar);
+    console.log('👨‍⚕️ Nuevo terapeuta:', nuevoTerapeuta);
+
+    try {
+      if (!servicioAEditar || !servicioAEditar.asignaciones || servicioAEditar.asignaciones.length === 0) {
+        throw new Error('No hay asignación para editar');
+      }
+
+      // Encontrar el ID del terapeuta seleccionado
+      const terapeutaSeleccionado = terapeutasDisponibles.find(
+        t => `${t.nombres} ${t.apellidos}` === nuevoTerapeuta
+      );
+      if (!terapeutaSeleccionado) {
+        throw new Error('Terapeuta no encontrado');
+      }
+
+      const asignacionId = servicioAEditar.asignaciones[0].id;
+
+      console.log('📤 Actualizando asignación:', {
+        asignacionId,
+        terapeuta_id: terapeutaSeleccionado.id
+      });
+
+      // Llamar a la API para actualizar la asignación
+      await api.patch(`/paciente-servicio/asignacion/${asignacionId}`, {
+        terapeuta_id: terapeutaSeleccionado.id
+      });
+
+      console.log('✅ Terapeuta actualizado exitosamente');
+
+      // Recargar los servicios del paciente
+      const serviciosActualizados = await getServiciosPorPaciente(id);
+      setPaciente(prev => ({
+        ...prev,
+        servicios: serviciosActualizados
+      }));
+
+      // Mostrar mensaje de éxito
+      setSnackbar({
+        open: true,
+        message: 'Terapeuta actualizado correctamente',
+        severity: 'success'
+      });
+
+      // Cerrar el modal
+      setOpenEditarTerapeuta(false);
+      setServicioAEditar(null);
+      setNuevoTerapeuta('');
+
+    } catch (error) {
+      console.error('❌ Error al actualizar terapeuta:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Error al actualizar el terapeuta',
+        severity: 'error'
+      });
+      throw error;
     }
   };
 
@@ -472,7 +617,7 @@ const EditarPacientePage = () => {
         terapeutas={terapeutasDisponibles}
         nuevoServicio={nuevoServicio}
         setNuevoServicio={setNuevoServicio}
-        onAsignar={() => {/* lógica */}}
+        onAsignar={handleAsignarServicio}
       />
 
       <EditarTerapeutaModal
@@ -482,7 +627,7 @@ const EditarPacientePage = () => {
         nuevoTerapeuta={nuevoTerapeuta}
         setNuevoTerapeuta={setNuevoTerapeuta}
         terapeutas={terapeutasDisponibles}
-        onGuardar={() => {/* lógica */}}
+        onGuardar={handleEditarTerapeuta}
       />
 
       {/* Popover estados */}

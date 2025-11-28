@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Phone, MapPin, Mail, Calendar, FileText, Heart, Pill, AlertCircle, Save, X, Edit2, Trash2, Plus } from 'lucide-react';
 
 // Componente de campo de formulario con iconos alineados
-const FormField = ({ icon: Icon, label, value, name, type = 'text', editable, onChange, error, iconColor = 'text-[#7B1FA2]', options = null }) => (
+const FormField = ({ icon: Icon, label, value, displayValue, name, type = 'text', editable, onChange, error, iconColor = 'text-[#7B1FA2]', options = null }) => (
   <div>
     <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-2.5">
       <Icon className={`w-4 h-4 ${iconColor}`} />
@@ -52,7 +52,7 @@ const FormField = ({ icon: Icon, label, value, name, type = 'text', editable, on
       </>
     ) : (
       <div className="py-3 px-4 text-sm text-gray-900 bg-gray-50 rounded-xl border border-gray-100">
-        {value || '-'}
+        {displayValue || value || '-'}
       </div>
     )}
   </div>
@@ -101,16 +101,25 @@ const FiliacionView = ({
   };
 
   const handleSelectChange = (name, value) => {
+    console.log('🔄 handleSelectChange:', name, value);
     setLocalPacienteData(prev => ({
       ...prev,
-      [name]: { id: value }
+      [name]: { id: parseInt(value) }
     }));
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    handleSubmit(e, localPacienteData);
-    setModoEdicion(false);
+    console.log('📝 Formulario enviado con datos:', localPacienteData);
+
+    try {
+      await handleSubmit(e, localPacienteData);
+      console.log('✅ Datos guardados exitosamente');
+      setModoEdicion(false);
+    } catch (error) {
+      console.error('❌ Error al guardar:', error);
+      // No cerramos el modo edición si hay error
+    }
   };
 
   const handleCancelar = () => {
@@ -190,7 +199,8 @@ const FiliacionView = ({
             <FormField
               icon={FileText}
               label="Tipo de Documento"
-              value={localPacienteData.tipo_documento?.nombre}
+              value={localPacienteData.tipo_documento?.id}
+              displayValue={localPacienteData.tipo_documento?.nombre}
               name="tipo_documento"
               editable={modoEdicion}
               onChange={(e) => handleSelectChange('tipo_documento', e.target.value)}
@@ -209,7 +219,8 @@ const FiliacionView = ({
             <FormField
               icon={User}
               label="Sexo"
-              value={localPacienteData.sexo?.nombre}
+              value={localPacienteData.sexo?.id}
+              displayValue={localPacienteData.sexo?.nombre}
               name="sexo"
               editable={modoEdicion}
               onChange={(e) => handleSelectChange('sexo', e.target.value)}
@@ -261,7 +272,8 @@ const FiliacionView = ({
             <FormField
               icon={MapPin}
               label="Distrito"
-              value={localPacienteData.distrito?.nombre}
+              value={localPacienteData.distrito?.id}
+              displayValue={localPacienteData.distrito?.nombre}
               name="distrito"
               editable={modoEdicion}
               onChange={(e) => handleSelectChange('distrito', e.target.value)}
