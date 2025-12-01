@@ -13,6 +13,7 @@ import TumboBlog from './nutricion/TumboBlog';
 // Blogs de Psicología
 import ViolenciaDomesticaBlog from './psicologia/ViolenciaDomesticaBlog';
 import Dia25NoviembreBlog from './psicologia/Dia25NoviembreBlog';
+import TCABlog from './psicologia/TCABlog';
 
 // Blogs de Terapias
 // import EjemploBlog from './terapias/EjemploBlog';
@@ -31,6 +32,7 @@ export const blogComponents = {
   'alimentos-omega-3-ninos-neurodivergentes': Omega3Blog,
   '25-noviembre-dia-eliminacion-violencia-mujer': Dia25NoviembreBlog,
   'tumbo-fruta-andina-ninos-neurodivergentes': TumboBlog,
+  '30-noviembre-trastornos-conducta-alimentaria': TCABlog,
   // Agrega más blogs aquí...
   // 'slug-del-blog': ComponenteBlog,
 };
@@ -43,4 +45,5 @@ export {
   Omega3Blog,
   Dia25NoviembreBlog,
   TumboBlog,
+  TCABlog,
 };

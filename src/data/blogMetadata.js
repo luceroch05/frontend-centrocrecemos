@@ -79,6 +79,19 @@ export const blogMetadata = [
     readTime: '8 min lectura',
     author: 'Leonardo Yactayo Uceda',
     heroImage: '/assets/img/blog/tumbo-portada.jpg'
+  },
+  {
+    id: 7,
+    slug: '30-noviembre-trastornos-conducta-alimentaria',
+    title: '30 de Noviembre: Un recordatorio necesario de la lucha contra los Trastornos de Conducta Alimentaria',
+    excerpt: 'Imaginemos un lugar pequeño, una cárcel que no tiene barrotes, pero que a pesar de que intentamos salir, existe un carcelero, la voz interna, que constantemente nos dice que no es suficiente. Este 30 de noviembre, alzamos la voz contra los TCA.',
+    image: '/assets/img/blog/tca-portada.jpg',
+    date: '30 Noviembre 2025',
+    category: 'psicologia',
+    categoryName: 'Psicología',
+    readTime: '12 min lectura',
+    author: 'Lic. Giselle Burgos Del Rosario',
+    heroImage: '/assets/img/blog/tca.jpg'
   }
   // Aquí agregas más blogs...
 ];

@@ -97,7 +97,7 @@ export default function HomePage() {
               
               <div className="promo-image-container">
                 <img 
-                  src="/assets/img/index/diainternacionaldelaviolenciacontralamujer.png" // Cambia por la ruta de tu imagen promocional
+                  src="/assets/img/index/DiaInternacionaldelaLuchacontralosTrastornosdelaConductaAlimentaria(TCA).png" // Cambia por la ruta de tu imagen promocional
                   alt="Promoción especial - Centro Crecemos"
                   className="promo-image"
                 />
@@ -548,6 +548,8 @@ export default function HomePage() {
           textAlign: 'center',
           marginTop: 'auto'
         }}></div>
+          <div className="swiper-pagination"></div>
+   
     </div>
   </div>
 </section>
