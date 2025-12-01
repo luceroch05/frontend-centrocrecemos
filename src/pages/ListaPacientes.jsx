@@ -551,6 +551,7 @@ export const ListaPacientes = () => {
       </div>
 
       {/* Tarjetas de pacientes */}
+      <div className="-mx-4 md:-mx-0">
       <TarjetasPacientes
         pacientes={paginatedPacientes}
         pacienteSeleccionadoId={pacienteSeleccionadoId}
@@ -571,6 +572,7 @@ export const ListaPacientes = () => {
           }
         }}
       />
+      </div>
 
       {/* Paginación moderna */}
       {filteredPacientes.length > 0 && (
