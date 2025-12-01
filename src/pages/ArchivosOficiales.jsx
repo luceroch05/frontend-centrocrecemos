@@ -22,7 +22,9 @@ import {
   ChevronRight,
   Sparkles,
   FileCheck,
-  AlertTriangle
+  AlertTriangle,
+  Grid3x3,
+  List
 } from 'lucide-react';
 import { getPacientesAll } from '../services/pacienteService';
 import { getTrabajadores } from '../services/trabajadorService';
@@ -43,6 +45,7 @@ const GestionArchivosOficiales = () => {
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [documentoSeleccionado, setDocumentoSeleccionado] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
 
   // Estados formulario
   const [tipoDestinatario, setTipoDestinatario] = useState('paciente');
@@ -508,17 +511,29 @@ const GestionArchivosOficiales = () => {
   const totalPages = Math.ceil(documentosFiltrados.length / rowsPerPage);
 
   // Calcular documentos del mes calendario actual (ej: todo noviembre, todo diciembre)
-  // ✅ MOVIDO ANTES del return condicional para cumplir con las reglas de hooks
   const documentosEsteMes = useMemo(() => {
     const ahora = new Date();
-    const mesActual = ahora.getMonth(); // 0-11
+    const mesActual = ahora.getMonth(); // 0-11 (diciembre = 11)
     const añoActual = ahora.getFullYear();
 
     return documentos.filter(doc => {
       if (!doc.fechaEmision) return false;
-      const fechaDoc = new Date(doc.fechaEmision);
-      return fechaDoc.getMonth() === mesActual && fechaDoc.getFullYear() === añoActual;
+
+      // Crear fecha en UTC para evitar problemas de zona horaria
+      const fechaStr = doc.fechaEmision.split('T')[0]; // "2024-12-01"
+      const [año, mes, dia] = fechaStr.split('-');
+      const fechaDoc = new Date(Date.UTC(parseInt(año), parseInt(mes) - 1, parseInt(dia)));
+
+      const mesDoc = fechaDoc.getUTCMonth();
+      const añoDoc = fechaDoc.getUTCFullYear();
+
+      return mesDoc === mesActual && añoDoc === añoActual;
     }).length;
+  }, [documentos]);
+
+  // Calcular documentos activos (estado 'Activo' o sin estado definido)
+  const documentosActivos = useMemo(() => {
+    return documentos.filter(doc => !doc.estado || doc.estado === 'Activo').length;
   }, [documentos]);
 
   if (loadingData) {
@@ -565,7 +580,7 @@ const GestionArchivosOficiales = () => {
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">{Math.floor(documentos.length * 0.8)}</div>
+                  <div className="text-2xl font-bold text-gray-900">{documentosActivos}</div>
                   <div className="text-xs text-gray-600 font-medium">Activos</div>
                 </div>
               </div>
@@ -577,7 +592,7 @@ const GestionArchivosOficiales = () => {
                   <Sparkles className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">+{Math.floor(documentos.length * 0.3)}</div>
+                  <div className="text-2xl font-bold text-gray-900">{documentosEsteMes}</div>
                   <div className="text-xs text-gray-600 font-medium">Este Mes</div>
                 </div>
               </div>
@@ -648,19 +663,48 @@ const GestionArchivosOficiales = () => {
           {/* TAB 0: DASHBOARD */}
           {tabValue === 0 && (
             <div className="p-6">
-              {/* Filtros */}
+              {/* Filtros y Vista */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Filter className="w-5 h-5 text-[#7B1FA2]" />
                     <h2 className="text-lg font-bold text-gray-900">Filtros</h2>
                   </div>
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="text-sm font-medium text-[#7B1FA2] hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-all"
-                  >
-                    {showFilters ? 'Ocultar' : 'Mostrar'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Botones de cambio de vista */}
+                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                          viewMode === 'grid'
+                            ? 'bg-white text-[#7B1FA2] shadow-sm'
+                            : 'text-gray-600 hover:text-[#7B1FA2]'
+                        }`}
+                        title="Vista de tarjetas"
+                      >
+                        <Grid3x3 className="w-4 h-4" />
+                        Tarjetas
+                      </button>
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                          viewMode === 'list'
+                            ? 'bg-white text-[#7B1FA2] shadow-sm'
+                            : 'text-gray-600 hover:text-[#7B1FA2]'
+                        }`}
+                        title="Vista de lista"
+                      >
+                        <List className="w-4 h-4" />
+                        Lista
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="text-sm font-medium text-[#7B1FA2] hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      {showFilters ? 'Ocultar' : 'Mostrar'}
+                    </button>
+                  </div>
                 </div>
 
                 {showFilters && (
@@ -735,9 +779,10 @@ const GestionArchivosOficiales = () => {
                 </div>
               ) : (
                 <>
-                  {/* Grid de tarjetas */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    {paginatedDocumentos.map((doc) => {
+                  {/* Vista de Tarjetas */}
+                  {viewMode === 'grid' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      {paginatedDocumentos.map((doc) => {
                       const isPaciente = doc.paciente;
 
                       return (
@@ -746,9 +791,9 @@ const GestionArchivosOficiales = () => {
                           className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-gray-300 transition-all group"
                         >
                           {/* Header */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3 flex-1">
-                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                          <div className="flex items-start justify-between mb-4 gap-2">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                 isPaciente ? 'bg-blue-100' : 'bg-amber-100'
                               }`}>
                                 {isPaciente ? (
@@ -758,10 +803,10 @@ const GestionArchivosOficiales = () => {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                <p className="text-sm font-semibold text-gray-900 break-words leading-tight">
                                   {obtenerNombreDestinatario(doc)}
                                 </p>
-                                <p className={`text-xs font-medium ${isPaciente ? 'text-blue-600' : 'text-amber-600'}`}>
+                                <p className={`text-xs font-medium mt-1 ${isPaciente ? 'text-blue-600' : 'text-amber-600'}`}>
                                   {isPaciente ? 'Paciente' : 'Trabajador'}
                                 </p>
                               </div>
@@ -769,7 +814,7 @@ const GestionArchivosOficiales = () => {
 
                             <button
                               onClick={(e) => handleMenuOpen(e, doc)}
-                              className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                              className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
                             >
                               <MoreVertical className="w-4 h-4" />
                             </button>
@@ -833,7 +878,146 @@ const GestionArchivosOficiales = () => {
                         </div>
                       );
                     })}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Vista de Lista */}
+                  {viewMode === 'list' && (
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Destinatario
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Código
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Tipo de Documento
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Fecha Emisión
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Terapeuta
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Estado
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Acciones
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {paginatedDocumentos.map((doc) => {
+                              const isPaciente = doc.paciente;
+
+                              return (
+                                <tr key={doc.id} className="hover:bg-gray-50 transition-colors group">
+                                  <td className="px-4 py-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                        isPaciente ? 'bg-blue-100' : 'bg-amber-100'
+                                      }`}>
+                                        {isPaciente ? (
+                                          <User className="w-5 h-5 text-blue-600" />
+                                        ) : (
+                                          <Briefcase className="w-5 h-5 text-amber-600" />
+                                        )}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 break-words">
+                                          {obtenerNombreDestinatario(doc)}
+                                        </p>
+                                        <p className={`text-xs font-medium ${isPaciente ? 'text-blue-600' : 'text-amber-600'}`}>
+                                          {isPaciente ? 'Paciente' : 'Trabajador'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className={`inline-block px-3 py-1.5 rounded-lg ${
+                                      isPaciente
+                                        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                                        : 'bg-gradient-to-r from-amber-500 to-amber-600'
+                                    }`}>
+                                      <p className="text-xs font-mono font-bold text-white">
+                                        {doc.codigoValidacion}
+                                      </p>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <FileText className={`w-4 h-4 flex-shrink-0 ${
+                                        isPaciente ? 'text-blue-500' : 'text-amber-500'
+                                      }`} />
+                                      <span className="text-sm text-gray-900 font-medium">
+                                        {doc.tipoArchivo?.nombre}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className={`w-4 h-4 flex-shrink-0 ${
+                                        isPaciente ? 'text-blue-500' : 'text-amber-500'
+                                      }`} />
+                                      <span className="text-sm text-gray-700">
+                                        {formatearFecha(doc.fechaEmision)}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    {isPaciente && doc.terapeuta ? (
+                                      <span className="text-sm text-gray-700">
+                                        {doc.terapeuta.nombres} {doc.terapeuta.apellidos}
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${
+                                      doc.estado === 'Activo'
+                                        ? 'bg-green-50 text-green-700'
+                                        : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                      {doc.estado === 'Activo' ? (
+                                        <CheckCircle2 className="w-3 h-3" />
+                                      ) : (
+                                        <AlertCircle className="w-3 h-3" />
+                                      )}
+                                      {doc.estado || 'Activo'}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        onClick={() => setModalVer(doc)}
+                                        className="p-2 text-[#7B1FA2] hover:bg-purple-50 rounded-lg transition-all"
+                                        title="Ver detalles"
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => handleMenuOpen(e, doc)}
+                                        className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                        title="Más opciones"
+                                      >
+                                        <MoreVertical className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Paginación */}
                   {documentosFiltrados.length > 0 && (

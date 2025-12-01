@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getMyProfile, updateMyProfile, getEspecialidades } from '../services/trabajadorService';
-import { UserIcon, PhoneIcon, MapPinIcon, ShoppingBagIcon, CheckCircleIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { UserIcon, PhoneIcon, MapPinIcon, ShoppingBagIcon, CheckCircleIcon, XMarkIcon, LockClosedIcon, PlusIcon, TrashIcon, StarIcon, PencilIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import {
+  getCuentasBancarias,
+  crearCuentaBancaria,
+  eliminarCuentaBancaria,
+  marcarCuentaPrincipal
+} from '../services/rrhhService';
 
 const MiPerfil = () => {
   const [perfil, setPerfil] = useState(null);
@@ -11,6 +18,7 @@ const MiPerfil = () => {
   const [perfilCompleto, setPerfilCompleto] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
   const [errors, setErrors] = useState({});
+  const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
 
   useEffect(() => {
     cargarDatos();
@@ -27,16 +35,12 @@ const MiPerfil = () => {
       setPerfil(perfilData);
       setEspecialidades(especialidadesData || []);
 
-      const estaCompleto = !!(
-        perfilData.telefono ||
-        perfilData.direccion ||
-        perfilData.talla_polo ||
-        perfilData.talla_pantalon ||
-        perfilData.talla_zapatos
-      );
-
+      // ✅ CAMBIO: Usar perfil_completo en lugar de perfil_bloqueado
+      const estaCompleto = perfilData.perfil_completo === true;
       setPerfilCompleto(estaCompleto);
-      setModoEdicion(!estaCompleto);
+      
+      // Inicialmente desactivar modo edición
+      setModoEdicion(false);
     } catch (error) {
       console.error('Error al cargar perfil:', error);
       showNotification('Error al cargar los datos del perfil', 'error');
@@ -82,12 +86,34 @@ const MiPerfil = () => {
     return Object.keys(erroresNuevos).length === 0;
   };
 
+  // Nueva función para activar el modo edición
+  const activarEdicion = () => {
+    if (perfilCompleto) {
+      showNotification('Tu perfil está bloqueado. Contacta al administrador para realizar cambios.', 'error');
+      return;
+    }
+    setModoEdicion(true);
+  };
+
+  // Nueva función para cancelar edición
+  const cancelarEdicion = () => {
+    setModoEdicion(false);
+    cargarDatos(); // Recargar datos originales
+    setErrors({});
+  };
+
   const handleGuardar = async () => {
     if (!validarFormulario()) {
       showNotification('Por favor corrige los errores', 'error');
       return;
     }
 
+    // Mostrar modal de confirmación personalizado
+    setMostrarModalConfirmacion(true);
+  };
+
+  const confirmarGuardado = async () => {
+    setMostrarModalConfirmacion(false);
     setGuardando(true);
     try {
       const dataToUpdate = {
@@ -105,11 +131,19 @@ const MiPerfil = () => {
         talla_polo: perfil.talla_polo || null,
         talla_pantalon: perfil.talla_pantalon || null,
         talla_zapatos: perfil.talla_zapatos || null,
-        especialidad_id: perfil.especialidad?.id || null
+        especialidad_id: perfil.especialidad?.id || null,
+        // ✅ CAMBIO: Usar perfil_completo en lugar de perfil_bloqueado
+        perfil_completo: true // MARCAR COMO COMPLETADO
       };
 
       await updateMyProfile(dataToUpdate);
-      showNotification('Perfil actualizado correctamente', 'success');
+      showNotification('Perfil guardado y bloqueado correctamente. Para cambios futuros contacta al administrador.', 'success');
+      
+      // Actualizar estado local
+      setPerfilCompleto(true);
+      setModoEdicion(false);
+      
+      // Recargar datos del servidor
       await cargarDatos();
     } catch (error) {
       console.error('Error al actualizar perfil:', error);
@@ -158,8 +192,114 @@ const MiPerfil = () => {
             ? 'bg-white border-gray-200'
             : 'bg-white border-red-200'
         } flex items-center gap-2.5`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${notification.type === 'success' ? 'bg-[#A3C644]' : 'bg-red-500'}`}></div>
+          {notification.type === 'success' ? (
+            <CheckCircleIcon className="w-5 h-5 text-[#A3C644]" />
+          ) : (
+            <XMarkIcon className="w-5 h-5 text-red-500" />
+          )}
           <span className="text-xs font-medium text-gray-700">{notification.message}</span>
+        </div>
+      )}
+
+      {/* Modal de Confirmación */}
+      {mostrarModalConfirmacion && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setMostrarModalConfirmacion(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            {/* Header con degradado */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <ExclamationTriangleIcon className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Confirmar Guardado de Perfil</h2>
+              </div>
+              <button
+                onClick={() => setMostrarModalConfirmacion(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-5">
+                <div className="flex gap-3">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-amber-900 mb-2">IMPORTANTE: Lee con atención</h3>
+                    <p className="text-sm text-amber-800 leading-relaxed">
+                      Una vez que guardes tu perfil, <strong className="font-bold">NO podrás modificarlo por tu cuenta</strong>. Si en el futuro necesitas realizar cambios, deberás contactar al administrador del sistema.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-5">
+                <p className="text-sm text-gray-700 font-medium">
+                  Por favor, verifica que toda la información sea correcta:
+                </p>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
+                    <span>Datos personales completos y correctos</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
+                    <span>Información de contacto actualizada</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
+                    <span>Dirección y datos de ubicación precisos</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
+                    <span>Tallas e información adicional verificada</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <p className="text-sm text-gray-700 text-center">
+                  ¿Estás seguro de que toda la información es correcta y deseas <strong className="font-bold text-[#7B1FA2]">guardar y bloquear</strong> tu perfil?
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200">
+              <button
+                onClick={() => setMostrarModalConfirmacion(false)}
+                className="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarGuardado}
+                disabled={guardando}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#7B1FA2] to-[#6A1B9A] rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {guardando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleIcon className="w-5 h-5" />
+                    Sí, Guardar y Bloquear
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -194,15 +334,59 @@ const MiPerfil = () => {
               </div>
             </div>
             
-            {!modoEdicion && (
-              <button
-                onClick={() => setModoEdicion(true)}
-                className="flex items-center gap-2 bg-[#7B1FA2] text-white px-4 py-2.5 rounded-lg text-xs font-medium hover:bg-[#6A1B9A] transition-all"
-              >
-                <PencilIcon className="w-4 h-4" />
-                Editar
-              </button>
-            )}
+            {/* Controles de edición */}
+            <div className="flex items-center gap-3">
+              {/* Mostrar mensaje si está bloqueado */}
+              {perfilCompleto && (
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border-2 border-amber-200 rounded-lg">
+                  <LockClosedIcon className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-medium text-amber-700">
+                    Perfil bloqueado. Contacta al administrador para cambios.
+                  </span>
+                </div>
+              )}
+              
+              {/* Botón Editar - Solo visible si NO está en modo edición y NO está bloqueado */}
+              {!modoEdicion && !perfilCompleto && (
+                <button
+                  onClick={activarEdicion}
+                  className="flex items-center gap-2 bg-[#7B1FA2] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                  Editar Perfil
+                </button>
+              )}
+              
+              {/* Botones Cancelar/Guardar - Solo en modo edición */}
+              {modoEdicion && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={cancelarEdicion}
+                    className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all border border-gray-300"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleGuardar}
+                    disabled={guardando}
+                    className="flex items-center gap-2 bg-[#A3C644] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all disabled:opacity-50"
+                  >
+                    {guardando ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="w-4 h-4" />
+                        Guardar y Bloquear
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Username y Badge */}
@@ -213,6 +397,18 @@ const MiPerfil = () => {
             {perfilCompleto && (
               <div className="px-3.5 py-1.5 bg-[#A3C644]/10 rounded-lg text-xs text-[#A3C644] font-medium border border-[#A3C644]/20">
                 Perfil Completo
+              </div>
+            )}
+            {!perfilCompleto && !modoEdicion && (
+              <div className="px-3.5 py-1.5 bg-orange-50 rounded-lg text-xs text-orange-600 font-medium border border-orange-200 flex items-center gap-1.5">
+                <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                Completa tu perfil (solo una vez)
+              </div>
+            )}
+            {modoEdicion && (
+              <div className="px-3.5 py-1.5 bg-blue-50 rounded-lg text-xs text-blue-600 font-medium border border-blue-200 flex items-center gap-1.5">
+                <PencilIcon className="w-3.5 h-3.5" />
+                Modo Edición
               </div>
             )}
           </div>
@@ -308,40 +504,15 @@ const MiPerfil = () => {
               <Field label="Talla Zapatos" value={perfil.talla_zapatos} name="talla_zapatos" editable={modoEdicion} onChange={handleChange} />
             </div>
           </Section>
-        </div>
 
-        {/* Floating Action Buttons */}
-        {modoEdicion && (
-          <div className="fixed bottom-6 right-6 flex gap-3 z-40">
-            <button
-              onClick={() => {
-                setModoEdicion(false);
-                cargarDatos();
-              }}
-              className="p-3 bg-white text-gray-600 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all"
-              title="Cancelar"
-            >
-              <XMarkIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleGuardar}
-              disabled={guardando}
-              className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#8FB82D] transition-all hover:shadow-lg disabled:opacity-50"
-            >
-              {guardando ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <CheckCircleIcon className="w-5 h-5" />
-                  Guardar
-                </>
-              )}
-            </button>
-          </div>
-        )}
+          {/* Cuentas Bancarias - Solo editable si el perfil NO está bloqueado */}
+          <Section icon={ShoppingBagIcon} title="Información Bancaria" color="[#7B1FA2]">
+            <CuentasBancarias 
+              trabajadorId={perfil.id} 
+              readOnly={perfilCompleto || !modoEdicion}
+            />
+          </Section>
+        </div>
       </div>
     </div>
   );
@@ -404,5 +575,257 @@ const Field = ({ label, value, name, type = 'text', editable, onChange, error, m
     )}
   </div>
 );
+
+// Componente de Cuentas Bancarias integrado
+const CuentasBancarias = ({ trabajadorId, readOnly = false }) => {
+  const [cuentas, setCuentas] = useState([]);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    banco: '',
+    numero_cuenta: '',
+    cci: ''
+  });
+
+  const bancos = [
+    'BCP', 'BBVA', 'INTERBANK', 'SCOTIABANK', 'BANBIF',
+    'PICHINCHA', 'BANCO DE LA NACIÓN', 'OTROS'
+  ];
+
+  useEffect(() => {
+    if (trabajadorId) {
+      cargarCuentas();
+    }
+  }, [trabajadorId]);
+
+  const cargarCuentas = async () => {
+    try {
+      setLoading(true);
+      const data = await getCuentasBancarias(trabajadorId);
+      setCuentas(data);
+    } catch (error) {
+      console.error('Error al cargar cuentas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAgregarCuenta = async () => {
+    if (!formData.banco || !formData.numero_cuenta) {
+      alert('Por favor completa banco y número de cuenta');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await crearCuentaBancaria({
+        trabajadorId: trabajadorId,
+        banco: formData.banco,
+        numero_cuenta: formData.numero_cuenta,
+        cci: formData.cci || null,
+        es_principal: cuentas.length === 0
+      });
+
+      setFormData({ banco: '', numero_cuenta: '', cci: '' });
+      setMostrarFormulario(false);
+      await cargarCuentas();
+    } catch (error) {
+      console.error('Error al agregar cuenta:', error);
+      alert('Error al agregar cuenta bancaria');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEliminarCuenta = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar esta cuenta bancaria?')) return;
+
+    try {
+      setLoading(true);
+      await eliminarCuentaBancaria(id);
+      await cargarCuentas();
+    } catch (error) {
+      console.error('Error al eliminar cuenta:', error);
+      alert('Error al eliminar cuenta bancaria');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarcarPrincipal = async (id) => {
+    try {
+      setLoading(true);
+      await marcarCuentaPrincipal(id);
+      await cargarCuentas();
+    } catch (error) {
+      console.error('Error al marcar cuenta principal:', error);
+      alert('Error al marcar como principal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          Cuentas Bancarias {cuentas.length > 0 && `(${cuentas.length})`}
+        </h3>
+        {trabajadorId && !readOnly && (
+          <button
+            onClick={() => setMostrarFormulario(!mostrarFormulario)}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#7B1FA2] hover:bg-[#6A1B9A] rounded-lg transition-all"
+            disabled={loading}
+          >
+            <PlusIcon className="w-4 h-4" />
+            Agregar
+          </button>
+        )}
+      </div>
+
+      {mostrarFormulario && !readOnly && (
+        <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Banco <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.banco}
+                onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
+                className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#7B1FA2] transition-all bg-white"
+              >
+                <option value="">Seleccionar banco</option>
+                {bancos.map(banco => (
+                  <option key={banco} value={banco}>{banco}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Número de Cuenta <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.numero_cuenta}
+                onChange={(e) => setFormData({ ...formData, numero_cuenta: e.target.value })}
+                className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#7B1FA2] transition-all"
+                placeholder="Ej: 19412345678901"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                CCI (Código de Cuenta Interbancario)
+              </label>
+              <input
+                type="text"
+                value={formData.cci}
+                onChange={(e) => setFormData({ ...formData, cci: e.target.value })}
+                className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#7B1FA2] transition-all"
+                placeholder="Ej: 00219400123456789012"
+                maxLength={20}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => {
+                setMostrarFormulario(false);
+                setFormData({ banco: '', numero_cuenta: '', cci: '' });
+              }}
+              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+              disabled={loading}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleAgregarCuenta}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[#7B1FA2] hover:bg-[#6A1B9A] rounded-lg transition-all"
+              disabled={loading}
+            >
+              {loading ? 'Guardando...' : 'Guardar Cuenta'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {cuentas.length === 0 && !mostrarFormulario ? (
+        <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+          <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          <p className="text-sm text-gray-500">No hay cuentas bancarias registradas</p>
+          {trabajadorId && !readOnly && (
+            <p className="text-xs text-gray-400 mt-1">Haz clic en "Agregar" para registrar una cuenta</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {cuentas.map((cuenta) => (
+            <div
+              key={cuenta.id}
+              className={`relative border-2 rounded-lg p-3 transition-all ${
+                cuenta.es_principal
+                  ? 'border-[#A3C644] bg-green-50/50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              {cuenta.es_principal && (
+                <div className="absolute -top-2 -right-2 bg-[#A3C644] text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
+                  PRINCIPAL
+                </div>
+              )}
+
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-bold text-gray-900 text-sm">{cuenta.banco}</h4>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-0.5">
+                    <span className="font-medium">Cuenta:</span> {cuenta.numero_cuenta}
+                  </p>
+                  {cuenta.cci && (
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">CCI:</span> {cuenta.cci}
+                    </p>
+                  )}
+                </div>
+
+                {!readOnly && trabajadorId && (
+                  <div className="flex items-center gap-1">
+                    {!cuenta.es_principal && (
+                      <button
+                        onClick={() => handleMarcarPrincipal(cuenta.id)}
+                        className="p-1.5 text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 rounded transition-all"
+                        title="Marcar como principal"
+                        disabled={loading}
+                      >
+                        <StarIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleEliminarCuenta(cuenta.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                      title="Eliminar cuenta"
+                      disabled={loading}
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default MiPerfil;

@@ -522,7 +522,7 @@ const ModalNuevoEmpleado = ({ onClose, roles, especialidades, onSuccess, onError
 
   const validarFormulario = () => {
     const erroresNuevos = {};
-    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'contrasena', 'email', 'rol', 'cargo'];
+    const camposObligatorios = ['nombres', 'apellidos', 'dni', 'usuario', 'contrasena', 'email', 'rol'];
 
     const rolObj = roles.find(r => r.nombre === formData.rol);
     if (rolObj?.nombre === 'Terapeuta') {
@@ -645,7 +645,6 @@ const ModalNuevoEmpleado = ({ onClose, roles, especialidades, onSuccess, onError
                 <InputField label="Usuario" name="usuario" value={formData.usuario} onChange={handleChange} error={errors.usuario} required />
                 <InputField label="Contraseña" name="contrasena" type="password" value={formData.contrasena} onChange={handleChange} error={errors.contrasena} required />
                 <SelectField label="Rol" name="rol" value={formData.rol} onChange={handleChange} error={errors.rol} options={roles.map(r => r.nombre)} required />
-                <InputField label="Cargo" name="cargo" value={formData.cargo} onChange={handleChange} error={errors.cargo} required />
                 {esTerapeuta && (
                   <div className="md:col-span-2">
                     <SelectField label="Especialidad" name="especialidad" value={formData.especialidad} onChange={handleChange} error={errors.especialidad} options={especialidades.map(e => e.nombre)} required />
@@ -911,7 +910,6 @@ const ModalEditarEmpleado = ({ empleado, onClose, roles, especialidades, onSucce
                 <InputField label="Usuario" name="usuario" value={formData.usuario} onChange={handleChange} error={errors.usuario} required />
                 <InputField label="Nueva Contraseña" name="contrasena" type="password" value={formData.contrasena} onChange={handleChange} placeholder="Dejar en blanco para mantener" />
                 <SelectField label="Rol" name="rol" value={formData.rol} onChange={handleChange} error={errors.rol} options={roles.map(r => r.nombre)} required />
-                <InputField label="Cargo" name="cargo" value={formData.cargo} onChange={handleChange} error={errors.cargo} required />
                 {esTerapeuta && (
                   <div className="md:col-span-2">
                     <SelectField label="Especialidad" name="especialidad" value={formData.especialidad} onChange={handleChange} error={errors.especialidad} options={especialidades.map(e => e.nombre)} required />
@@ -1068,7 +1066,7 @@ const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
             <DetalleSection title="Información Profesional">
               <div className="grid grid-cols-2 gap-4">
                 <InfoField label="Rol" value={empleado.rol?.nombre || 'N/A'} />
-                <InfoField label="Cargo" value={empleado.cargo} />
+                
                 {empleado.especialidad && (
                   <InfoField label="Especialidad" value={empleado.especialidad.nombre} />
                 )}

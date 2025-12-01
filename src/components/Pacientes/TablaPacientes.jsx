@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  UserCircle, Phone, MapPin, Calendar, FileText, X, 
+import {
+  UserCircle, Phone, MapPin, Calendar, FileText, X,
   Clock, Stethoscope, Mail, Home, AlertCircle, Heart, Pill, User, Users,
-  Edit2, Trash2, Check, ChevronRight
+  Edit2, Trash2, Check, ChevronRight, Grid3x3, List, Eye
 } from 'lucide-react';
 import { canViewContactInfo, canViewServiceInfo, canManagePatientStatus } from '../../constants/roles';
 import { cambiarVisibilidadPaciente } from '../../services/pacienteService';
@@ -469,6 +469,7 @@ const ModalDetallesPaciente = ({ paciente, onClose, onEditar, user, onPacienteOc
 const TarjetasPacientes = ({ pacientes, pacienteSeleccionadoId, onSelect, onEditar, user, emptyMessage, onPacienteOcultado }) => {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
 
   const handleClickPaciente = (paciente) => {
     setPacienteSeleccionado(paciente);
@@ -497,18 +498,193 @@ const TarjetasPacientes = ({ pacientes, pacienteSeleccionadoId, onSelect, onEdit
 
   return (
     <>
-      {/* Grid de tarjetas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {pacientes.map((paciente) => (
-          <TarjetaPacienteCompacta
-            key={paciente.id}
-            paciente={paciente}
-            onClick={() => handleClickPaciente(paciente)}
-            seleccionado={pacienteSeleccionadoId === paciente.id}
-            user={user}
-          />
-        ))}
+      {/* Botones de cambio de vista */}
+      <div className="flex items-center justify-end mb-4">
+        <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              viewMode === 'grid'
+                ? 'bg-white text-[#7B1FA2] shadow-sm'
+                : 'text-gray-600 hover:text-[#7B1FA2]'
+            }`}
+            title="Vista de tarjetas"
+          >
+            <Grid3x3 className="w-4 h-4" />
+            Tarjetas
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              viewMode === 'list'
+                ? 'bg-white text-[#7B1FA2] shadow-sm'
+                : 'text-gray-600 hover:text-[#7B1FA2]'
+            }`}
+            title="Vista de lista"
+          >
+            <List className="w-4 h-4" />
+            Lista
+          </button>
+        </div>
       </div>
+
+      {/* Vista de Tarjetas */}
+      {viewMode === 'grid' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {pacientes.map((paciente) => (
+            <TarjetaPacienteCompacta
+              key={paciente.id}
+              paciente={paciente}
+              onClick={() => handleClickPaciente(paciente)}
+              seleccionado={pacienteSeleccionadoId === paciente.id}
+              user={user}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Vista de Lista */}
+      {viewMode === 'list' && (
+        <div className="-mx-4 md:-mx-8 bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    Paciente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    Documento
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    Edad
+                  </th>
+                  {canViewServiceInfo(user) && (
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                      Servicio
+                    </th>
+                  )}
+                  {canViewContactInfo(user) && (
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                      Contacto
+                    </th>
+                  )}
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {pacientes.map((paciente) => {
+                  const estadoColors = getEstadoColor(paciente.estado?.nombre);
+
+                  return (
+                    <tr
+                      key={paciente.id}
+                      className={`hover:bg-gray-50 transition-colors group ${
+                        pacienteSeleccionadoId === paciente.id ? 'bg-[#A3C644]/5' : ''
+                      }`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${
+                            pacienteSeleccionadoId === paciente.id
+                              ? 'bg-gradient-to-br from-[#9C27B0] to-[#BA68C8]'
+                              : 'bg-gradient-to-br from-[#7B1FA2] to-[#6A1B9A]'
+                          }`}>
+                            {paciente.nombres?.[0]}{paciente.apellido_paterno?.[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {paciente.nombres} {paciente.apellido_paterno} {paciente.apellido_materno}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                          <span className="text-sm text-gray-900 font-medium">
+                            {paciente.numero_documento}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                          <span className="text-sm text-gray-700">
+                            {calcularEdad(paciente.fecha_nacimiento)}
+                          </span>
+                        </div>
+                      </td>
+                      {canViewServiceInfo(user) && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {paciente.servicio ? (
+                            <div className="flex items-center gap-2">
+                              <Stethoscope className="w-4 h-4 text-[#A3C644] flex-shrink-0" />
+                              <span className="text-sm text-gray-700">
+                                {paciente.servicio.nombre}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                      )}
+                      {canViewContactInfo(user) && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {paciente.celular ? (
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              <span className="text-sm text-gray-700">
+                                {paciente.celular}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${estadoColors.bg} ${estadoColors.border}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${estadoColors.dot}`} />
+                          <span className={`text-xs font-semibold ${estadoColors.text} uppercase tracking-wide`}>
+                            {paciente.estado?.nombre}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleClickPaciente(paciente)}
+                            className="p-2 text-[#7B1FA2] hover:bg-purple-50 rounded-lg transition-all"
+                            title="Ver detalles"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleClickPaciente(paciente);
+                              setTimeout(() => onEditar(paciente.id), 100);
+                            }}
+                            className="p-2 text-[#A3C644] hover:bg-green-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modal lateral */}
       {modalAbierto && pacienteSeleccionado && (
