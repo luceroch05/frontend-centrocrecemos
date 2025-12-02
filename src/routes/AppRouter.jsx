@@ -50,6 +50,8 @@ import HistorialPagosPage from '../pages/rrhh/HistorialPagosPage';
 import DashboardRRHH from '../pages/rrhh/DashboardRRHH';
 import VacacionesPage from '../pages/rrhh/VacacionesPage';
 
+// Páginas de Auditoría
+import HistorialAuditoria from '../pages/Auditoria/HistorialAuditoria';
 
 export const AppRouter = () => {
   return (
@@ -168,6 +170,17 @@ export const AppRouter = () => {
               <Sidebar />
               <SidebarContentWrapper>
                 <VacacionesPage />
+              </SidebarContentWrapper>
+            </SidebarProvider>
+          </PrivateRoute>
+        } />
+
+        <Route path="/intranet/auditoria" element={
+          <PrivateRoute>
+            <SidebarProvider>
+              <Sidebar />
+              <SidebarContentWrapper>
+                <HistorialAuditoria />
               </SidebarContentWrapper>
             </SidebarProvider>
           </PrivateRoute>

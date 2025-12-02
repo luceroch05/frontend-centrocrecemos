@@ -177,3 +177,23 @@ export const eliminarCuentaBancaria = async (id) => {
   );
   return response.data;
 };
+
+// ========== NOTIFICACIONES Y ALERTAS ==========
+
+// Obtener vacaciones próximas (empleados próximos a cumplir primer año)
+export const obtenerVacacionesProximas = async () => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/vacaciones/alertas/primer-anio`,
+      { headers: getAuthHeaders() }
+    );
+    // Filtrar solo los que faltan 7 días o menos (una semana)
+    const proximosFiltrados = (response.data || []).filter(
+      emp => emp.diasHastaPrimerAnio <= 7
+    );
+    return proximosFiltrados;
+  } catch (error) {
+    console.error('Error al obtener vacaciones próximas:', error);
+    return [];
+  }
+};

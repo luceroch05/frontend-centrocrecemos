@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROLES_NAMES, ROLES } from '../constants/roles';
-import NotificacionesVacaciones from './NotificacionesVacaciones';
+import NotificacionesGlobales from './NotificacionesGlobales';
 import {
   CalendarDaysIcon,
   UserGroupIcon,
@@ -19,7 +19,8 @@ import {
   ClockIcon,
   ChartBarIcon,
   ChevronDownIcon,
-  CalendarIcon
+  CalendarIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 // Contexto para compartir el estado del sidebar
@@ -51,6 +52,7 @@ const menuItems = [
   { text: 'Popup Inicio', path: '/intranet/popup-promocional', icon: BellAlertIcon },
   { text: 'Postulaciones', path: '/intranet/postulaciones', icon: BriefcaseIcon },
   { text: 'Certificaciones', path: '/intranet/archivos-oficiales', icon: DocumentCheckIcon },
+  { text: 'Auditoría', path: '/intranet/auditoria', icon: ShieldCheckIcon, adminOnly: true },
   {
     text: 'Recursos Humanos',
     icon: UsersIcon,
@@ -111,7 +113,13 @@ const Sidebar = () => {
       );
     }
 
-    return menuItems;
+    // Filtrar items solo para admin
+    return menuItems.filter(item => {
+      if (item.adminOnly && userRole !== ROLES.ADMINISTRADOR) {
+        return false;
+      }
+      return true;
+    });
   };
 
   const handleLogout = () => {
@@ -369,7 +377,7 @@ const Sidebar = () => {
             <div className="flex flex-col items-center gap-2">
               {/* Notificaciones */}
               <div className="w-full flex justify-center">
-                <NotificacionesVacaciones />
+                <NotificacionesGlobales />
               </div>
 
               {/* Avatar del usuario */}
@@ -442,7 +450,7 @@ const Sidebar = () => {
               {/* Fila de notificaciones y cerrar sesión */}
               <div className="flex items-center gap-2">
                 <div className="flex-shrink-0">
-                  <NotificacionesVacaciones />
+                  <NotificacionesGlobales />
                 </div>
                 
                 <button
