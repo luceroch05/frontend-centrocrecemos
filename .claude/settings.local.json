@@ -25,7 +25,9 @@
       "Bash(tasklist:*)",
       "Bash(if exist dist rmdir /s /q dist)",
       "Bash(kill:*)",
-      "Bash(mysql:*)"
+      "Bash(mysql:*)",
+      "Bash(npm run build:*)",
+      "Bash(del \"C:\\Users\\Lucero\\Desktop\\frontend-centrocrecemos\\BACKEND_AUDITORIA_FIX.md\")"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, X, Save, FileText, Target, Activity, Stethoscope, ClipboardList, Calendar, User } from 'lucide-react';
+import { guardarNotaEvolucion } from '../../services/notaEvolucionService';
 
 const NotasEvolucion = ({ 
   notas, 
@@ -39,7 +40,7 @@ const NotasEvolucion = ({
         user_id_crea
       };
       try {
-        // await guardarNotaEvolucion(nuevaNota);
+        await guardarNotaEvolucion(nuevaNota);
         setNotas([
           {
             id: notas.length + 1,

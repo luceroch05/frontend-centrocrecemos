@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container,
   Paper,
@@ -62,6 +62,9 @@ const HistorialAuditoria = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
+  // Ref para evitar llamadas duplicadas en desarrollo (React.StrictMode)
+  const isLoadingRef = useRef(false);
+
   // Filtros
   const [filtros, setFiltros] = useState({
     modulo: '',
@@ -71,12 +74,11 @@ const HistorialAuditoria = () => {
     busqueda: '',
   });
 
-  useEffect(() => {
-    cargarHistorial();
-    cargarEstadisticas();
-  }, [page, rowsPerPage]);
+  const cargarHistorial = useCallback(async () => {
+    // Evitar llamadas duplicadas
+    if (isLoadingRef.current) return;
 
-  const cargarHistorial = async () => {
+    isLoadingRef.current = true;
     setLoading(true);
     try {
       const resultado = await obtenerHistorial({
@@ -91,10 +93,11 @@ const HistorialAuditoria = () => {
       console.error('Error al cargar historial:', error);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  };
+  }, [filtros, page, rowsPerPage]);
 
-  const cargarEstadisticas = async () => {
+  const cargarEstadisticas = useCallback(async () => {
     try {
       const stats = await obtenerEstadisticas(
         filtros.fechaInicio || null,
@@ -104,7 +107,15 @@ const HistorialAuditoria = () => {
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
     }
-  };
+  }, [filtros.fechaInicio, filtros.fechaFin]);
+
+  useEffect(() => {
+    cargarHistorial();
+  }, [cargarHistorial]);
+
+  useEffect(() => {
+    cargarEstadisticas();
+  }, [cargarEstadisticas]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -120,12 +131,13 @@ const HistorialAuditoria = () => {
   };
 
   const aplicarFiltros = () => {
+    // Solo resetear la página, el useEffect se encargará de recargar los datos
     setPage(0);
-    cargarHistorial();
-    cargarEstadisticas();
+    // Los useEffect se dispararán automáticamente porque filtros cambió
   };
 
   const limpiarFiltros = () => {
+    // Resetear filtros y página, el useEffect recargará los datos
     setFiltros({
       modulo: '',
       accion: '',

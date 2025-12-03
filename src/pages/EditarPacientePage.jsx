@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, Heart, HardDrive, Camera, Clock, AlertCircle, ChevronDown, X } from 'lucide-react';
-import { getPacienteById, getServiciosPorPaciente, updatePacienteById, getEstadosPaciente, cambiarEstadoPaciente, asignarServicioPaciente } from '../services/pacienteService';
+import { getPacienteById, getServiciosPorPaciente, updatePacienteById, getEstadosPaciente, cambiarEstadoPaciente, asignarServicioPaciente, desasignarServicioPaciente } from '../services/pacienteService';
+import { asignarTerapeuta } from '../services/terapeutaService';
 import api from '../services/api';
 import { getDistritos, getTiposDocumento, getGeneros } from '../services/catalogoService';
 import FiliacionView from '../components/EditarPaciente/FiliacionView';
@@ -201,12 +202,9 @@ const EditarPacientePage = () => {
 
   const handleSubmit = async (event, datosActualizados = null) => {
     event.preventDefault();
-    console.log('🚀 handleSubmit INICIADO');
-    console.log('📦 Datos recibidos:', datosActualizados);
     setSaving(true);
 
     const pacienteData = datosActualizados || paciente;
-    console.log('📋 Datos del paciente a usar:', pacienteData);
 
     const data = {
       nombres: pacienteData.nombres,
@@ -294,9 +292,6 @@ const EditarPacientePage = () => {
   };
 
   const handleAsignarServicio = async () => {
-    console.log('🎯 handleAsignarServicio iniciado');
-    console.log('📋 Datos del nuevo servicio:', nuevoServicio);
-
     try {
       // Encontrar el ID del servicio seleccionado
       const servicioSeleccionado = serviciosDisponibles.find(s => s.nombre === nuevoServicio.servicio);
@@ -312,20 +307,65 @@ const EditarPacientePage = () => {
         throw new Error('Terapeuta no encontrado');
       }
 
-      console.log('📤 Asignando servicio:', {
+      // PASO 1: Asignar el servicio al paciente
+      const resultado = await asignarServicioPaciente({
         paciente_id: parseInt(id),
         servicio_id: servicioSeleccionado.id,
-        terapeuta_id: terapeutaSeleccionado.id
+        user_id_actua: user_id
       });
 
-      // Llamar a la API
-      await asignarServicioPaciente({
-        paciente_id: parseInt(id),
-        servicio_id: servicioSeleccionado.id,
-        terapeuta_id: terapeutaSeleccionado.id
+      console.log('Respuesta completa del backend:', JSON.stringify(resultado, null, 2));
+
+      // PASO 2: Asignar el terapeuta al servicio del paciente
+      // Intentar diferentes formas de obtener el ID
+      const pacienteServicioId = resultado?.pacienteServicio?.id
+        || resultado?.id
+        || resultado?.data?.id
+        || resultado?.data?.pacienteServicio?.id;
+
+      console.log('PacienteServicio ID extraído:', pacienteServicioId);
+
+      if (!pacienteServicioId) {
+        console.error('No se pudo extraer el ID. Estructura de respuesta:', resultado);
+        throw new Error('No se pudo obtener el ID del servicio asignado. Revisa la consola para más detalles.');
+      }
+
+      console.log('Asignando terapeuta:', {
+        paciente_servicio_id: pacienteServicioId,
+        terapeuta_id: terapeutaSeleccionado.id,
+        user_id_actua: user_id
       });
 
-      console.log('✅ Servicio asignado exitosamente');
+      try {
+        await asignarTerapeuta({
+          paciente_servicio_id: pacienteServicioId,
+          terapeuta_id: terapeutaSeleccionado.id,
+          user_id_actua: user_id
+        });
+        console.log('Terapeuta asignado exitosamente');
+      } catch (errorTerapeuta) {
+        console.error('Error al asignar terapeuta:', errorTerapeuta);
+        console.error('Detalles del error:', {
+          message: errorTerapeuta.message,
+          response: errorTerapeuta.response?.data,
+          status: errorTerapeuta.response?.status
+        });
+
+        // Intentar método alternativo: actualizar el paciente_servicio directamente
+        console.log('Intentando método alternativo...');
+        try {
+          await api.post('/paciente-servicio/asignar', {
+            paciente_id: parseInt(id),
+            servicio_id: servicioSeleccionado.id,
+            terapeuta_id: terapeutaSeleccionado.id,
+            user_id_actua: user_id
+          });
+          console.log('Terapeuta asignado con método alternativo');
+        } catch (errorAlternativo) {
+          console.error('Método alternativo también falló:', errorAlternativo);
+          throw new Error(`No se pudo asignar el terapeuta: ${errorTerapeuta.response?.data?.message || errorTerapeuta.message}`);
+        }
+      }
 
       // Recargar los servicios del paciente
       const serviciosActualizados = await getServiciosPorPaciente(id);
@@ -337,7 +377,7 @@ const EditarPacientePage = () => {
       // Mostrar mensaje de éxito
       setSnackbar({
         open: true,
-        message: 'Servicio asignado correctamente',
+        message: 'Servicio y terapeuta asignados correctamente',
         severity: 'success'
       });
 
@@ -346,7 +386,7 @@ const EditarPacientePage = () => {
       setNuevoServicio({ servicio: '', terapeuta: '' });
 
     } catch (error) {
-      console.error('❌ Error al asignar servicio:', error);
+      console.error('Error al asignar servicio:', error);
       setSnackbar({
         open: true,
         message: error.response?.data?.message || 'Error al asignar el servicio',
@@ -356,10 +396,37 @@ const EditarPacientePage = () => {
     }
   };
 
+  const handleEliminarServicio = async (servicio) => {
+    if (!window.confirm(`¿Estás seguro de eliminar el servicio "${servicio.servicio?.nombre}"?`)) {
+      return;
+    }
+
+    try {
+      await desasignarServicioPaciente(paciente.id, servicio.servicio.id, user_id);
+
+      // Recargar los servicios del paciente
+      const serviciosActualizados = await getServiciosPorPaciente(id);
+      setPaciente(prev => ({
+        ...prev,
+        servicios: serviciosActualizados
+      }));
+
+      setSnackbar({
+        open: true,
+        message: 'Servicio eliminado exitosamente',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error al eliminar servicio:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Error al eliminar el servicio',
+        severity: 'error'
+      });
+    }
+  };
+
   const handleEditarTerapeuta = async () => {
-    console.log('🎯 handleEditarTerapeuta iniciado');
-    console.log('📋 Servicio a editar:', servicioAEditar);
-    console.log('👨‍⚕️ Nuevo terapeuta:', nuevoTerapeuta);
 
     try {
       if (!servicioAEditar || !servicioAEditar.asignaciones || servicioAEditar.asignaciones.length === 0) {
@@ -376,17 +443,11 @@ const EditarPacientePage = () => {
 
       const asignacionId = servicioAEditar.asignaciones[0].id;
 
-      console.log('📤 Actualizando asignación:', {
-        asignacionId,
-        terapeuta_id: terapeutaSeleccionado.id
-      });
-
       // Llamar a la API para actualizar la asignación
       await api.patch(`/paciente-servicio/asignacion/${asignacionId}`, {
-        terapeuta_id: terapeutaSeleccionado.id
+        terapeuta_id: terapeutaSeleccionado.id,
+        user_id_actua: user_id
       });
-
-      console.log('✅ Terapeuta actualizado exitosamente');
 
       // Recargar los servicios del paciente
       const serviciosActualizados = await getServiciosPorPaciente(id);
@@ -584,6 +645,7 @@ const EditarPacientePage = () => {
                 setServicioAEditar={setServicioAEditar}
                 setNuevoTerapeuta={setNuevoTerapeuta}
                 setOpenEditarTerapeuta={setOpenEditarTerapeuta}
+                handleEliminarServicio={handleEliminarServicio}
                 user={user}
               />
             )}

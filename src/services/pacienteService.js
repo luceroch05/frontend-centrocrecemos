@@ -31,17 +31,19 @@ export const updatePacienteById = async (id, data) => {
   return response.data;
 };
 
-export const asignarServicioPaciente = async ({ paciente_id, servicio_id, terapeuta_id }) => {
+export const asignarServicioPaciente = async ({ paciente_id, servicio_id, user_id_actua }) => {
   const response = await api.post('/paciente-servicio/asignar', {
     paciente_id,
     servicio_id,
-    terapeuta_id
+    user_id_actua
   });
   return response.data;
 };
 
-export const desasignarServicioPaciente = async (pacienteId, servicioId) => {
-  const response = await api.delete(`/paciente-servicio/paciente/${pacienteId}/servicio/${servicioId}`);
+export const desasignarServicioPaciente = async (pacienteId, servicioId, userId) => {
+  const response = await api.delete(`/paciente-servicio/paciente/${pacienteId}/servicio/${servicioId}`, {
+    data: { user_id_actua: userId }
+  });
   return response.data;
 };
 

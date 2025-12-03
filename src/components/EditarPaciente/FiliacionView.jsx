@@ -71,19 +71,20 @@ const Section = ({ icon: Icon, title, iconColor = 'text-[#7B1FA2]', bgColor = 'b
   </div>
 );
 
-const FiliacionView = ({ 
-  paciente, 
-  setPaciente, 
-  handleSubmit, 
-  saving, 
-  generos, 
-  distritos, 
+const FiliacionView = ({
+  paciente,
+  setPaciente,
+  handleSubmit,
+  saving,
+  generos,
+  distritos,
   tiposDocumento,
   setOpenAsignarServicio,
   setServicioAEditar,
   setNuevoTerapeuta,
   setOpenEditarTerapeuta,
-  user 
+  handleEliminarServicio,
+  user
 }) => {
   const [localPacienteData, setLocalPacienteData] = useState(paciente);
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -400,6 +401,7 @@ const FiliacionView = ({
                       </button>
                       <button
                         type="button"
+                        onClick={() => handleEliminarServicio(servicio)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
