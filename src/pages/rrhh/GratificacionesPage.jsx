@@ -57,19 +57,24 @@ export default function GratificacionesPage() {
     cerrarConfirmacion();
 
     try {
+      // Obtener usuario logueado
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
       // Convertir a número y redondear a 2 decimales
       const montoNumero = parseFloat(parseFloat(gratificacion.gratificacionProporcional).toFixed(2));
 
       console.log('Datos de la gratificación:', {
         empleadoId: gratificacion.id,
         monto: montoNumero,
-        periodo: `${periodo}-${anio}`
+        periodo: `${periodo}-${anio}`,
+        userId: user.id
       });
 
       const response = await registrarGratificacion({
         empleadoId: gratificacion.id,
         monto: montoNumero,
-        periodo: `${periodo}-${anio}`
+        periodo: `${periodo}-${anio}`,
+        userId: user.id // ✅ Enviamos el ID del usuario que registra
       });
       setSnackbar({
         open: true,

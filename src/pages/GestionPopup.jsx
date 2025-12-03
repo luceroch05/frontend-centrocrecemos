@@ -395,26 +395,27 @@ const GestionPopup = () => {
       {/* Diálogo de vista previa */}
       {vistaPrevia && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl">
-            <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white p-6 rounded-t-2xl flex items-center justify-between">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Eye className="w-6 h-6" />
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white p-4 rounded-t-2xl flex items-center justify-between">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Eye className="w-5 h-5" />
                 Vista Previa del Popup
               </h3>
               <button
                 onClick={() => setVistaPrevia(false)}
-                className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-xl transition-colors"
+                className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-xl transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-0">
+            <div className="overflow-auto flex-1">
               {popupConfig.imagenUrl ? (
                 <img
-                  src={popupConfig.imagenUrl}
+                  src={`http://localhost:3001/uploads/popup/${popupConfig.imagenUrl}`}
                   alt="Imagen promocional"
-                  className="w-full h-auto"
+                  className="w-full h-auto object-contain"
+                  style={{ maxHeight: 'calc(90vh - 80px)' }}
                 />
               ) : (
                 <div className="p-12 text-center">

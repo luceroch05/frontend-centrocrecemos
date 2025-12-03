@@ -1172,6 +1172,9 @@ const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
     setShowConfirm(false);
     setLoading(true);
     try {
+      // Obtener usuario logueado
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
       // Convertir sueldo_base a número y redondear a 2 decimales
       const montoNumero = parseFloat(parseFloat(empleado.sueldo_base).toFixed(2));
 
@@ -1180,7 +1183,8 @@ const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
         mes: pagoData.mes,
         anio: pagoData.anio,
         monto: montoNumero,
-        fechaPago: pagoData.fechaPago
+        fechaPago: pagoData.fechaPago,
+        userId: user.id
       });
 
       await registrarPagoMensual({
@@ -1188,7 +1192,8 @@ const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
         mes: pagoData.mes,
         anio: pagoData.anio,
         monto: montoNumero,
-        fechaPago: pagoData.fechaPago
+        fechaPago: pagoData.fechaPago,
+        userId: user.id // ✅ Enviamos el ID del usuario que registra
       });
       onSuccess();
       onClose();

@@ -13,26 +13,17 @@ export const obtenerConfiguracionPopup = async () => {
   }
 };
 
-/**
- * Actualizar la configuración del popup (activo/desactivado)
- */
-export const actualizarConfiguracionPopup = async (configuracion) => {
-  try {
-    const response = await api.put('/popup/configuracion', configuracion);
-    return response.data;
-  } catch (error) {
-    console.error('Error al actualizar configuración del popup:', error);
-    throw error;
-  }
+// Asume que tienes el userId guardado (localStorage, context, etc.)
+const getUserId = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  return user?.id;
 };
 
-/**
- * Subir imagen del popup
- */
 export const subirImagenPopup = async (archivo) => {
   try {
     const formData = new FormData();
     formData.append('imagen', archivo);
+    formData.append('userId', getUserId()); // ✅ Enviamos userId
 
     const response = await api.post('/popup/imagen', formData, {
       headers: {
@@ -46,6 +37,18 @@ export const subirImagenPopup = async (archivo) => {
   }
 };
 
+export const actualizarConfiguracionPopup = async (configuracion) => {
+  try {
+    const response = await api.put('/popup/configuracion', {
+      ...configuracion,
+      userId: getUserId() // ✅ Enviamos userId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al actualizar configuración del popup:', error);
+    throw error;
+  }
+};
 /**
  * Eliminar imagen del popup
  */

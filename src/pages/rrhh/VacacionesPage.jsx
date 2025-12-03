@@ -109,12 +109,16 @@ export default function VacacionesPage() {
     }
 
     try {
+      // Obtener usuario logueado
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
       await registrarVacacion({
         empleadoId: empleado.id,
         fechaInicio: formData.fechaSalida,
         fechaFin: formData.fechaRegreso,
         periodoAnio: anio,
-        observaciones: formData.observaciones
+        observaciones: formData.observaciones,
+        userId: user.id // ✅ Enviamos el ID del usuario que registra
       });
 
       showNotification(
