@@ -191,18 +191,28 @@ export default function NavBar() {
               </li>
               
               <li>
-                <Link 
-                  to="/staff" 
+                <Link
+                  to="/staff"
                   className={location.pathname === '/staff' ? 'active' : ''}
                   onClick={closeMobileNav}
                 >
                   Especialistas
                 </Link>
               </li>
-              
+
               <li>
-                <Link 
-                  to="/contactanos" 
+                <Link
+                  to="/blog"
+                  className={location.pathname === '/blog' || location.pathname.includes('/blog/') ? 'active' : ''}
+                  onClick={closeMobileNav}
+                >
+                  Blog
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/contactanos"
                   className={location.pathname === '/contactanos' ? 'active' : ''}
                   onClick={closeMobileNav}
                 >

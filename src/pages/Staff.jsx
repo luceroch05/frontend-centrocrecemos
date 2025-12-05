@@ -61,21 +61,7 @@ const specialists = [
       ],
       areas: ['Área Infantil']
     },
-    {
-      id: '9',
-      img: 'assets/img/servicios/terapuet-danielac.png',
-      name: 'Lic. Daniela Calle',
-      title: 'Especialista en Terapia de Integración Sensorial',
-      specialties: 'Enfocada en procesamiento sensorial, desarrollo de habilidades motoras finas y gruesas, y fortalecimiento de la autorregulación emocional y conductual en niños y adolescentes.',
-      services: [
-        'Terapia de Integración Sensorial',
-        'Estimulación de habilidades motoras finas y gruesas',
-        'Actividades para autorregulación emocional y conductual',
-        'Entrenamiento en autonomía y rutinas diarias',
-        'Orientación a padres para manejo sensorial en casa'
-      ],
-      areas: ['Niños y Adolescentes']
-    },
+    
     {
       id: '10',
       img: 'assets/img/servicios/Lic. Giselle (1).png',
