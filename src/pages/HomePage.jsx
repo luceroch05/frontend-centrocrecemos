@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import  {initializePageScripts}  from '../utils/initScripts';
 import { useState } from 'react';
 import * as popupService from '../services/popupService';
-import { SERVER_BASE_URL } from '../services/api';
+import { API_BASE_URL } from '../services/api';
 
 
 export default function HomePage() {
@@ -128,7 +128,7 @@ useEffect(() => {
           </button>
 
           <img
-            src={`${SERVER_BASE_URL}/uploads/popup/${popupConfig.imagenUrl}`}
+            src={`${API_BASE_URL}/uploads/popup/${popupConfig.imagenUrl}`}
             alt="Promoción especial - Centro Crecemos"
             className="w-full h-full object-contain block"
           />
