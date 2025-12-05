@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User, Phone, MapPin, Mail, Calendar, FileText, Heart, Pill, AlertCircle, Save, X, Edit2, Trash2, Plus } from 'lucide-react';
+import { User, Phone, MapPin, Mail, Calendar, FileText, Heart, Pill, AlertCircle, Save, X, Edit2, Trash2, Plus, ShieldAlert } from 'lucide-react';
+import { ROLES } from '../../constants/roles';
 
 // Componente de campo de formulario con iconos alineados
 const FormField = ({ icon: Icon, label, value, displayValue, name, type = 'text', editable, onChange, error, iconColor = 'text-[#7B1FA2]', options = null }) => (
@@ -89,6 +90,12 @@ const FiliacionView = ({
   const [localPacienteData, setLocalPacienteData] = useState(paciente);
   const [modoEdicion, setModoEdicion] = useState(false);
 
+  // ✅ CONTROL DE PERMISOS
+  const puedeEditarPaciente = user?.rol?.id === ROLES.ADMINISTRADOR;
+  const puedeGestionarServicios = user?.rol?.id === ROLES.ADMINISTRADOR || user?.rol?.id === ROLES.ADMISION;
+  const esAdmision = user?.rol?.id === ROLES.ADMISION;
+  const esTerapeuta = user?.rol?.id === ROLES.TERAPEUTA;
+
   React.useEffect(() => {
     setLocalPacienteData(paciente);
   }, [paciente]);
@@ -119,7 +126,6 @@ const FiliacionView = ({
       setModoEdicion(false);
     } catch (error) {
       console.error('❌ Error al guardar:', error);
-      // No cerramos el modo edición si hay error
     }
   };
 
@@ -143,7 +149,9 @@ const FiliacionView = ({
               Datos personales y médicos
             </p>
           </div>
-          {!modoEdicion && (
+          
+          {/* Botón de editar solo para ADMINISTRADOR */}
+          {puedeEditarPaciente && !modoEdicion && (
             <button
               onClick={() => setModoEdicion(true)}
               className="flex items-center gap-2 bg-[#7B1FA2] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
@@ -151,6 +159,16 @@ const FiliacionView = ({
               <Edit2 className="w-4 h-4" />
               Editar
             </button>
+          )}
+
+          {/* Mensaje para roles sin permiso */}
+          {!puedeEditarPaciente && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <span className="text-xs text-amber-700 font-medium">
+                {esAdmision ? 'Solo lectura - Sin permisos de edición de datos personales' : 'Modo solo lectura'}
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -165,7 +183,7 @@ const FiliacionView = ({
               label="Nombres"
               value={localPacienteData.nombres}
               name="nombres"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-[#7B1FA2]"
             />
@@ -174,7 +192,7 @@ const FiliacionView = ({
               label="Apellido Paterno"
               value={localPacienteData.apellido_paterno}
               name="apellido_paterno"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-[#7B1FA2]"
             />
@@ -183,7 +201,7 @@ const FiliacionView = ({
               label="Apellido Materno"
               value={localPacienteData.apellido_materno}
               name="apellido_materno"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-[#7B1FA2]"
             />
@@ -193,7 +211,7 @@ const FiliacionView = ({
               value={localPacienteData.fecha_nacimiento ? localPacienteData.fecha_nacimiento.substring(0, 10) : ''}
               name="fecha_nacimiento"
               type="date"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-[#7B1FA2]"
             />
@@ -203,7 +221,7 @@ const FiliacionView = ({
               value={localPacienteData.tipo_documento?.id}
               displayValue={localPacienteData.tipo_documento?.nombre}
               name="tipo_documento"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={(e) => handleSelectChange('tipo_documento', e.target.value)}
               options={tiposDocumento}
               iconColor="text-[#7B1FA2]"
@@ -213,7 +231,7 @@ const FiliacionView = ({
               label="Número de Documento"
               value={localPacienteData.numero_documento}
               name="numero_documento"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-[#7B1FA2]"
             />
@@ -223,7 +241,7 @@ const FiliacionView = ({
               value={localPacienteData.sexo?.id}
               displayValue={localPacienteData.sexo?.nombre}
               name="sexo"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={(e) => handleSelectChange('sexo', e.target.value)}
               options={generos}
               iconColor="text-[#7B1FA2]"
@@ -239,7 +257,7 @@ const FiliacionView = ({
               label="Celular Principal"
               value={localPacienteData.celular}
               name="celular"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-emerald-600"
             />
@@ -248,7 +266,7 @@ const FiliacionView = ({
               label="Celular Secundario"
               value={localPacienteData.celular2}
               name="celular2"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-emerald-600"
             />
@@ -259,7 +277,7 @@ const FiliacionView = ({
                 value={localPacienteData.correo}
                 name="correo"
                 type="email"
-                editable={modoEdicion}
+                editable={modoEdicion && puedeEditarPaciente}
                 onChange={handleLocalChange}
                 iconColor="text-emerald-600"
               />
@@ -276,7 +294,7 @@ const FiliacionView = ({
               value={localPacienteData.distrito?.id}
               displayValue={localPacienteData.distrito?.nombre}
               name="distrito"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={(e) => handleSelectChange('distrito', e.target.value)}
               options={distritos}
               iconColor="text-blue-600"
@@ -286,7 +304,7 @@ const FiliacionView = ({
               label="Dirección Completa"
               value={localPacienteData.direccion}
               name="direccion"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-blue-600"
             />
@@ -301,7 +319,7 @@ const FiliacionView = ({
               label="Motivo de Consulta"
               value={localPacienteData.motivo_consulta}
               name="motivo_consulta"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-rose-600"
             />
@@ -310,7 +328,7 @@ const FiliacionView = ({
               label="Referido Por"
               value={localPacienteData.referido_por}
               name="referido_por"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-rose-600"
             />
@@ -319,7 +337,7 @@ const FiliacionView = ({
               label="Diagnóstico Médico"
               value={localPacienteData.diagnostico_medico}
               name="diagnostico_medico"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-rose-600"
             />
@@ -328,7 +346,7 @@ const FiliacionView = ({
               label="Alergias"
               value={localPacienteData.alergias}
               name="alergias"
-              editable={modoEdicion}
+              editable={modoEdicion && puedeEditarPaciente}
               onChange={handleLocalChange}
               iconColor="text-rose-600"
             />
@@ -338,7 +356,7 @@ const FiliacionView = ({
                 label="Medicamentos Actuales"
                 value={localPacienteData.medicamentos_actuales}
                 name="medicamentos_actuales"
-                editable={modoEdicion}
+                editable={modoEdicion && puedeEditarPaciente}
                 onChange={handleLocalChange}
                 iconColor="text-rose-600"
               />
@@ -346,16 +364,18 @@ const FiliacionView = ({
           </div>
         </Section>
 
-        {/* Servicios Asignados */}
+        {/* Servicios Asignados - ADMINISTRADOR y ADMISIÓN pueden gestionar */}
         <Section icon={FileText} title="Servicios Asignados" iconColor="text-[#A3C644]" bgColor="bg-[#A3C644]/10">
-          <button
-            type="button"
-            onClick={() => setOpenAsignarServicio(true)}
-            className="flex items-center gap-2 bg-[#A3C644] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm mb-5"
-          >
-            <Plus className="w-4 h-4" />
-            Asignar Nuevo Servicio
-          </button>
+          {puedeGestionarServicios && (
+            <button
+              type="button"
+              onClick={() => setOpenAsignarServicio(true)}
+              className="flex items-center gap-2 bg-[#A3C644] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm mb-5"
+            >
+              <Plus className="w-4 h-4" />
+              Asignar Nuevo Servicio
+            </button>
+          )}
 
           {paciente.servicios && paciente.servicios.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
@@ -383,30 +403,34 @@ const FiliacionView = ({
                           : 'Sin asignar'}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setServicioAEditar(servicio);
-                          setNuevoTerapeuta(
-                            servicio.asignaciones && servicio.asignaciones.length > 0 && servicio.asignaciones[0].terapeuta
-                              ? `${servicio.asignaciones[0].terapeuta.nombres} ${servicio.asignaciones[0].terapeuta.apellidos}`
-                              : ''
-                          );
-                          setOpenEditarTerapeuta(true);
-                        }}
-                        className="p-2 text-[#7B1FA2] hover:bg-purple-50 rounded-lg transition-all"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setModalEliminarServicio({ open: true, servicio })}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+
+                    {/* Botones de gestión para ADMINISTRADOR y ADMISIÓN */}
+                    {puedeGestionarServicios && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setServicioAEditar(servicio);
+                            setNuevoTerapeuta(
+                              servicio.asignaciones && servicio.asignaciones.length > 0 && servicio.asignaciones[0].terapeuta
+                                ? `${servicio.asignaciones[0].terapeuta.nombres} ${servicio.asignaciones[0].terapeuta.apellidos}`
+                                : ''
+                            );
+                            setOpenEditarTerapeuta(true);
+                          }}
+                          className="p-2 text-[#7B1FA2] hover:bg-purple-50 rounded-lg transition-all"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setModalEliminarServicio({ open: true, servicio })}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -419,8 +443,8 @@ const FiliacionView = ({
           )}
         </Section>
 
-        {/* Botones de acción */}
-        {modoEdicion && (
+        {/* Botones de acción - Solo visible en modo edición para ADMINISTRADOR */}
+        {modoEdicion && puedeEditarPaciente && (
           <div className="flex items-center justify-end gap-3 pt-8 border-t border-gray-100 mt-8">
             <button
               type="button"

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Save, Edit, ChevronDown, ChevronUp, X, Plus, Trash2, Eye } from 'lucide-react';
+import { Users, Save, Edit, ChevronDown, ChevronUp, X, Plus, Trash2, Eye, ShieldAlert } from 'lucide-react';
 import { calcularEdad } from '../../../../utils/date';
 import { guardarEntrevistaPadres, obtenerEntrevistaPadres, actualizarEntrevistaPadres } from '../../../../services/entrevistaPadresService';
 import { getGradosEscolares, getAtenciones, getRelacionPadres, getGeneros, getOcupaciones } from '../../../../services/catalogoService';
+import { ROLES } from '../../../../constants/roles';
 
 const EntrevistaPadresView = ({ paciente, user }) => {
+  // ✅ CONTROL DE PERMISOS - Solo TERAPEUTA y ADMINISTRADOR pueden editar
+  const puedeEditarHistoriaClinica = user?.rol?.id === ROLES.ADMINISTRADOR || user?.rol?.id === ROLES.TERAPEUTA;
+  const esAdmision = user?.rol?.id === ROLES.ADMISION;
   // Función helper para obtener fecha local
   const getFechaLocal = () => {
     const now = new Date();
@@ -474,13 +478,22 @@ const EntrevistaPadresView = ({ paciente, user }) => {
         </div>
 
         {entrevistaExistente && !editando && (
-          <button
-            onClick={handleEditar}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-sm"
-          >
-            <Edit className="w-4 h-4" />
-            Editar Entrevista
-          </button>
+          puedeEditarHistoriaClinica ? (
+            <button
+              onClick={handleEditar}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-sm"
+            >
+              <Edit className="w-4 h-4" />
+              Editar Entrevista
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <span className="text-xs text-amber-700 font-medium">
+                Solo lectura
+              </span>
+            </div>
+          )
         )}
       </div>
 
@@ -515,6 +528,7 @@ const EntrevistaPadresView = ({ paciente, user }) => {
           onGuardar={handleGuardar}
           saving={saving}
           esNuevo={!entrevistaExistente}
+          puedeEditarHistoriaClinica={puedeEditarHistoriaClinica}
         />
       )}
     </div>
@@ -693,7 +707,8 @@ const FormularioEntrevista = ({
   handleAgregarFamiliar,
   onGuardar,
   saving,
-  esNuevo
+  esNuevo,
+  puedeEditarHistoriaClinica
 }) => {
 
   return (
@@ -1151,25 +1166,27 @@ const FormularioEntrevista = ({
       </Section>
 
       {/* Botones de acción */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-        <button
-          onClick={onGuardar}
-          disabled={saving}
-          className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {saving ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              {esNuevo ? 'Guardar Entrevista' : 'Actualizar Entrevista'}
-            </>
-          )}
-        </button>
-      </div>
+      {puedeEditarHistoriaClinica && (
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <button
+            onClick={onGuardar}
+            disabled={saving}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                {esNuevo ? 'Guardar Entrevista' : 'Actualizar Entrevista'}
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

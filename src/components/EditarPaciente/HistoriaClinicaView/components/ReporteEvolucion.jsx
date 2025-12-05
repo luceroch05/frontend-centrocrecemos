@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Save, ChevronDown, ChevronUp, Plus, Eye, Calendar, User, X } from 'lucide-react';
+import { FileText, Save, ChevronDown, ChevronUp, Plus, Eye, Calendar, User, X, ShieldAlert } from 'lucide-react';
 import { calcularEdad } from '../../../../utils/date';
+import { ROLES } from '../../../../constants/roles';
 
 const ReporteEvolucion = ({
   paciente,
@@ -17,6 +18,10 @@ const ReporteEvolucion = ({
   handleNuevoReporte,
   serviciosPaciente
 }) => {
+  // ✅ CONTROL DE PERMISOS - Solo TERAPEUTA y ADMINISTRADOR pueden editar
+  const puedeEditarHistoriaClinica = user?.rol?.id === ROLES.ADMINISTRADOR || user?.rol?.id === ROLES.TERAPEUTA;
+  const esAdmision = user?.rol?.id === ROLES.ADMISION;
+
   const [expandedReportes, setExpandedReportes] = useState({});
 
   // Estados para el periodo de intervención
@@ -115,13 +120,22 @@ const ReporteEvolucion = ({
                 <p className="text-sm text-gray-500">Historial de evaluaciones del paciente</p>
               </div>
             </div>
-            <button
-              onClick={handleNuevoReporte}
-              className="flex items-center gap-2 bg-[#7B1FA2] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Nuevo Reporte
-            </button>
+            {puedeEditarHistoriaClinica ? (
+              <button
+                onClick={handleNuevoReporte}
+                className="flex items-center gap-2 bg-[#7B1FA2] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Nuevo Reporte
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+                <ShieldAlert className="w-4 h-4 text-amber-600" />
+                <span className="text-xs text-amber-700 font-medium">
+                  Solo lectura
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Lista de Reportes */}
@@ -200,13 +214,15 @@ const ReporteEvolucion = ({
               <p className="text-sm text-gray-500 mb-4">
                 Aún no se han creado reportes de evolución para este paciente
               </p>
-              <button
-                onClick={handleNuevoReporte}
-                className="inline-flex items-center gap-2 bg-[#7B1FA2] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                Crear Primer Reporte
-              </button>
+              {puedeEditarHistoriaClinica && (
+                <button
+                  onClick={handleNuevoReporte}
+                  className="inline-flex items-center gap-2 bg-[#7B1FA2] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  Crear Primer Reporte
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -472,23 +488,25 @@ const ReporteEvolucion = ({
                   Cancelar
                 </button>
               )}
-              <button
-                onClick={handleSaveReporte}
-                disabled={saving}
-                className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Guardar Reporte de Evolución
-                  </>
-                )}
-              </button>
+              {puedeEditarHistoriaClinica && (
+                <button
+                  onClick={handleSaveReporte}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-[#A3C644] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Guardar Reporte de Evolución
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

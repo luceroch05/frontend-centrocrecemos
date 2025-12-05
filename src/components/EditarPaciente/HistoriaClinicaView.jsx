@@ -306,7 +306,7 @@ const HistoriaClinicaView = ({ paciente, user }) => {
       case 'entrevista-padres':
         return <EntrevistaPadresView paciente={paciente} user={user} />;
       case 'evaluacion-terapia-ocupacional':
-        return <EvaluacionTerapiaOcupacional pacienteId={paciente?.id} usuarioId={user?.id} />;
+        return <EvaluacionTerapiaOcupacional pacienteId={paciente?.id} usuarioId={user?.id} user={user} />;
       default:
         return <div>Contenido no encontrado</div>;
     }

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Save, Edit, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { FileText, Save, Edit, ChevronDown, ChevronUp, X, ShieldAlert } from 'lucide-react';
 import {
   guardarEvaluacionTerapia,
   obtenerEvaluacionesTerapia,
   obtenerEvaluacionTerapiaPorId,
   actualizarEvaluacionTerapia
 } from '../../../../services/historiaClinicaService';
+import { ROLES } from '../../../../constants/roles';
 
 const formatearFechaSinZonaHoraria = (fechaStr) => {
   if (!fechaStr) return 'No especificado';
@@ -22,7 +23,11 @@ const formatearFechaSinZonaHoraria = (fechaStr) => {
   return `${day}/${month}/${year}`;
 };
 
-const EvaluacionTerapiaOcupacional = ({ pacienteId, usuarioId }) => {
+const EvaluacionTerapiaOcupacional = ({ pacienteId, usuarioId, user }) => {
+  // ✅ CONTROL DE PERMISOS - Solo TERAPEUTA y ADMINISTRADOR pueden editar
+  const puedeEditarHistoriaClinica = user?.rol?.id === ROLES.ADMINISTRADOR || user?.rol?.id === ROLES.TERAPEUTA;
+  const esAdmision = user?.rol?.id === ROLES.ADMISION;
+
   const [evaluacion, setEvaluacion] = useState(getEstadoInicial());
   const [evaluacionActual, setEvaluacionActual] = useState(null);
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -330,12 +335,21 @@ const EvaluacionTerapiaOcupacional = ({ pacienteId, usuarioId }) => {
         </div>
 
         {evaluacionActual && !modoEdicion && (
-          <button
-            onClick={handleEditar}
-            className="p-2.5 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 transition-all"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
+          puedeEditarHistoriaClinica ? (
+            <button
+              onClick={handleEditar}
+              className="p-2.5 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 transition-all"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <span className="text-xs text-amber-700 font-medium">
+                Solo lectura
+              </span>
+            </div>
+          )
         )}
       </div>
 
@@ -366,6 +380,7 @@ const EvaluacionTerapiaOcupacional = ({ pacienteId, usuarioId }) => {
           onCancelar={handleCancelar}
           guardando={guardando}
           esNuevo={!evaluacionActual}
+          puedeEditarHistoriaClinica={puedeEditarHistoriaClinica}
         />
       )}
     </div>
@@ -445,7 +460,8 @@ const FormularioEvaluacionCompleto = ({
   onGuardar,
   onCancelar,
   guardando,
-  esNuevo
+  esNuevo,
+  puedeEditarHistoriaClinica
 }) => {
   return (
     <div className="space-y-6">
@@ -1171,32 +1187,34 @@ const FormularioEvaluacionCompleto = ({
       </Section>
 
       {/* Botones de acción */}
-      <div className="flex justify-center gap-4 mt-8 pt-6 border-t border-gray-100">
-        <button
-          onClick={onCancelar}
-          disabled={guardando}
-          className="px-6 py-3 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={onGuardar}
-          disabled={guardando}
-          className="flex items-center gap-2 bg-[#A3C644] text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50"
-        >
-          {guardando ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              {esNuevo ? 'Guardar Evaluación' : 'Actualizar Evaluación'}
-            </>
-          )}
-        </button>
-      </div>
+      {puedeEditarHistoriaClinica && (
+        <div className="flex justify-center gap-4 mt-8 pt-6 border-t border-gray-100">
+          <button
+            onClick={onCancelar}
+            disabled={guardando}
+            className="px-6 py-3 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onGuardar}
+            disabled={guardando}
+            className="flex items-center gap-2 bg-[#A3C644] text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-[#8FB82D] transition-all shadow-sm disabled:opacity-50"
+          >
+            {guardando ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                {esNuevo ? 'Guardar Evaluación' : 'Actualizar Evaluación'}
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import {
   Clock, Stethoscope, Mail, Home, AlertCircle, Heart, Pill, User, Users,
   Edit2, Trash2, Check, ChevronRight, Grid3x3, List, Eye
 } from 'lucide-react';
-import { canViewContactInfo, canViewServiceInfo, canManagePatientStatus } from '../../constants/roles';
+import { canViewContactInfo, canViewServiceInfo, canManagePatientStatus, isAdministrador } from '../../constants/roles';
 import { cambiarVisibilidadPaciente } from '../../services/pacienteService';
 
 const calcularEdad = (fechaNacimiento) => {
@@ -267,8 +267,8 @@ const ModalDetallesPaciente = ({ paciente, onClose, onEditar, user, onPacienteOc
             <Edit2 className="w-4 h-4" />
             Editar
           </button>
-          
-          {canManagePatientStatus(user) && (
+
+          {isAdministrador(user) && (
             <button
               onClick={() => setShowConfirm(true)}
               className="flex items-center gap-2 bg-white text-red-600 px-4 py-2 rounded-lg border border-red-200 text-sm font-medium hover:bg-red-50 transition-all"
