@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarIcon, UserIcon, PlusIcon, TrashIcon, XMarkIcon, CheckCircleIcon, MagnifyingGlassIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, UserIcon, PlusIcon, XMarkIcon, CheckCircleIcon, MagnifyingGlassIcon, ClockIcon } from '@heroicons/react/24/outline';
 import {
   calcularVacaciones,
   registrarVacacion,
   getVacaciones,
-  deleteVacacion
+  // deleteVacacion // DESHABILITADO: No se permite eliminar vacaciones
 } from '../../services/rrhhService';
 
 export default function VacacionesPage() {
@@ -138,18 +138,19 @@ export default function VacacionesPage() {
     }
   };
 
-  const eliminarVacacion = async (id, empleado) => {
-    if (!window.confirm(`¿Eliminar vacaciones de ${empleado}?`)) return;
+  // FUNCIÓN DESHABILITADA: No se permite eliminar vacaciones registradas
+  // const eliminarVacacion = async (id, empleado) => {
+  //   if (!window.confirm(`¿Eliminar vacaciones de ${empleado}?`)) return;
 
-    try {
-      await deleteVacacion(id);
-      showNotification('Vacación eliminada', 'success');
-      await cargarVacaciones();
-      await cargarHistorial();
-    } catch (error) {
-      showNotification('Error al eliminar', 'error');
-    }
-  };
+  //   try {
+  //     await deleteVacacion(id);
+  //     showNotification('Vacación eliminada', 'success');
+  //     await cargarVacaciones();
+  //     await cargarHistorial();
+  //   } catch (error) {
+  //     showNotification('Error al eliminar', 'error');
+  //   }
+  // };
 
   const formatearFechaHistorial = (fechaStr) => {
     if (!fechaStr) return '';
@@ -394,7 +395,6 @@ export default function VacacionesPage() {
     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600">Último Día</th>
     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600">Días</th>
     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600">Observaciones</th>
-    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -412,21 +412,13 @@ export default function VacacionesPage() {
               </td>
               {/* LÍNEAS CORREGIDAS - USANDO LA FUNCIÓN NUEVA */}
               <td className="px-6 py-4 text-center text-sm text-gray-700">
-                {formatearFechaHistorial(h.fechaSalida)}
+                {formatearFechaHistorial(h.fecha_inicio)}
               </td>
               <td className="px-6 py-4 text-center text-sm text-gray-700">
-                {formatearFechaHistorial(h.fechaRegreso)}
+                {formatearFechaHistorial(h.fecha_fin)}
               </td>
-              <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900">{h.diasTomados}</td>
+              <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900">{h.dias_tomados}</td>
               <td className="px-6 py-4 text-center text-sm text-gray-600">{h.observaciones || '-'}</td>
-              <td className="px-6 py-4 text-center">
-                <button
-                  onClick={() => eliminarVacacion(h.id, `${h.empleado.nombres} ${h.empleado.apellidos}`)}
-                  className="inline-flex items-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>

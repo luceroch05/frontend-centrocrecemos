@@ -1151,12 +1151,28 @@ const ModalDetalleEmpleado = ({ empleado, onClose, onEditar }) => {
 
 // Modal Pago
 const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
+  // Mapeo de meses (ID -> nombre)
+  const MESES = [
+    { id: 1, nombre: 'enero' },
+    { id: 2, nombre: 'febrero' },
+    { id: 3, nombre: 'marzo' },
+    { id: 4, nombre: 'abril' },
+    { id: 5, nombre: 'mayo' },
+    { id: 6, nombre: 'junio' },
+    { id: 7, nombre: 'julio' },
+    { id: 8, nombre: 'agosto' },
+    { id: 9, nombre: 'septiembre' },
+    { id: 10, nombre: 'octubre' },
+    { id: 11, nombre: 'noviembre' },
+    { id: 12, nombre: 'diciembre' }
+  ];
+
   // Formatear fecha actual sin problemas de timezone
   const hoy = new Date();
   const fechaHoyFormateada = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
 
   const [pagoData, setPagoData] = useState({
-    mes: new Date().toLocaleString('es-ES', { month: 'long' }).toLowerCase(),
+    mesId: new Date().getMonth() + 1, // ID del mes (1-12)
     anio: new Date().getFullYear(),
     fechaPago: fechaHoyFormateada
   });
@@ -1180,7 +1196,7 @@ const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
 
       console.log('Datos del pago:', {
         empleadoId: empleado.id,
-        mes: pagoData.mes,
+        mesId: pagoData.mesId,
         anio: pagoData.anio,
         monto: montoNumero,
         fechaPago: pagoData.fechaPago,
@@ -1189,7 +1205,7 @@ const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
 
       await registrarPagoMensual({
         empleadoId: empleado.id,
-        mes: pagoData.mes,
+        mesId: pagoData.mesId,
         anio: pagoData.anio,
         monto: montoNumero,
         fechaPago: pagoData.fechaPago,
@@ -1242,13 +1258,13 @@ const ModalPago = ({ empleado, onClose, onSuccess, onError }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Mes de Pago</label>
                 <select
-                  value={pagoData.mes}
-                  onChange={(e) => setPagoData({...pagoData, mes: e.target.value})}
+                  value={pagoData.mesId}
+                  onChange={(e) => setPagoData({...pagoData, mesId: parseInt(e.target.value)})}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent capitalize"
                   required
                 >
-                  {['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'].map(mes => (
-                    <option key={mes} value={mes}>{mes.charAt(0).toUpperCase() + mes.slice(1)}</option>
+                  {MESES.map(mes => (
+                    <option key={mes.id} value={mes.id}>{mes.nombre.charAt(0).toUpperCase() + mes.nombre.slice(1)}</option>
                   ))}
                 </select>
               </div>

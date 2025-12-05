@@ -11,8 +11,6 @@ import api from './api';
  * @param {number} filtros.trabajadorId - ID del trabajador
  * @param {string} filtros.modulo - Módulo del sistema
  * @param {string} filtros.accion - Acción realizada
- * @param {string} filtros.entidadTipo - Tipo de entidad
- * @param {number} filtros.entidadId - ID de la entidad
  * @param {string} filtros.fechaInicio - Fecha de inicio (ISO string)
  * @param {string} filtros.fechaFin - Fecha de fin (ISO string)
  * @param {string} filtros.busqueda - Búsqueda general
@@ -34,22 +32,6 @@ export const obtenerHistorial = async (filtros = {}) => {
     return response.data;
   } catch (error) {
     console.error('Error al obtener historial de auditoría:', error);
-    throw error;
-  }
-};
-
-/**
- * Obtiene el historial de una entidad específica
- * @param {string} entidadTipo - Tipo de entidad (ej: 'Paciente', 'TrabajadorCentro')
- * @param {number} entidadId - ID de la entidad
- * @returns {Promise} Historial de la entidad
- */
-export const obtenerHistorialEntidad = async (entidadTipo, entidadId) => {
-  try {
-    const response = await api.get(`/auditoria/historial/${entidadTipo}/${entidadId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error al obtener historial de entidad:', error);
     throw error;
   }
 };
@@ -125,7 +107,6 @@ export const exportarHistorial = async (filtros = {}) => {
 
 export default {
   obtenerHistorial,
-  obtenerHistorialEntidad,
   obtenerEstadisticas,
   obtenerActividadUsuario,
   obtenerUltimasAcciones,

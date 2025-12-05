@@ -45,7 +45,7 @@ export default function DashboardRRHH() {
       const pagos = await getPagos({ anio: anioActual });
       const mesActual = new Date().getMonth();
       const pagosMesActual = pagos.filter(p => {
-        const fechaPago = new Date(p.fechaPago);
+        const fechaPago = new Date(p.fecha_pago);
         return fechaPago.getMonth() === mesActual;
       });
 
@@ -78,15 +78,12 @@ export default function DashboardRRHH() {
     }
   };
 
-  const getTipoBadge = (tipo) => {
+  const getTipoBadge = (tipoSueldoCodigo) => {
     const badges = {
-      'sueldo': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', label: 'Sueldo Regular' },
-      'sueldo_con_gratificacion': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', label: 'Sueldo + Gratificación' },
-      'bono': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'Bono' },
-      'gratificacion': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', label: 'Gratificación' },
-      'aguinaldo': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'Aguinaldo' }
+      'REGULAR': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', label: 'Sueldo Regular' },
+      'CON_GRATIFICACION': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', label: 'Sueldo + Gratificación' }
     };
-    return badges[tipo] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', label: tipo };
+    return badges[tipoSueldoCodigo] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', label: tipoSueldoCodigo };
   };
 
   if (loading) {
@@ -238,7 +235,7 @@ export default function DashboardRRHH() {
           <div className="space-y-3">
             {stats.pagosRecientes.length > 0 ? (
               stats.pagosRecientes.map((pago) => {
-                const badge = getTipoBadge(pago.tipo);
+                const badge = getTipoBadge(pago.tipo_sueldo?.codigo);
                 return (
                   <div key={pago.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors border border-gray-200">
                     <div className="flex items-center justify-between">
@@ -263,20 +260,20 @@ export default function DashboardRRHH() {
                           S/ {parseFloat(pago.monto).toLocaleString('es-PE', {minimumFractionDigits: 2})}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(pago.fechaPago).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {new Date(pago.fecha_pago).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
-                    {pago.tipo === 'sueldo_con_gratificacion' && (
+                    {pago.tipo_sueldo?.codigo === 'CON_GRATIFICACION' && (
                       <div className="mt-3 pt-3 border-t border-purple-200 bg-purple-50 rounded-lg p-3">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="flex justify-between">
                             <span className="text-gray-600">Sueldo Base:</span>
-                            <span className="font-semibold text-gray-700">S/ {parseFloat(pago.montoSueldo || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
+                            <span className="font-semibold text-gray-700">S/ {parseFloat(pago.monto_sueldo || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Gratificación (25%):</span>
-                            <span className="font-semibold text-[#7B1FA2]">S/ {parseFloat(pago.montoGratificacion || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
+                            <span className="font-semibold text-[#7B1FA2]">S/ {parseFloat(pago.monto_gratificacion || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
                           </div>
                         </div>
                       </div>

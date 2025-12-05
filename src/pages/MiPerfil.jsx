@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getMyProfile, updateMyProfile, getEspecialidades } from '../services/trabajadorService';
-import { UserIcon, PhoneIcon, MapPinIcon, ShoppingBagIcon, CheckCircleIcon, XMarkIcon, LockClosedIcon, PlusIcon, TrashIcon, StarIcon, PencilIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { getMyProfile, updateMyProfile, getEspecialidades, getCamposBloqueados } from '../services/trabajadorService';
+import { UserIcon, PhoneIcon, MapPinIcon, ShoppingBagIcon, CheckCircleIcon, XMarkIcon, LockClosedIcon, PlusIcon, TrashIcon, StarIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import {
   getCuentasBancarias,
@@ -15,10 +15,9 @@ const MiPerfil = () => {
   const [guardando, setGuardando] = useState(false);
   const [especialidades, setEspecialidades] = useState([]);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [perfilCompleto, setPerfilCompleto] = useState(false);
+  const [camposBloqueados, setCamposBloqueados] = useState({});
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
   const [errors, setErrors] = useState({});
-  const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
 
   useEffect(() => {
     cargarDatos();
@@ -27,19 +26,16 @@ const MiPerfil = () => {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [perfilData, especialidadesData] = await Promise.all([
+      const [perfilData, especialidadesData, camposBloqueadosData] = await Promise.all([
         getMyProfile(),
-        getEspecialidades()
+        getEspecialidades(),
+        getCamposBloqueados()
       ]);
 
       setPerfil(perfilData);
       setEspecialidades(especialidadesData || []);
+      setCamposBloqueados(camposBloqueadosData || {});
 
-      // ✅ CAMBIO: Usar perfil_completo en lugar de perfil_bloqueado
-      const estaCompleto = perfilData.perfil_completo === true;
-      setPerfilCompleto(estaCompleto);
-      
-      // Inicialmente desactivar modo edición
       setModoEdicion(false);
     } catch (error) {
       console.error('Error al cargar perfil:', error);
@@ -86,19 +82,13 @@ const MiPerfil = () => {
     return Object.keys(erroresNuevos).length === 0;
   };
 
-  // Nueva función para activar el modo edición
   const activarEdicion = () => {
-    if (perfilCompleto) {
-      showNotification('Tu perfil está bloqueado. Contacta al administrador para realizar cambios.', 'error');
-      return;
-    }
     setModoEdicion(true);
   };
 
-  // Nueva función para cancelar edición
   const cancelarEdicion = () => {
     setModoEdicion(false);
-    cargarDatos(); // Recargar datos originales
+    cargarDatos();
     setErrors({});
   };
 
@@ -108,12 +98,6 @@ const MiPerfil = () => {
       return;
     }
 
-    // Mostrar modal de confirmación personalizado
-    setMostrarModalConfirmacion(true);
-  };
-
-  const confirmarGuardado = async () => {
-    setMostrarModalConfirmacion(false);
     setGuardando(true);
     try {
       const dataToUpdate = {
@@ -131,23 +115,18 @@ const MiPerfil = () => {
         talla_polo: perfil.talla_polo || null,
         talla_pantalon: perfil.talla_pantalon || null,
         talla_zapatos: perfil.talla_zapatos || null,
-        especialidad_id: perfil.especialidad?.id || null,
-        // ✅ CAMBIO: Usar perfil_completo en lugar de perfil_bloqueado
-        perfil_completo: true // MARCAR COMO COMPLETADO
+        especialidad_id: perfil.especialidad?.id || null
       };
 
       await updateMyProfile(dataToUpdate);
-      showNotification('Perfil guardado y bloqueado correctamente. Para cambios futuros contacta al administrador.', 'success');
-      
-      // Actualizar estado local
-      setPerfilCompleto(true);
+      showNotification('Perfil guardado correctamente', 'success');
+
       setModoEdicion(false);
-      
-      // Recargar datos del servidor
       await cargarDatos();
     } catch (error) {
       console.error('Error al actualizar perfil:', error);
-      showNotification('Error al guardar', 'error');
+      const mensajeError = error.response?.data?.message || 'Error al guardar';
+      showNotification(mensajeError, 'error');
     } finally {
       setGuardando(false);
     }
@@ -201,108 +180,6 @@ const MiPerfil = () => {
         </div>
       )}
 
-      {/* Modal de Confirmación */}
-      {mostrarModalConfirmacion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Overlay */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setMostrarModalConfirmacion(false)}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-            {/* Header con degradado */}
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <ExclamationTriangleIcon className="w-6 h-6 text-white" />
-                </div>
-                <h2 className="text-xl font-bold text-white">Confirmar Guardado de Perfil</h2>
-              </div>
-              <button
-                onClick={() => setMostrarModalConfirmacion(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
-              >
-                <XMarkIcon className="w-5 h-5 text-white" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-5">
-                <div className="flex gap-3">
-                  <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-amber-900 mb-2">IMPORTANTE: Lee con atención</h3>
-                    <p className="text-sm text-amber-800 leading-relaxed">
-                      Una vez que guardes tu perfil, <strong className="font-bold">NO podrás modificarlo por tu cuenta</strong>. Si en el futuro necesitas realizar cambios, deberás contactar al administrador del sistema.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-5">
-                <p className="text-sm text-gray-700 font-medium">
-                  Por favor, verifica que toda la información sea correcta:
-                </p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
-                    <span>Datos personales completos y correctos</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
-                    <span>Información de contacto actualizada</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
-                    <span>Dirección y datos de ubicación precisos</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-[#7B1FA2] flex-shrink-0 mt-0.5" />
-                    <span>Tallas e información adicional verificada</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <p className="text-sm text-gray-700 text-center">
-                  ¿Estás seguro de que toda la información es correcta y deseas <strong className="font-bold text-[#7B1FA2]">guardar y bloquear</strong> tu perfil?
-                </p>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200">
-              <button
-                onClick={() => setMostrarModalConfirmacion(false)}
-                className="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmarGuardado}
-                disabled={guardando}
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#7B1FA2] to-[#6A1B9A] rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {guardando ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircleIcon className="w-5 h-5" />
-                    Sí, Guardar y Bloquear
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-12">
@@ -312,11 +189,6 @@ const MiPerfil = () => {
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#7B1FA2] to-[#6A1B9A] flex items-center justify-center text-white text-2xl font-bold shadow-sm">
                   {perfil.nombres?.[0]}{perfil.apellidos?.[0]}
                 </div>
-                {perfilCompleto && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#A3C644] rounded-full border-3 border-white flex items-center justify-center">
-                    <CheckCircleIcon className="w-3.5 h-3.5 text-white" />
-                  </div>
-                )}
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-1.5">
@@ -333,21 +205,11 @@ const MiPerfil = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Controles de edición */}
             <div className="flex items-center gap-3">
-              {/* Mostrar mensaje si está bloqueado */}
-              {perfilCompleto && (
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border-2 border-amber-200 rounded-lg">
-                  <LockClosedIcon className="w-4 h-4 text-amber-600" />
-                  <span className="text-xs font-medium text-amber-700">
-                    Perfil bloqueado. Contacta al administrador para cambios.
-                  </span>
-                </div>
-              )}
-              
-              {/* Botón Editar - Solo visible si NO está en modo edición y NO está bloqueado */}
-              {!modoEdicion && !perfilCompleto && (
+              {/* Botón Editar - Solo visible si NO está en modo edición */}
+              {!modoEdicion && (
                 <button
                   onClick={activarEdicion}
                   className="flex items-center gap-2 bg-[#7B1FA2] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6A1B9A] transition-all"
@@ -356,7 +218,7 @@ const MiPerfil = () => {
                   Editar Perfil
                 </button>
               )}
-              
+
               {/* Botones Cancelar/Guardar - Solo en modo edición */}
               {modoEdicion && (
                 <div className="flex gap-2">
@@ -380,7 +242,7 @@ const MiPerfil = () => {
                     ) : (
                       <>
                         <CheckCircleIcon className="w-4 h-4" />
-                        Guardar y Bloquear
+                        Guardar
                       </>
                     )}
                   </button>
@@ -394,17 +256,6 @@ const MiPerfil = () => {
             <div className="px-3.5 py-1.5 bg-gray-50 rounded-lg text-xs text-gray-600 font-medium border border-gray-100">
               @{perfil.username}
             </div>
-            {perfilCompleto && (
-              <div className="px-3.5 py-1.5 bg-[#A3C644]/10 rounded-lg text-xs text-[#A3C644] font-medium border border-[#A3C644]/20">
-                Perfil Completo
-              </div>
-            )}
-            {!perfilCompleto && !modoEdicion && (
-              <div className="px-3.5 py-1.5 bg-orange-50 rounded-lg text-xs text-orange-600 font-medium border border-orange-200 flex items-center gap-1.5">
-                <ExclamationTriangleIcon className="w-3.5 h-3.5" />
-                Completa tu perfil (solo una vez)
-              </div>
-            )}
             {modoEdicion && (
               <div className="px-3.5 py-1.5 bg-blue-50 rounded-lg text-xs text-blue-600 font-medium border border-blue-200 flex items-center gap-1.5">
                 <PencilIcon className="w-3.5 h-3.5" />
@@ -457,10 +308,10 @@ const MiPerfil = () => {
           {/* Contacto */}
           <Section icon={PhoneIcon} title="Contacto" color="[#7B1FA2]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-              <Field label="Teléfono Personal" value={perfil.telefono} name="telefono" editable={modoEdicion} onChange={handleChange} error={errors.telefono} maxLength={9} />
-              <Field label="Teléfono Emergencia" value={perfil.telefono_emergencia} name="telefono_emergencia" editable={modoEdicion} onChange={handleChange} error={errors.telefono_emergencia} maxLength={9} />
+              <Field label="Teléfono Personal" value={perfil.telefono} name="telefono" editable={modoEdicion} onChange={handleChange} error={errors.telefono} maxLength={9} bloqueado={camposBloqueados.telefono} />
+              <Field label="Teléfono Emergencia" value={perfil.telefono_emergencia} name="telefono_emergencia" editable={modoEdicion} onChange={handleChange} error={errors.telefono_emergencia} maxLength={9} bloqueado={camposBloqueados.telefono_emergencia} />
               <div className="md:col-span-2">
-                <Field label="Contacto Emergencia" value={perfil.contacto_emergencia} name="contacto_emergencia" editable={modoEdicion} onChange={handleChange} />
+                <Field label="Contacto Emergencia" value={perfil.contacto_emergencia} name="contacto_emergencia" editable={modoEdicion} onChange={handleChange} bloqueado={camposBloqueados.contacto_emergencia} />
               </div>
             </div>
           </Section>
@@ -468,11 +319,11 @@ const MiPerfil = () => {
           {/* Dirección */}
           <Section icon={MapPinIcon} title="Dirección" color="[#7B1FA2]">
             <div className="space-y-6">
-              <Field label="Dirección Completa" value={perfil.direccion} name="direccion" editable={modoEdicion} onChange={handleChange} multiline />
+              <Field label="Dirección Completa" value={perfil.direccion} name="direccion" editable={modoEdicion} onChange={handleChange} multiline bloqueado={camposBloqueados.direccion} />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-6">
-                <Field label="Distrito" value={perfil.distrito} name="distrito" editable={modoEdicion} onChange={handleChange} />
-                <Field label="Provincia" value={perfil.provincia} name="provincia" editable={modoEdicion} onChange={handleChange} />
-                <Field label="Departamento" value={perfil.departamento} name="departamento" editable={modoEdicion} onChange={handleChange} />
+                <Field label="Distrito" value={perfil.distrito} name="distrito" editable={modoEdicion} onChange={handleChange} bloqueado={camposBloqueados.distrito} />
+                <Field label="Provincia" value={perfil.provincia} name="provincia" editable={modoEdicion} onChange={handleChange} bloqueado={camposBloqueados.provincia} />
+                <Field label="Departamento" value={perfil.departamento} name="departamento" editable={modoEdicion} onChange={handleChange} bloqueado={camposBloqueados.departamento} />
               </div>
             </div>
           </Section>
@@ -481,35 +332,53 @@ const MiPerfil = () => {
           <Section icon={ShoppingBagIcon} title="Tallas" color="[#A3C644]">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-6">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Polo/Camisa</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide flex items-center gap-1.5">
+                  Polo/Camisa
+                  {camposBloqueados.talla_polo && (
+                    <LockClosedIcon className="w-3 h-3 text-amber-600" />
+                  )}
+                </label>
                 {modoEdicion ? (
-                  <select
-                    name="talla_polo"
-                    value={perfil.talla_polo || ''}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#A3C644] transition-all bg-white text-gray-900 font-medium hover:border-gray-300"
-                  >
-                    <option value="">Seleccionar</option>
-                    {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(size => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      name="talla_polo"
+                      value={perfil.talla_polo || ''}
+                      onChange={handleChange}
+                      disabled={camposBloqueados.talla_polo}
+                      className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all font-medium ${
+                        camposBloqueados.talla_polo
+                          ? 'bg-amber-50/50 border-amber-200 text-gray-600 cursor-not-allowed'
+                          : 'border-gray-200 focus:border-[#A3C644] hover:border-gray-300 bg-white text-gray-900'
+                      }`}
+                    >
+                      <option value="">Seleccionar</option>
+                      {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(size => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                    {camposBloqueados.talla_polo && (
+                      <p className="text-amber-600 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+                        <LockClosedIcon className="w-3 h-3" />
+                        Campo bloqueado. Contacta al administrador para modificarlo.
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <div className="py-2.5 px-3 text-sm text-gray-900 font-medium bg-gray-50 rounded-lg border border-gray-100">
                     {perfil.talla_polo || '-'}
                   </div>
                 )}
               </div>
-              <Field label="Talla Pantalón" value={perfil.talla_pantalon} name="talla_pantalon" editable={modoEdicion} onChange={handleChange} />
-              <Field label="Talla Zapatos" value={perfil.talla_zapatos} name="talla_zapatos" editable={modoEdicion} onChange={handleChange} />
+              <Field label="Talla Pantalón" value={perfil.talla_pantalon} name="talla_pantalon" editable={modoEdicion} onChange={handleChange} bloqueado={camposBloqueados.talla_pantalon} />
+              <Field label="Talla Zapatos" value={perfil.talla_zapatos} name="talla_zapatos" editable={modoEdicion} onChange={handleChange} bloqueado={camposBloqueados.talla_zapatos} />
             </div>
           </Section>
 
-          {/* Cuentas Bancarias - Solo editable si el perfil NO está bloqueado */}
+          {/* Cuentas Bancarias */}
           <Section icon={ShoppingBagIcon} title="Información Bancaria" color="[#7B1FA2]">
-            <CuentasBancarias 
-              trabajadorId={perfil.id} 
-              readOnly={perfilCompleto || !modoEdicion}
+            <CuentasBancarias
+              trabajadorId={perfil.id}
+              readOnly={!modoEdicion}
             />
           </Section>
         </div>
@@ -532,9 +401,14 @@ const Section = ({ icon: Icon, title, color, children }) => (
   </div>
 );
 
-const Field = ({ label, value, name, type = 'text', editable, onChange, error, multiline, maxLength }) => (
+const Field = ({ label, value, name, type = 'text', editable, onChange, error, multiline, maxLength, bloqueado }) => (
   <div>
-    <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{label}</label>
+    <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide flex items-center gap-1.5">
+      {label}
+      {bloqueado && (
+        <LockClosedIcon className="w-3 h-3 text-amber-600" />
+      )}
+    </label>
     {editable ? (
       <>
         {multiline ? (
@@ -542,11 +416,16 @@ const Field = ({ label, value, name, type = 'text', editable, onChange, error, m
             name={name}
             value={value || ''}
             onChange={onChange}
-            className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all resize-none bg-white text-gray-900 font-medium ${
-              error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+            disabled={bloqueado}
+            className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all resize-none font-medium ${
+              bloqueado
+                ? 'bg-amber-50/50 border-amber-200 text-gray-600 cursor-not-allowed'
+                : error
+                  ? 'border-red-300 focus:border-red-400 bg-red-50/30 text-gray-900'
+                  : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300 bg-white text-gray-900'
             }`}
             rows={2}
-            placeholder={`Ingresa ${label.toLowerCase()}`}
+            placeholder={bloqueado ? 'Campo bloqueado' : `Ingresa ${label.toLowerCase()}`}
           />
         ) : (
           <input
@@ -555,13 +434,24 @@ const Field = ({ label, value, name, type = 'text', editable, onChange, error, m
             value={value || ''}
             onChange={onChange}
             maxLength={maxLength}
-            className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all bg-white text-gray-900 font-medium ${
-              error ? 'border-red-300 focus:border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300'
+            disabled={bloqueado}
+            className={`w-full px-3 py-2.5 text-sm border-2 rounded-lg focus:outline-none transition-all font-medium ${
+              bloqueado
+                ? 'bg-amber-50/50 border-amber-200 text-gray-600 cursor-not-allowed'
+                : error
+                  ? 'border-red-300 focus:border-red-400 bg-red-50/30 text-gray-900'
+                  : 'border-gray-200 focus:border-[#7B1FA2] hover:border-gray-300 bg-white text-gray-900'
             }`}
-            placeholder={`Ingresa ${label.toLowerCase()}`}
+            placeholder={bloqueado ? 'Campo bloqueado' : `Ingresa ${label.toLowerCase()}`}
           />
         )}
-        {error && (
+        {bloqueado && (
+          <p className="text-amber-600 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+            <LockClosedIcon className="w-3 h-3" />
+            Campo bloqueado. Contacta al administrador para modificarlo.
+          </p>
+        )}
+        {error && !bloqueado && (
           <p className="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-red-500"></span>
             {error}

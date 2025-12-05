@@ -172,17 +172,6 @@ const HistorialAuditoria = () => {
     return colores[modulo] || 'default';
   };
 
-  const getColorMetodoHttp = (metodo) => {
-    const colores = {
-      GET: 'info',
-      POST: 'success',
-      PUT: 'warning',
-      PATCH: 'warning',
-      DELETE: 'error',
-    };
-    return colores[metodo] || 'default';
-  };
-
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       {/* Título */}
@@ -305,10 +294,10 @@ const HistorialAuditoria = () => {
           <Grid item xs={12} md={8}>
             <TextField
               fullWidth
-              label="Buscar por usuario, descripción o entidad"
+              label="Buscar por usuario o descripción"
               value={filtros.busqueda}
               onChange={(e) => handleFiltroChange('busqueda', e.target.value)}
-              placeholder="Ejemplo: Juan Pérez, paciente, archivo..."
+              placeholder="Ejemplo: Juan Pérez, creó paciente, editó datos..."
               InputProps={{
                 startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
               }}
@@ -345,79 +334,61 @@ const HistorialAuditoria = () => {
             <TableRow>
               <TableCell>Fecha y Hora</TableCell>
               <TableCell>Usuario</TableCell>
-              <TableCell>Módulo</TableCell>
               <TableCell>Acción</TableCell>
               <TableCell>Descripción</TableCell>
-              <TableCell>Entidad</TableCell>
-              <TableCell>Método</TableCell>
               <TableCell>IP</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={5} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : registros.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={5} align="center">
                   No se encontraron registros
                 </TableCell>
               </TableRow>
             ) : (
               registros.map((registro) => (
                 <TableRow key={registro.id} hover>
-                  <TableCell>{formatearFecha(registro.fechaHora)}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {formatearFecha(registro.fechaHora)}
+                    </Typography>
+                  </TableCell>
                   <TableCell>
                     <Box>
                       <Typography variant="body2" fontWeight="medium">
-                        {registro.trabajadorNombre}
+                        {registro.trabajador?.nombres} {registro.trabajador?.apellidos}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {registro.trabajadorUsername}
+                        {registro.trabajador?.username}
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={registro.modulo}
-                      color={getColorModulo(registro.modulo)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                      {registro.accion}
-                    </Typography>
+                    <Box>
+                      <Chip
+                        label={registro.modulo}
+                        color={getColorModulo(registro.modulo)}
+                        size="small"
+                        sx={{ mb: 0.5 }}
+                      />
+                      <Typography variant="caption" display="block" sx={{ fontFamily: 'monospace' }}>
+                        {registro.accion}
+                      </Typography>
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Tooltip title={registro.descripcion}>
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                      <Typography variant="body2" noWrap sx={{ maxWidth: 400 }}>
                         {registro.descripcion}
                       </Typography>
                     </Tooltip>
-                  </TableCell>
-                  <TableCell>
-                    {registro.entidadNombre && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          {registro.entidadTipo}
-                        </Typography>
-                        <Typography variant="body2" noWrap sx={{ maxWidth: 150 }}>
-                          {registro.entidadNombre}
-                        </Typography>
-                      </Box>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={registro.metodoHttp}
-                      color={getColorMetodoHttp(registro.metodoHttp)}
-                      size="small"
-                      variant="outlined"
-                    />
                   </TableCell>
                   <TableCell>
                     <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>

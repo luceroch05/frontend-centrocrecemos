@@ -83,7 +83,7 @@ const FiliacionView = ({
   setServicioAEditar,
   setNuevoTerapeuta,
   setOpenEditarTerapeuta,
-  handleEliminarServicio,
+  setModalEliminarServicio,
   user
 }) => {
   const [localPacienteData, setLocalPacienteData] = useState(paciente);
@@ -401,7 +401,7 @@ const FiliacionView = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleEliminarServicio(servicio)}
+                        onClick={() => setModalEliminarServicio({ open: true, servicio })}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <Trash2 className="w-4 h-4" />

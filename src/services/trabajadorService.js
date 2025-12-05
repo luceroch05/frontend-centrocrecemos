@@ -67,4 +67,10 @@ export const getMyProfile = async () => {
 export const updateMyProfile = async (data) => {
   const response = await api.patch('/trabajadores/perfil/me', data);
   return response.data;
+};
+
+// Obtener estado de bloqueo de campos del perfil
+export const getCamposBloqueados = async () => {
+  const response = await api.get('/trabajadores/perfil/me/campos-bloqueados');
+  return response.data;
 }; 

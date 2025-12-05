@@ -120,13 +120,14 @@ export const getVacaciones = async (filters = {}) => {
 };
 
 // Eliminar una vacación
-export const deleteVacacion = async (id) => {
-  const response = await axios.delete(
-    `${API_BASE_URL}/vacaciones/${id}`,
-    { headers: getAuthHeaders() }
-  );
-  return response.data;
-};
+// DESHABILITADO: No se permite eliminar vacaciones registradas
+// export const deleteVacacion = async (id) => {
+//   const response = await axios.delete(
+//     `${API_BASE_URL}/vacaciones/${id}`,
+//     { headers: getAuthHeaders() }
+//   );
+//   return response.data;
+// };
 
 // ========== CUENTAS BANCARIAS ==========
 

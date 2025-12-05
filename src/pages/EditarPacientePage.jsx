@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Heart, HardDrive, Camera, Clock, AlertCircle, ChevronDown, X } from 'lucide-react';
+import { User, Heart, HardDrive, Camera, Clock, AlertCircle, ChevronDown, X, Trash2 } from 'lucide-react';
 import { getPacienteById, getServiciosPorPaciente, updatePacienteById, getEstadosPaciente, cambiarEstadoPaciente, asignarServicioPaciente, desasignarServicioPaciente } from '../services/pacienteService';
 import { asignarTerapeuta } from '../services/terapeutaService';
 import api from '../services/api';
@@ -110,6 +110,7 @@ const EditarPacientePage = () => {
   const [nuevoTerapeuta, setNuevoTerapeuta] = useState('');
   const [anchorEstado, setAnchorEstado] = useState(null);
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
+  const [modalEliminarServicio, setModalEliminarServicio] = useState({ open: false, servicio: null });
 
   useEffect(() => {
     const cargarPaciente = async () => {
@@ -396,10 +397,8 @@ const EditarPacientePage = () => {
     }
   };
 
-  const handleEliminarServicio = async (servicio) => {
-    if (!window.confirm(`¿Estás seguro de eliminar el servicio "${servicio.servicio?.nombre}"?`)) {
-      return;
-    }
+  const handleEliminarServicio = async () => {
+    const servicio = modalEliminarServicio.servicio;
 
     try {
       await desasignarServicioPaciente(paciente.id, servicio.servicio.id, user_id);
@@ -416,6 +415,8 @@ const EditarPacientePage = () => {
         message: 'Servicio eliminado exitosamente',
         severity: 'success'
       });
+
+      setModalEliminarServicio({ open: false, servicio: null });
     } catch (error) {
       console.error('Error al eliminar servicio:', error);
       setSnackbar({
@@ -631,7 +632,7 @@ const EditarPacientePage = () => {
         {/* Contenido */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Área principal */}
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-7">
             {tabSeleccionado === 'filiacion' && (
               <FiliacionView
                 paciente={paciente}
@@ -645,7 +646,7 @@ const EditarPacientePage = () => {
                 setServicioAEditar={setServicioAEditar}
                 setNuevoTerapeuta={setNuevoTerapeuta}
                 setOpenEditarTerapeuta={setOpenEditarTerapeuta}
-                handleEliminarServicio={handleEliminarServicio}
+                setModalEliminarServicio={setModalEliminarServicio}
                 user={user}
               />
             )}
@@ -654,7 +655,7 @@ const EditarPacientePage = () => {
           </div>
 
           {/* Sidebar - Notas */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-5">
             <NotasEvolucion
               notas={comentarios}
               setNotas={setComentarios}
@@ -695,7 +696,7 @@ const EditarPacientePage = () => {
       {/* Popover estados */}
       {anchorEstado && canManagePatientStatus(user) && (
         <div className="fixed inset-0 z-50" onClick={() => setAnchorEstado(null)}>
-          <div 
+          <div
             className="absolute bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 min-w-[180px]"
             style={{
               top: anchorEstado.getBoundingClientRect().bottom + 8,
@@ -722,6 +723,66 @@ const EditarPacientePage = () => {
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmación Eliminar Servicio */}
+      {modalEliminarServicio.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setModalEliminarServicio({ open: false, servicio: null })}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Confirmar Eliminación</h2>
+              </div>
+              <button
+                onClick={() => setModalEliminarServicio({ open: false, servicio: null })}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-700 mb-2">
+                ¿Estás seguro de que deseas eliminar el servicio:
+              </p>
+              <p className="text-lg font-semibold text-gray-900 mb-4">
+                "{modalEliminarServicio.servicio?.servicio?.nombre}"?
+              </p>
+              <p className="text-sm text-gray-500">
+                Esta acción no se puede deshacer. El terapeuta asignado también será desvinculado de este servicio.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-100">
+              <button
+                onClick={() => setModalEliminarServicio({ open: false, servicio: null })}
+                className="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEliminarServicio}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl hover:from-red-600 hover:to-red-700 transition-all flex items-center gap-2 shadow-lg shadow-red-500/30"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar Servicio
+              </button>
+            </div>
           </div>
         </div>
       )}

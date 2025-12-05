@@ -13,6 +13,8 @@ export default function HistorialPagosPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [paginaActual, setPaginaActual] = useState(1);
+  const itemsPorPagina = 10;
 
   const meses = [
     { valor: 'enero', numero: 1 },
@@ -37,19 +39,19 @@ export default function HistorialPagosPage() {
     setLoading(true);
     try {
       const filtrosApi = {
-      
+
       };
       if (filtros.tipo !== 'todos') filtrosApi.tipo = filtros.tipo;
       if (filtros.mes !== 'todos') {
-        filtrosApi.mes = filtros.mes;
+        filtrosApi.periodo = filtros.mes; // periodo ahora es el mesId (1-12)
       }
       filtrosApi.anio = filtros.anio;
 
       const data = await getPagos(filtrosApi);
-      
+
       const pagosOrdenados = data.sort((a, b) => {
-        const fechaA = new Date(a.created_at || a.fechaPago);
-        const fechaB = new Date(b.created_at || b.fechaPago);
+        const fechaA = new Date(a.created_at || a.fecha_pago);
+        const fechaB = new Date(b.created_at || b.fecha_pago);
         return fechaB - fechaA;
       });
       
@@ -76,7 +78,7 @@ export default function HistorialPagosPage() {
         ['HISTORIAL DE PAGOS - CENTRO CRECEMOS'],
         [`Año: ${filtros.anio}`, `Fecha de Exportación: ${new Date().toLocaleDateString('es-PE')}`],
         [],
-        ['Empleado', 'DNI', 'Cargo', 'Tipo de Pago', 'Mes', 'Año', 'Monto Total', 'Fecha de Pago', 'Sueldo Base', 'Gratificación', 'Banco', 'Cuenta']
+        ['Empleado', 'DNI', 'Cargo', 'Tipo de Pago', 'Mes', 'Año', 'Monto Total', 'Fecha de Pago', 'Sueldo Base', 'Gratificación', 'Banco', 'Cuenta', 'Registrado por']
       ];
 
       // Función para formatear fecha correctamente sin problemas de timezone
@@ -94,15 +96,16 @@ export default function HistorialPagosPage() {
           `${pago.empleado?.nombres || ''} ${pago.empleado?.apellidos || ''}`,
           pago.empleado?.numeroDocumento || pago.empleado?.dni || 'N/A',
           pago.empleado?.cargo || 'N/A',
-          getTipoBadge(pago.tipo).label,
-          pago.mes ? pago.mes.charAt(0).toUpperCase() + pago.mes.slice(1) : 'N/A',
+          getTipoBadge(pago.tipo_sueldo?.codigo).label,
+          pago.mes?.nombre ? pago.mes.nombre.charAt(0).toUpperCase() + pago.mes.nombre.slice(1) : 'N/A',
           pago.anio || 'N/A',
           `S/ ${parseFloat(pago.monto).toFixed(2)}`,
-          formatearFecha(pago.fechaPago),
-          pago.tipo === 'sueldo_con_gratificacion' && pago.montoSueldo ? `S/ ${parseFloat(pago.montoSueldo).toFixed(2)}` : '-',
-          pago.tipo === 'sueldo_con_gratificacion' && pago.montoGratificacion ? `S/ ${parseFloat(pago.montoGratificacion).toFixed(2)}` : '-',
+          formatearFecha(pago.fecha_pago),
+          pago.tipo_sueldo?.codigo === 'CON_GRATIFICACION' && pago.monto_sueldo ? `S/ ${parseFloat(pago.monto_sueldo).toFixed(2)}` : '-',
+          pago.tipo_sueldo?.codigo === 'CON_GRATIFICACION' && pago.monto_gratificacion ? `S/ ${parseFloat(pago.monto_gratificacion).toFixed(2)}` : '-',
           pago.empleado?.banco || 'N/A',
-          pago.empleado?.numero_cuenta || 'N/A'
+          pago.empleado?.numero_cuenta || 'N/A',
+          pago.usuarioCrea ? `${pago.usuarioCrea.nombres} ${pago.usuarioCrea.apellidos}` : 'Sistema'
         ]);
       });
 
@@ -110,14 +113,14 @@ export default function HistorialPagosPage() {
 
       // Merge del título
       wsPagos['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }
       ];
 
       // Ajustar ancho de columnas
       wsPagos['!cols'] = [
         { wch: 28 }, { wch: 12 }, { wch: 22 }, { wch: 28 },
         { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 16 },
-        { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 20 }
+        { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 20 }, { wch: 25 }
       ];
 
       // Estilos
@@ -319,24 +322,35 @@ export default function HistorialPagosPage() {
     return nombreCompleto.includes(search) || cargo.includes(search);
   });
 
+  // Resetear página cuando cambien filtros o búsqueda
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [filtros, searchTerm]);
+
+  // Cálculos de paginación
+  const totalPaginas = Math.ceil(pagosFiltrados.length / itemsPorPagina);
+  const indiceInicio = (paginaActual - 1) * itemsPorPagina;
+  const indiceFin = indiceInicio + itemsPorPagina;
+  const pagosPaginados = pagosFiltrados.slice(indiceInicio, indiceFin);
+
   const totalPagado = pagosFiltrados.reduce((sum, pago) => sum + parseFloat(pago.monto), 0);
 
-  const pagosSueldo = pagosFiltrados.filter(p => p.tipo === 'sueldo');
-  const pagosSueldoConGratificacion = pagosFiltrados.filter(p => p.tipo === 'sueldo_con_gratificacion');
+  const pagosSueldo = pagosFiltrados.filter(p => p.tipo_sueldo?.codigo === 'REGULAR');
+  const pagosSueldoConGratificacion = pagosFiltrados.filter(p => p.tipo_sueldo?.codigo === 'CON_GRATIFICACION');
 
   const totalSueldos = pagosSueldo.reduce((sum, p) => sum + parseFloat(p.monto), 0);
   const totalSueldosConGratificacion = pagosSueldoConGratificacion.reduce((sum, p) => sum + parseFloat(p.monto), 0);
 
   const totalGratificaciones = pagosSueldoConGratificacion.reduce((sum, p) =>
-    sum + parseFloat(p.montoGratificacion || 0), 0
+    sum + parseFloat(p.monto_gratificacion || 0), 0
   );
 
-  const getTipoBadge = (tipo) => {
+  const getTipoBadge = (tipoSueldoCodigo) => {
     const badges = {
-      'sueldo': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', label: 'Sueldo Regular' },
-      'sueldo_con_gratificacion': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', label: 'Sueldo + Gratificación' }
+      'REGULAR': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', label: 'Sueldo Regular' },
+      'CON_GRATIFICACION': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', label: 'Sueldo + Gratificación' }
     };
-    return badges[tipo] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', label: tipo };
+    return badges[tipoSueldoCodigo] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', label: tipoSueldoCodigo };
   };
 
   return (
@@ -391,8 +405,8 @@ export default function HistorialPagosPage() {
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7B1FA2] focus:border-transparent transition-all"
               >
                 <option value="todos">Todos los tipos</option>
-                <option value="sueldo">Sueldo Regular</option>
-                <option value="sueldo_con_gratificacion">Sueldo + Gratificación</option>
+                <option value="REGULAR">Sueldo Regular</option>
+                <option value="CON_GRATIFICACION">Sueldo + Gratificación</option>
               </select>
             </div>
 
@@ -405,7 +419,7 @@ export default function HistorialPagosPage() {
               >
                 <option value="todos">Todos los meses</option>
                 {meses.map(mes => (
-                  <option key={mes.valor} value={mes.valor} className="capitalize">{mes.valor}</option>
+                  <option key={mes.numero} value={mes.numero} className="capitalize">{mes.valor}</option>
                 ))}
               </select>
             </div>
@@ -505,13 +519,13 @@ export default function HistorialPagosPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {pagosFiltrados.map((pago) => {
-                    const badge = getTipoBadge(pago.tipo);
-                    
+                  {pagosPaginados.map((pago) => {
+                    const badge = getTipoBadge(pago.tipo_sueldo?.codigo);
+
                     // Parsear fecha correctamente sin cambio de timezone
-                    const [year, month, day] = pago.fechaPago.split('-').map(Number);
+                    const [year, month, day] = pago.fecha_pago.split('-').map(Number);
                     const fechaLocal = new Date(year, month - 1, day);
-                    
+
                     return (
                       <tr key={pago.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -534,7 +548,7 @@ export default function HistorialPagosPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div className="font-semibold capitalize">
-                            {pago.mes || '-'}
+                            {pago.mes?.nombre || '-'}
                           </div>
                           <div className="text-xs text-gray-500">{pago.anio}</div>
                         </td>
@@ -542,15 +556,15 @@ export default function HistorialPagosPage() {
                           <div className="text-sm font-bold text-[#A3C644]">
                             S/ {parseFloat(pago.monto).toLocaleString('es-PE', {minimumFractionDigits: 2})}
                           </div>
-                          {pago.tipo === 'sueldo_con_gratificacion' && (
+                          {pago.tipo_sueldo?.codigo === 'CON_GRATIFICACION' && (
                             <div className="text-xs text-gray-500 mt-2 space-y-1 bg-purple-50 rounded-lg p-2 border border-purple-100">
                               <div className="flex justify-between gap-2">
                                 <span>Base:</span>
-                                <span className="font-semibold text-gray-700">S/ {parseFloat(pago.montoSueldo || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
+                                <span className="font-semibold text-gray-700">S/ {parseFloat(pago.monto_sueldo || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
                               </div>
                               <div className="flex justify-between gap-2">
                                 <span>Gratif.:</span>
-                                <span className="font-semibold text-[#7B1FA2]">S/ {parseFloat(pago.montoGratificacion || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
+                                <span className="font-semibold text-[#7B1FA2]">S/ {parseFloat(pago.monto_gratificacion || 0).toLocaleString('es-PE', {minimumFractionDigits: 2})}</span>
                               </div>
                             </div>
                           )}
@@ -563,7 +577,7 @@ export default function HistorialPagosPage() {
                           })}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {pago.registradoPor || 'Sistema'}
+                          {pago.usuarioCrea ? `${pago.usuarioCrea.nombres} ${pago.usuarioCrea.apellidos}` : 'Sistema'}
                         </td>
                       </tr>
                     );
@@ -571,6 +585,69 @@ export default function HistorialPagosPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Paginación */}
+            {pagosFiltrados.length > 0 && totalPaginas > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Mostrando <span className="font-semibold">{indiceInicio + 1}</span> a{' '}
+                    <span className="font-semibold">{Math.min(indiceFin, pagosFiltrados.length)}</span> de{' '}
+                    <span className="font-semibold">{pagosFiltrados.length}</span> pagos
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
+                      disabled={paginaActual === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Anterior
+                    </button>
+
+                    <div className="flex gap-1">
+                      {[...Array(totalPaginas)].map((_, index) => {
+                        const numeroPagina = index + 1;
+                        // Mostrar solo algunas páginas alrededor de la actual
+                        if (
+                          numeroPagina === 1 ||
+                          numeroPagina === totalPaginas ||
+                          (numeroPagina >= paginaActual - 1 && numeroPagina <= paginaActual + 1)
+                        ) {
+                          return (
+                            <button
+                              key={numeroPagina}
+                              onClick={() => setPaginaActual(numeroPagina)}
+                              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                paginaActual === numeroPagina
+                                  ? 'bg-[#7B1FA2] text-white'
+                                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {numeroPagina}
+                            </button>
+                          );
+                        } else if (
+                          numeroPagina === paginaActual - 2 ||
+                          numeroPagina === paginaActual + 2
+                        ) {
+                          return <span key={numeroPagina} className="px-2 py-2 text-gray-500">...</span>;
+                        }
+                        return null;
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
+                      disabled={paginaActual === totalPaginas}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {pagosFiltrados.length === 0 && (
               <div className="text-center py-16">

@@ -17,6 +17,8 @@ export default function GratificacionesPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmModal, setConfirmModal] = useState({ open: false, gratificacion: null });
+  const [paginaActual, setPaginaActual] = useState(1);
+  const itemsPorPagina = 10;
 
   useEffect(() => {
     cargarGratificaciones();
@@ -105,6 +107,17 @@ export default function GratificacionesPage() {
     `${grat.nombres} ${grat.apellidos}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     grat.cargo.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Resetear a la primera página cuando cambien los filtros
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [periodo, anio, searchTerm]);
+
+  // Calcular paginación
+  const totalPaginas = Math.ceil(filteredGratificaciones.length / itemsPorPagina);
+  const indiceInicio = (paginaActual - 1) * itemsPorPagina;
+  const indiceFin = indiceInicio + itemsPorPagina;
+  const gratificacionesPaginadas = filteredGratificaciones.slice(indiceInicio, indiceFin);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -334,7 +347,7 @@ export default function GratificacionesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredGratificaciones.map((grat, index) => (
+                {gratificacionesPaginadas.map((grat, index) => (
                   <tr key={grat.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
@@ -421,6 +434,96 @@ export default function GratificacionesPage() {
             <div className="text-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#7B1FA2] mx-auto mb-4"></div>
               <p className="text-gray-500 font-medium">Calculando gratificaciones...</p>
+            </div>
+          )}
+
+          {/* Paginación */}
+          {filteredGratificaciones.length > 0 && !loading && (
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-700">
+                  Mostrando <span className="font-semibold">{indiceInicio + 1}</span> a{' '}
+                  <span className="font-semibold">
+                    {Math.min(indiceFin, filteredGratificaciones.length)}
+                  </span>{' '}
+                  de <span className="font-semibold">{filteredGratificaciones.length}</span> gratificaciones
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
+                    disabled={paginaActual === 1}
+                    className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Anterior
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {/* Primera página */}
+                    {paginaActual > 3 && (
+                      <>
+                        <button
+                          onClick={() => setPaginaActual(1)}
+                          className="w-10 h-10 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+                        >
+                          1
+                        </button>
+                        {paginaActual > 4 && (
+                          <span className="px-2 text-gray-500">...</span>
+                        )}
+                      </>
+                    )}
+
+                    {/* Páginas alrededor de la actual */}
+                    {Array.from({ length: totalPaginas }, (_, i) => i + 1)
+                      .filter(num => {
+                        return num === paginaActual ||
+                               num === paginaActual - 1 ||
+                               num === paginaActual + 1 ||
+                               num === paginaActual - 2 ||
+                               num === paginaActual + 2;
+                      })
+                      .filter(num => num > 0 && num <= totalPaginas)
+                      .map(num => (
+                        <button
+                          key={num}
+                          onClick={() => setPaginaActual(num)}
+                          className={`w-10 h-10 text-sm font-semibold rounded-lg transition-all ${
+                            paginaActual === num
+                              ? 'bg-gradient-to-r from-[#7B1FA2] to-[#9C27B0] text-white shadow-md'
+                              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      ))
+                    }
+
+                    {/* Última página */}
+                    {paginaActual < totalPaginas - 2 && (
+                      <>
+                        {paginaActual < totalPaginas - 3 && (
+                          <span className="px-2 text-gray-500">...</span>
+                        )}
+                        <button
+                          onClick={() => setPaginaActual(totalPaginas)}
+                          className="w-10 h-10 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+                        >
+                          {totalPaginas}
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
+                    disabled={paginaActual === totalPaginas}
+                    className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

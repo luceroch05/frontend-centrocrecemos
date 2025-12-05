@@ -27,7 +27,11 @@
       "Bash(kill:*)",
       "Bash(mysql:*)",
       "Bash(npm run build:*)",
-      "Bash(del \"C:\\Users\\Lucero\\Desktop\\frontend-centrocrecemos\\BACKEND_AUDITORIA_FIX.md\")"
+      "Bash(del \"C:\\Users\\Lucero\\Desktop\\frontend-centrocrecemos\\BACKEND_AUDITORIA_FIX.md\")",
+      "Bash(find:*)",
+      "Bash(for file in \"./historia-clinica/archivos-digitales.controller.ts\" \"./historia-clinica/historia-clinica.controller.ts\" \"./pacientes/controllers/nota-evolucion.controller.ts\" \"./pacientes/historia-clinica.controller.ts\" \"./pacientes/paciente-servicio.controller.ts\")",
+      "Bash(do sed -i \"/entidadTipo:/d; /entidadIdParam:/d; /entidadIdBody:/d; /entidadIdResponse:/d\" \"$file\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

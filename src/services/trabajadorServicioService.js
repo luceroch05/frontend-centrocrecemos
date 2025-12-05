@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { SERVER_BASE_URL } from './api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || SERVER_BASE_URL;
 
 /**
  * Obtiene todos los trabajadores asignados a un servicio específico

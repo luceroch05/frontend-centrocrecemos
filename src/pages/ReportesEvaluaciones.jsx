@@ -35,6 +35,7 @@ import { getTiposTest, getDatosEstudiantes, getGrados, getSecciones, getInstituc
 import axios from 'axios';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { API_BASE_URL } from '../services/api';
 
 // Configurar las fuentes
 pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
@@ -48,9 +49,6 @@ pdfMake.fonts = {
     bolditalics: 'Roboto-MediumItalic.ttf'
   }
 };
-
-const API_BASE_URL = 'https://www.crecemos.com.pe/backend_api';
-// const API_BASE_URL = 'http://localhost:3001/backend_api';
 
 export const ReportesEvaluaciones = () => {
   const [tiposTest, setTiposTest] = useState([]);
