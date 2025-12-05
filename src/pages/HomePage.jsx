@@ -128,7 +128,7 @@ useEffect(() => {
           </button>
 
           <img
-            src={`${API_BASE_URL}/uploads/popup/${popupConfig.imagenUrl}`}
+            src={`${API_BASE_URL}/popup/imagen/${popupConfig.imagenUrl}`}
             alt="Promoción especial - Centro Crecemos"
             className="w-full h-full object-contain block"
           />

@@ -264,7 +264,7 @@ const GestionPopup = () => {
                 <div className="space-y-4">
                   <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
                     <img
-                      src={`${API_BASE_URL}/uploads/popup/${popupConfig.imagenUrl}`}
+                      src={`${API_BASE_URL}/popup/imagen/${popupConfig.imagenUrl}`}
                       alt="Imagen promocional"
                       className="w-full h-auto max-h-96 object-contain"
                     />
@@ -413,7 +413,7 @@ const GestionPopup = () => {
             <div className="overflow-auto flex-1">
               {popupConfig.imagenUrl ? (
                 <img
-                  src={`${API_BASE_URL}/uploads/popup/${popupConfig.imagenUrl}`}
+                  src={`${API_BASE_URL}/popup/imagen/${popupConfig.imagenUrl}`}
                   alt="Imagen promocional"
                   className="w-full h-auto object-contain"
                   style={{ maxHeight: 'calc(90vh - 80px)' }}

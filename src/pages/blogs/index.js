@@ -15,6 +15,9 @@ import ViolenciaDomesticaBlog from './psicologia/ViolenciaDomesticaBlog';
 import Dia25NoviembreBlog from './psicologia/Dia25NoviembreBlog';
 import TCABlog from './psicologia/TCABlog';
 
+// Blogs de Efemérides
+import DiaDiscapacidadBlog from './efemerides/DiaDiscapacidadBlog';
+
 // Blogs de Terapias
 // import EjemploBlog from './terapias/EjemploBlog';
 
@@ -33,6 +36,7 @@ export const blogComponents = {
   '25-noviembre-dia-eliminacion-violencia-mujer': Dia25NoviembreBlog,
   'tumbo-fruta-andina-ninos-neurodivergentes': TumboBlog,
   '30-noviembre-trastornos-conducta-alimentaria': TCABlog,
+  '3-diciembre-dia-internacional-personas-discapacidad': DiaDiscapacidadBlog,
   // Agrega más blogs aquí...
   // 'slug-del-blog': ComponenteBlog,
 };
@@ -46,4 +50,5 @@ export {
   Dia25NoviembreBlog,
   TumboBlog,
   TCABlog,
+  DiaDiscapacidadBlog,
 };

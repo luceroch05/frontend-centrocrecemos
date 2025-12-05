@@ -92,6 +92,19 @@ export const blogMetadata = [
     readTime: '12 min lectura',
     author: 'Lic. Giselle Burgos Del Rosario',
     heroImage: '/assets/img/blog/tca.jpg'
+  },
+  {
+    id: 8,
+    slug: '3-diciembre-dia-internacional-personas-discapacidad',
+    title: 'Día Internacional de las Personas con Discapacidad: el camino hacia la Inclusión',
+    excerpt: 'Hoy conmemoramos el Día Internacional de las Personas con Discapacidad, una fecha de suma importancia para visibilizar, promover los derechos y el bienestar de las personas con discapacidad en todos los ámbitos de la sociedad.',
+    image: '/assets/img/blog/discapacidad-portada.jpg',
+    date: '3 Diciembre 2025',
+    category: 'efemerides',
+    categoryName: 'Eventos Conmemorativos',
+    readTime: '10 min lectura',
+    author: 'Centro Crecemos',
+    heroImage: '/assets/img/blog/discapacidad-hero.jpg'
   }
   // Aquí agregas más blogs...
 ];
